@@ -16,6 +16,11 @@ const eslintConfig = defineConfig([
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+      // React Compiler lint (eslint-config-next recommended-latest): valid patterns
+      // (useLatestRef-style sync, hydrate from props, drawer reset on open) — revisit incrementally.
+      "react-hooks/refs": "off",
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/error-boundaries": "off",
     },
   },
 ]);

@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.1.10
+
+- ESLint: atslēgt React Compiler ref/effect noteikumus esošajam kodam; settings MFA gate bez JSX try/catch
+
 ## v0.1.9
 
 - Next.js **16.4.3** (kritiskie CVE: Image Optimization SVG RCE, Server Actions DoS, `use cache` RCE)
