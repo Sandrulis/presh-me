@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.1.9
+
+- Next.js **16.4.3** (kritiskie CVE: Image Optimization SVG RCE, Server Actions DoS, `use cache` RCE)
+
 ## v0.1.8
 
 **Zīmols, landing, drošība un i18n**
