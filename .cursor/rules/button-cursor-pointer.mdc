@@ -1,0 +1,12 @@
+---
+description: Clickable buttons use a pointer cursor
+alwaysApply: true
+---
+
+# Pogas — cursor: pointer
+
+Visām klikšķināmām pogām jāparāda rokas kursors (`cursor: pointer`).
+
+Bāzes stils ir `app/globals.css`: `button`, `[role="button"]` un faila izvēles `label`.
+
+Atspējotām pogām: `cursor: not-allowed`.

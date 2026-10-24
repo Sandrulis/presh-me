@@ -1,0 +1,49 @@
+---
+description: Kad lietotājs saka push/commit — versijas tags un GitHub
+alwaysApply: true
+---
+
+# GitHub — commit un push ar versiju
+
+Kad lietotājs prasa **push**, **push GitHub**, **commit**, **atjaunināt github** u.tml.:
+
+## Pirms commit
+
+1. Ja ir **shippable** izmaiņas un versija vēl nav bumpota → vispirms **update** (`.cursor/rules/readme-version-update.mdc`, patch +0.0.1).
+2. Versijas avots: **`package.json` `"version"`** — commit ziņojumā jābūt **tai pašai**.
+3. Pirms commit (release):
+
+```bash
+npm run typecheck
+npm run build
+```
+
+Kļūdas jālabo; necommitot salauztu release. `npm run lint` — labot **errors**.
+
+## Commit ziņojums (obligāts formāts)
+
+```
+Īss apraksts par izmaiņu. vX.Y.Z
+```
+
+- **Viena teikuma** kopsavilkums — *kas jauns / kāpēc*, ne failu saraksts
+- **Beigās obligāti** `. vX.Y.Z` (punkts, atstarpe, `v`, semver no `package.json`)
+- Versijai jāsakrīt ar `CHANGELOG.md` jaunāko `## vX.Y.Z`
+
+### Piemēri
+
+```
+Studijas sānu josla un kompaktākas izvēlnes kartītes. v0.1.1
+```
+
+## Push
+
+- Iekļaut `CHANGELOG.md`, `README.md`, `DEVELOPER.md` un `package.json` tajā pašā commit, ja bumpots release
+- **Push tikai** ja lietotājs skaidri prasa push
+- Pēc jaunām izmaiņām pirms push atkārtot `typecheck` + `build`
+
+## Ko nedarīt
+
+- Push bez `. vX.Y.Z` beigās
+- Commit versija ≠ `package.json` / Changelog
+- `--force` uz `main` bez skaidra lietotāja lūguma

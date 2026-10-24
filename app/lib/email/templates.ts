@@ -1,0 +1,257 @@
+export type EmailTemplateKind = "signup" | "password_reset" | "email_change";
+
+export type EmailTemplateDraft = {
+  kind: EmailTemplateKind;
+  subjectKey: string;
+  bodyKey: string;
+  buttonKey: string;
+  subjects: Record<string, string>;
+  bodies: Record<string, string>;
+  buttons: Record<string, string>;
+};
+
+export const EMAIL_TEMPLATE_KINDS: EmailTemplateKind[] = [
+  "signup",
+  "password_reset",
+  "email_change",
+];
+
+export const TEMPLATE_KEYS: Record<
+  EmailTemplateKind,
+  { subjectKey: string; bodyKey: string; buttonKey: string }
+> = {
+  signup: {
+    subjectKey: "email.signup.subject",
+    bodyKey: "email.signup.body",
+    buttonKey: "email.signup.button",
+  },
+  password_reset: {
+    subjectKey: "email.password_reset.subject",
+    bodyKey: "email.password_reset.body",
+    buttonKey: "email.password_reset.button",
+  },
+  email_change: {
+    subjectKey: "email.email_change.subject",
+    bodyKey: "email.email_change.body",
+    buttonKey: "email.email_change.button",
+  },
+};
+
+type LangPack = Record<string, string>;
+
+export const BUTTON_FALLBACK: Record<EmailTemplateKind, LangPack> = {
+  signup: {
+    lv: "Apstiprināt e-pastu",
+    en: "Confirm email",
+    ru: "Подтвердить e-mail",
+    de: "E-Mail bestätigen",
+    fr: "Confirmer l'e-mail",
+    es: "Confirmar correo",
+    nl: "E-mail bevestigen",
+    da: "Bekræft e-mail",
+    no: "Bekreft e-post",
+    fi: "Vahvista sähköposti",
+    pl: "Potwierdź e-mail",
+    lt: "Patvirtinti el. paštą",
+    et: "Kinnita e-post",
+    it: "Conferma e-mail",
+    sv: "Bekräfta e-post",
+  },
+  password_reset: {
+    lv: "Atjaunot paroli",
+    en: "Reset password",
+    ru: "Сбросить пароль",
+    de: "Passwort zurücksetzen",
+    fr: "Réinitialiser le mot de passe",
+    es: "Restablecer contraseña",
+    nl: "Wachtwoord resetten",
+    da: "Nulstil adgangskode",
+    no: "Tilbakestill passord",
+    fi: "Nollaa salasana",
+    pl: "Zresetuj hasło",
+    lt: "Atkurti slaptažodį",
+    et: "Lähtesta parool",
+    it: "Reimposta password",
+    sv: "Återställ lösenord",
+  },
+  email_change: {
+    lv: "Apstiprināt jauno e-pastu",
+    en: "Confirm new email",
+    ru: "Подтвердить новый e-mail",
+    de: "Neue E-Mail bestätigen",
+    fr: "Confirmer le nouvel e-mail",
+    es: "Confirmar el nuevo correo",
+    nl: "Nieuwe e-mail bevestigen",
+    da: "Bekræft ny e-mail",
+    no: "Bekreft ny e-post",
+    fi: "Vahvista uusi sähköposti",
+    pl: "Potwierdź nowy e-mail",
+    lt: "Patvirtinti naują el. paštą",
+    et: "Kinnita uus e-post",
+    it: "Conferma la nuova e-mail",
+    sv: "Bekräfta ny e-post",
+  },
+};
+
+export const FOOTER_FALLBACK: LangPack = {
+  lv: "Ja poga nedarbojas, atver šo saiti pārlūkā:",
+  en: "If the button does not work, open this link in your browser:",
+  ru: "Если кнопка не работает, откройте эту ссылку в браузере:",
+  de: "Wenn die Schaltfläche nicht funktioniert, öffne diesen Link im Browser:",
+  fr: "Si le bouton ne fonctionne pas, ouvre ce lien dans ton navigateur :",
+  es: "Si el botón no funciona, abre este enlace en el navegador:",
+  nl: "Als de knop niet werkt, open deze link in je browser:",
+  da: "Hvis knappen ikke virker, så åbn dette link i din browser:",
+  no: "Hvis knappen ikke virker, åpne denne lenken i nettleseren:",
+  fi: "Jos painike ei toimi, avaa tämä linkki selaimessa:",
+  pl: "Jeśli przycisk nie działa, otwórz ten link w przeglądarce:",
+  lt: "Jei mygtukas neveikia, atidaryk šią nuorodą naršyklėje:",
+  et: "Kui nupp ei tööta, ava see link brauseris:",
+  it: "Se il pulsante non funziona, apri questo link nel browser:",
+  sv: "Om knappen inte fungerar, öppna den här länken i webbläsaren:",
+};
+
+export const FALLBACK_TEMPLATES: Record<
+  EmailTemplateKind,
+  { subject: LangPack; body: LangPack }
+> = {
+  signup: {
+    subject: {
+      lv: "Apstiprini e-pastu — {system}",
+      en: "Confirm your email — {system}",
+      ru: "Подтвердите e-mail — {system}",
+      de: "Bestätige deine E-Mail — {system}",
+      fr: "Confirme ton e-mail — {system}",
+      es: "Confirma tu correo — {system}",
+      nl: "Bevestig je e-mail — {system}",
+      da: "Bekræft din e-mail — {system}",
+      no: "Bekreft e-posten din — {system}",
+      fi: "Vahvista sähköpostisi — {system}",
+      pl: "Potwierdź e-mail — {system}",
+      lt: "Patvirtink el. paštą — {system}",
+      et: "Kinnita oma e-post — {system}",
+      it: "Conferma la tua e-mail — {system}",
+      sv: "Bekräfta din e-post — {system}",
+    },
+    body: {
+      lv: "Sveiki, {name}!\n\nPaldies, ka reģistrējies sistēmā {system}.\n\nNospied pogu zemāk, lai apstiprinātu e-pastu un aktivizētu kontu.",
+      en: "Hello, {name}!\n\nThanks for signing up to {system}.\n\nPress the button below to confirm your email and activate your account.",
+      ru: "Здравствуйте, {name}!\n\nСпасибо за регистрацию в {system}.\n\nНажмите кнопку ниже, чтобы подтвердить e-mail и активировать аккаунт.",
+      de: "Hallo, {name}!\n\nDanke, dass du dich bei {system} registriert hast.\n\nDrücke die Schaltfläche unten, um deine E-Mail zu bestätigen und das Konto zu aktivieren.",
+      fr: "Bonjour {name} !\n\nMerci de t'être inscrit à {system}.\n\nAppuie sur le bouton ci-dessous pour confirmer ton e-mail et activer le compte.",
+      es: "Hola, {name}!\n\nGracias por registrarte en {system}.\n\nPulsa el botón de abajo para confirmar tu correo y activar la cuenta.",
+      nl: "Hallo, {name}!\n\nBedankt voor je registratie bij {system}.\n\nDruk op de knop hieronder om je e-mail te bevestigen en je account te activeren.",
+      da: "Hej {name}!\n\nTak fordi du tilmeldte dig {system}.\n\nTryk på knappen nedenfor for at bekræfte din e-mail og aktivere kontoen.",
+      no: "Hei, {name}!\n\nTakk for at du registrerte deg i {system}.\n\nTrykk på knappen nedenfor for å bekrefte e-posten og aktivere kontoen.",
+      fi: "Hei {name}!\n\nKiitos, että rekisteröidyit palveluun {system}.\n\nPaina alla olevaa painiketta vahvistaaksesi sähköpostin ja aktivoidaksesi tilin.",
+      pl: "Cześć, {name}!\n\nDziękujemy za rejestrację w {system}.\n\nNaciśnij przycisk poniżej, aby potwierdzić e-mail i aktywować konto.",
+      lt: "Sveiki, {name}!\n\nAčiū, kad užsiregistravai sistemoje {system}.\n\nPaspausk mygtuką žemiau, kad patvirtintum el. paštą ir aktyvuotum paskyrą.",
+      et: "Tere, {name}!\n\nAitäh, et registreerusid süsteemis {system}.\n\nVajuta allolevale nupule, et kinnitada e-post ja aktiveerida konto.",
+      it: "Ciao, {name}!\n\nGrazie per esserti registrato su {system}.\n\nPremi il pulsante qui sotto per confermare l'e-mail e attivare l'account.",
+      sv: "Hej {name}!\n\nTack för att du registrerade dig i {system}.\n\nTryck på knappen nedan för att bekräfta e-postadressen och aktivera kontot.",
+    },
+  },
+  password_reset: {
+    subject: {
+      lv: "Atjauno paroli — {system}",
+      en: "Reset your password — {system}",
+      ru: "Сброс пароля — {system}",
+      de: "Passwort zurücksetzen — {system}",
+      fr: "Réinitialise ton mot de passe — {system}",
+      es: "Restablece tu contraseña — {system}",
+      nl: "Reset je wachtwoord — {system}",
+      da: "Nulstil din adgangskode — {system}",
+      no: "Tilbakestill passordet — {system}",
+      fi: "Nollaa salasanasi — {system}",
+      pl: "Zresetuj hasło — {system}",
+      lt: "Atkurk slaptažodį — {system}",
+      et: "Lähtesta parool — {system}",
+      it: "Reimposta la password — {system}",
+      sv: "Återställ ditt lösenord — {system}",
+    },
+    body: {
+      lv: "Sveiki, {name}!\n\nSaņēmām pieprasījumu atjaunot paroli sistēmā {system}.\n\nNospied pogu zemāk, lai izvēlētos jaunu paroli. Ja tu to nepieprasīji, vari ignorēt šo e-pastu.",
+      en: "Hello, {name}!\n\nWe received a request to reset your password for {system}.\n\nPress the button below to choose a new password. If you did not request this, you can ignore this email.",
+      ru: "Здравствуйте, {name}!\n\nМы получили запрос на сброс пароля в {system}.\n\nНажмите кнопку ниже, чтобы выбрать новый пароль. Если вы этого не запрашивали, просто проигнорируйте письмо.",
+      de: "Hallo, {name}!\n\nWir haben eine Anfrage erhalten, dein Passwort für {system} zurückzusetzen.\n\nDrücke die Schaltfläche unten, um ein neues Passwort zu wählen. Wenn du das nicht angefordert hast, kannst du diese E-Mail ignorieren.",
+      fr: "Bonjour {name} !\n\nNous avons reçu une demande de réinitialisation du mot de passe pour {system}.\n\nAppuie sur le bouton ci-dessous pour choisir un nouveau mot de passe. Si tu n'as pas fait cette demande, tu peux ignorer cet e-mail.",
+      es: "Hola, {name}!\n\nHemos recibido una solicitud para restablecer tu contraseña de {system}.\n\nPulsa el botón de abajo para elegir una nueva contraseña. Si no lo pediste, puedes ignorar este correo.",
+      nl: "Hallo, {name}!\n\nWe hebben een verzoek ontvangen om je wachtwoord voor {system} te resetten.\n\nDruk op de knop hieronder om een nieuw wachtwoord te kiezen. Als jij dit niet hebt gevraagd, kun je deze e-mail negeren.",
+      da: "Hej {name}!\n\nVi har modtaget en anmodning om at nulstille din adgangskode til {system}.\n\nTryk på knappen nedenfor for at vælge en ny adgangskode. Hvis du ikke har bedt om det, kan du ignorere denne e-mail.",
+      no: "Hei, {name}!\n\nVi har mottatt en forespørsel om å tilbakestille passordet ditt for {system}.\n\nTrykk på knappen nedenfor for å velge et nytt passord. Hvis du ikke ba om dette, kan du ignorere e-posten.",
+      fi: "Hei {name}!\n\nSaimme pyynnön nollata salasanasi palvelussa {system}.\n\nPaina alla olevaa painiketta valitaksesi uuden salasanan. Jos et pyytänyt tätä, voit ohittaa viestin.",
+      pl: "Cześć, {name}!\n\nOtrzymaliśmy prośbę o zresetowanie hasła w {system}.\n\nNaciśnij przycisk poniżej, aby wybrać nowe hasło. Jeśli tego nie prosiłeś, zignoruj tę wiadomość.",
+      lt: "Sveiki, {name}!\n\nGavome prašymą atkurti slaptažodį sistemoje {system}.\n\nPaspausk mygtuką žemiau, kad pasirinktum naują slaptažodį. Jei to neprašei, šį laišką gali ignoruoti.",
+      et: "Tere, {name}!\n\nSaime taotluse lähtestada parool süsteemis {system}.\n\nVajuta allolevale nupule, et valida uus parool. Kui sa seda ei taotlenud, võid kirja eirata.",
+      it: "Ciao, {name}!\n\nAbbiamo ricevuto una richiesta per reimpostare la password di {system}.\n\nPremi il pulsante qui sotto per scegliere una nuova password. Se non l'hai richiesta tu, puoi ignorare questa e-mail.",
+      sv: "Hej {name}!\n\nVi har fått en begäran om att återställa ditt lösenord för {system}.\n\nTryck på knappen nedan för att välja ett nytt lösenord. Om du inte begärde detta kan du ignorera mejlet.",
+    },
+  },
+  email_change: {
+    subject: {
+      lv: "Apstiprini jauno e-pastu — {system}",
+      en: "Confirm your new email — {system}",
+      ru: "Подтвердите новый e-mail — {system}",
+      de: "Bestätige deine neue E-Mail — {system}",
+      fr: "Confirme ton nouvel e-mail — {system}",
+      es: "Confirma tu nuevo correo — {system}",
+      nl: "Bevestig je nieuwe e-mail — {system}",
+      da: "Bekræft din nye e-mail — {system}",
+      no: "Bekreft den nye e-posten — {system}",
+      fi: "Vahvista uusi sähköpostisi — {system}",
+      pl: "Potwierdź nowy e-mail — {system}",
+      lt: "Patvirtink naują el. paštą — {system}",
+      et: "Kinnita uus e-post — {system}",
+      it: "Conferma la nuova e-mail — {system}",
+      sv: "Bekräfta din nya e-post — {system}",
+    },
+    body: {
+      lv: "Sveiki, {name}!\n\nTu pieprasīji mainīt e-pastu sistēmā {system}.\n\nNospied pogu zemāk, lai apstiprinātu jauno adresi. Ja tu to nepieprasīji, ignorē šo vēstuli.",
+      en: "Hello, {name}!\n\nYou requested to change your email for {system}.\n\nPress the button below to confirm the new address. If you did not request this, ignore this email.",
+      ru: "Здравствуйте, {name}!\n\nВы запросили смену e-mail в {system}.\n\nНажмите кнопку ниже, чтобы подтвердить новый адрес. Если вы этого не запрашивали, просто проигнорируйте письмо.",
+      de: "Hallo, {name}!\n\nDu hast eine Änderung der E-Mail für {system} angefordert.\n\nDrücke die Schaltfläche unten, um die neue Adresse zu bestätigen. Wenn du das nicht angefordert hast, ignoriere diese E-Mail.",
+      fr: "Bonjour {name} !\n\nTu as demandé à changer d'e-mail pour {system}.\n\nAppuie sur le bouton ci-dessous pour confirmer la nouvelle adresse. Si tu n'as pas fait cette demande, ignore cet e-mail.",
+      es: "Hola, {name}!\n\nHas solicitado cambiar el correo de {system}.\n\nPulsa el botón de abajo para confirmar la nueva dirección. Si no lo pediste, ignora este correo.",
+      nl: "Hallo, {name}!\n\nJe hebt gevraagd om je e-mail voor {system} te wijzigen.\n\nDruk op de knop hieronder om het nieuwe adres te bevestigen. Als jij dit niet hebt gevraagd, negeer deze e-mail.",
+      da: "Hej {name}!\n\nDu har bedt om at ændre e-mailen til {system}.\n\nTryk på knappen nedenfor for at bekræfte den nye adresse. Hvis du ikke har bedt om det, kan du ignorere denne e-mail.",
+      no: "Hei, {name}!\n\nDu ba om å endre e-posten for {system}.\n\nTrykk på knappen nedenfor for å bekrefte den nye adressen. Hvis du ikke ba om dette, kan du ignorere e-posten.",
+      fi: "Hei {name}!\n\nPyysit vaihtamaan sähköpostiosoitetta palvelussa {system}.\n\nPaina alla olevaa painiketta vahvistaaksesi uuden osoitteen. Jos et pyytänyt tätä, voit ohittaa viestin.",
+      pl: "Cześć, {name}!\n\nPoprosiłeś o zmianę e-maila w {system}.\n\nNaciśnij przycisk poniżej, aby potwierdzić nowy adres. Jeśli tego nie prosiłeś, zignoruj tę wiadomość.",
+      lt: "Sveiki, {name}!\n\nPaprašei pakeisti el. paštą sistemoje {system}.\n\nPaspausk mygtuką žemiau, kad patvirtintum naują adresą. Jei to neprašei, šį laišką gali ignoruoti.",
+      et: "Tere, {name}!\n\nSa taotlesid e-posti muutmist süsteemis {system}.\n\nVajuta allolevale nupule, et kinnitada uus aadress. Kui sa seda ei taotlenud, võid kirja eirata.",
+      it: "Ciao, {name}!\n\nHai richiesto di cambiare l'e-mail di {system}.\n\nPremi il pulsante qui sotto per confermare il nuovo indirizzo. Se non l'hai richiesto tu, ignora questa e-mail.",
+      sv: "Hej {name}!\n\nDu begärde att byta e-post för {system}.\n\nTryck på knappen nedan för att bekräfta den nya adressen. Om du inte begärde detta kan du ignorera mejlet.",
+    },
+  },
+};
+
+export function fallbackFor(
+  kind: EmailTemplateKind,
+  field: "subject" | "body",
+  languageCode: string,
+): string {
+  const pack = FALLBACK_TEMPLATES[kind][field];
+  return pack[languageCode] || pack.en || pack.lv || "";
+}
+
+export function fallbackButton(kind: EmailTemplateKind, languageCode: string): string {
+  const pack = BUTTON_FALLBACK[kind];
+  return pack[languageCode] || pack.en || pack.lv || "";
+}
+
+export function fallbackFooter(languageCode: string): string {
+  return FOOTER_FALLBACK[languageCode] || FOOTER_FALLBACK.en || FOOTER_FALLBACK.lv;
+}
+
+export function emptyDraft(kind: EmailTemplateKind): EmailTemplateDraft {
+  const keys = TEMPLATE_KEYS[kind];
+  return {
+    kind,
+    subjectKey: keys.subjectKey,
+    bodyKey: keys.bodyKey,
+    buttonKey: keys.buttonKey,
+    subjects: {},
+    bodies: {},
+    buttons: {},
+  };
+}

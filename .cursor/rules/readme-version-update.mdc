@@ -1,0 +1,44 @@
+---
+description: Kad lietotājs saka "update", bump versiju un atjaunini CHANGELOG / README / DEVELOPER
+globs: README.md,DEVELOPER.md,CHANGELOG.md,package.json
+alwaysApply: true
+---
+
+# update — dokumentācija un versija
+
+Kad lietotājs raksta **update**, **README update**, `@README.md update` vai līdzīgi — veic **release notes** gājienu (ne tikai literāras kļūdas, ja vien nav skaidri „bez release”).
+
+## Trīs faili
+
+- **`CHANGELOG.md`** — visas versijas (`## vX.Y.Z`, jaunākais augšā). Vienīgā vietā versiju vēsture.
+- **`README.md`** — īss produkta pārskats, setup, `**Current version:**`; bez dziļas tehnikas; **<150 rindu**.
+- **`DEVELOPER.md`** — tehniskā dokumentācija: plūsma, store, ceļi, studija, versioning, roadmap.
+
+## Versijas bump (noklusējums: patch +0.0.1)
+
+| Lietotājs saka | Bump |
+|---|---|
+| `update` (noklusējums) | Patch — pēdējais segments +1 |
+| Explicit **minor** / `0.1` | Minor |
+| Explicit **major** | Major |
+| Tikai typo, **bez release** | Bez bump |
+
+## Soļi
+
+1. Nolasīt `package.json` `"version"` un jaunāko `## vX.Y.Z` `CHANGELOG.md`.
+2. Apkopot izmaiņas kopš tās versijas (`git log` / `git diff` / sesijas darbs).
+3. Bump `package.json`.
+4. `README.md`: `**Current version:** \`X.Y.Z\``.
+5. `CHANGELOG.md`: jaunā `## vX.Y.Z` (1–5 bullet), `## Unreleased` → `- (none)`.
+6. Sinhronizēt `DEVELOPER.md`, ja mainījās uzvedība vai struktūra.
+7. Commit/push **tikai** ja lietotājs to prasa → tad `.cursor/rules/github-version-commit.mdc`.
+
+## Changelog formāts
+
+```markdown
+## v0.1.2
+
+**Īss temats (pēc izvēles)**
+
+- Konkrēts uzlabojums
+```

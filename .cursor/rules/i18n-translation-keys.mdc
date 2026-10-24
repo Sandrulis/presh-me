@@ -1,0 +1,30 @@
+---
+description: I18n translation keys — all system languages, catalogs, no duplicate action keys
+alwaysApply: true
+---
+
+# Tulkojumu atslēgas — visās sistēmas valodās
+
+UI tekstiem izmanto `t(key, fallback, params)`. Fallback kodā ir drošības teksts latviešu valodā.
+
+Sistēmas valodas: **`lv`**, **`en`**, **`ru`**, **`de`**, **`fr`**, **`es`**, **`nl`**, **`da`**, **`no`**, **`fi`**, **`pl`**, **`lt`**, **`et`**, **`it`**, **`sv`**.
+
+| Avots | Valodas |
+|---|---|
+| `app/lib/i18n/messages.ts` | `lv` + `en` (kanons) |
+| `app/lib/i18n/_catalog/{code}.json` | pārējās valodas |
+| `app/lib/i18n/messages-{code}.ts` | ģenerēts no JSON — **neredigē ar roku** |
+
+`site_translations` ir tikai **overlay** (admin labojumi) — **neiesevo** visus key datubāzē.
+
+## Jauni vai mainīti UI teksti
+
+1. kodā `t(key, fallback, params)`;
+2. atslēga **`messages.ts`** ar `lv` un `en`;
+3. tā pati atslēga **katrā** `_catalog/{code}.json` ar īstu tulkojumu;
+4. palaid **`npm run i18n:check`**.
+
+## Nedublēt vienādas vērtības
+
+Kopīgas darbības: `actions.save`, `actions.edit`, `actions.delete`, `actions.add`, `actions.cancel`.
+Kopīgi: `common.name`, `common.email`, `nav.login`, `settings.language.title`.

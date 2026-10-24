@@ -1,0 +1,38 @@
+{
+  "name": "presh-me",
+  "version": "0.1.8",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node --max-http-header-size=65536 ./node_modules/next/dist/bin/next dev -p 3130",
+    "build": "next build",
+    "start": "node --max-http-header-size=65536 ./node_modules/next/dist/bin/next start -p 3130",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "i18n:check": "node scripts/sync-i18n-catalogs.mjs",
+    "i18n:seed-db": "node scripts/seed-site-translations.mjs",
+    "db:migrate": "node scripts/apply-migrations.mjs",
+    "db:test": "node scripts/test-supabase.mjs",
+    "seo:smoke": "node scripts/seo-smoke.mjs"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.98.0",
+    "next": "16.3.8",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.8",
+    "pg": "^8.21.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

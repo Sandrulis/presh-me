@@ -1,0 +1,40 @@
+---
+description: Jaunas lapas adrese ir rezervēts sistēmas links
+alwaysApply: true
+---
+
+# Sistēmas linki ir rezervēti
+
+Lietotāja links (`presh.me/vards`) nedrīkst sakrist ar sistēmas lapu.
+
+Avots ir `SYSTEM_LINKS` failā `app/lib/handles.ts`. Tas ietilpst `RESERVED_HANDLES`. Rezervēts links laukā rāda „Šāds links nav pieejams.” un tālākpoga paliek neaktīva.
+
+## Kad pievieno jaunu UI
+
+Ja izveido lapu, API maršrutu vai publisku failu ar savu pirmo segmentu:
+
+- `app/<segments>/page.tsx`
+- `app/<segments>/route.ts`
+- `public/<fails>`
+
+tajā pašā izmaiņā pievieno pirmo ceļa segmentu masīvam `SYSTEM_LINKS`.
+
+Sistēmas ceļš ir **angliski**: `terms`, `privacy`, `cookies`, `login`, `bug`, `suggestions`, `feedback`, `contact`. Lapas teksts paliek latviski. Nelieto latviešu segmentus (`noteikumi`, `privatums`). `rules` var palikt kā redirect uz `terms`.
+
+```ts
+export const SYSTEM_LINKS = [
+  "studio",
+  "bug",
+  "suggestions",
+  "feedback",
+  "contact",
+] as const;
+```
+
+`app/[handle]` nav sistēmas links. To nepievieno.
+
+## Ko nedarīt
+
+- Neatstāt jaunu `app/pricing/page.tsx` bez `"pricing"` sarakstā `SYSTEM_LINKS`.
+- Nelikt sistēmas mapei latviešu nosaukumu.
+- Nedublēt to pašu vārdu citā rezervēto kopā. Sistēmas adreses ir tikai `SYSTEM_LINKS`.

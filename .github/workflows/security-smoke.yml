@@ -1,0 +1,88 @@
+name: Security smoke
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  smoke:
+    name: smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22.13.0"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npm run typecheck
+
+      - name: Lint check
+        run: npm run lint
+
+      - name: Build (production)
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SITE_URL: "https://placeholder.example.com"
+
+      - name: Security - no hardcoded secrets
+        run: |
+          PATTERNS=(
+            "sk_live_"
+            "sk_test_"
+            "SUPABASE_SERVICE_ROLE_KEY\s*=\s*\"ey"
+          )
+          FOUND=0
+          for pattern in "${PATTERNS[@]}"; do
+            if grep -rE "$pattern" app/ --include="*.ts" --include="*.tsx" -l 2>/dev/null | grep -v "node_modules" | grep -v ".env"; then
+              echo "FAIL: Potential hardcoded secret: $pattern"
+              FOUND=$((FOUND + 1))
+            fi
+          done
+          if [ $FOUND -gt 0 ]; then exit 1; fi
+          echo "OK: No hardcoded secrets found"
+
+      - name: Security - API routes have auth checks
+        run: |
+          for file in $(find app/api -name "route.ts"); do
+            if grep -qE "export async function (GET|POST|PUT|DELETE|PATCH)" "$file"; then
+              case "$file" in
+                app/api/auth/verify-turnstile/route.ts)
+                  # Public bot check; rate-limited
+                  continue
+                  ;;
+              esac
+              if ! grep -qE "(getUser|requireAdmin|createClient|auth\.getUser)" "$file"; then
+                echo "FAIL: No auth check in $file"
+                exit 1
+              fi
+            fi
+          done
+          echo "OK: API auth check complete"
+
+      - name: Security - headers configured
+        run: |
+          for header in "X-Frame-Options" "X-Content-Type-Options" "Referrer-Policy" "Permissions-Policy"; do
+            if ! grep -q "$header" next.config.ts; then
+              echo "FAIL: Missing security header: $header"
+              exit 1
+            fi
+          done
+          echo "OK: Security headers present"
+
+      - name: Security - no eval() in production code
+        run: |
+          if grep -rn "\beval(" app/ --include="*.ts" --include="*.tsx" | grep -v "node_modules" | grep -v "// "; then
+            echo "FAIL: eval() found"
+            exit 1
+          fi
+          echo "OK: No eval() in app code"

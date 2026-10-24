@@ -1,0 +1,6 @@
+-- System branding images as data URLs. Idempotent.
+
+alter table public.site_settings
+  add column if not exists logo_url text,
+  add column if not exists favicon_url text,
+  add column if not exists notification_favicon_url text;

@@ -1,0 +1,35 @@
+---
+description: Pēc supabase/migrations SQL — palaid db:migrate, labo un atkārto
+alwaysApply: true
+---
+
+# DB migrations — run, fix, retry
+
+Kad **izveido vai būtiski labo** failu `supabase/migrations/`:
+
+## 1. Raksti migrāciju
+
+- Nākamais secīgais prefikss (`001_`, `002_`, …).
+- Idempotents SQL (`if not exists`, `on conflict`, `add column if not exists`).
+- RLS + deny policies anon/authenticated; funkcijām `set search_path = ''`.
+
+## 2. Palaid (obligāti)
+
+```bash
+npm run db:migrate
+```
+
+`scripts/apply-migrations.mjs` seko `public.schema_migrations`. Neizdevušies netiek ierakstīti.
+
+## 3. Kļūdas — labo un atkārto
+
+1. Izlasi kļūdu.
+2. Labo **to pašu** pending failu (ja vēl nav applied).
+3. Atkārto `npm run db:migrate`, līdz OK vai bloķeris (env/tīkls).
+
+## 4. Ziņo lietotājam
+
+- Success: applied failu vārdi vai `No pending migrations.`
+- Pēc fix+retry: īsi kas bija un kas labots.
+
+Atslēgas un DB parole tikai `.env.local` — nekad repo.
