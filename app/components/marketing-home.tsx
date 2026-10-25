@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ClaimForm } from "@/app/components/claim-form";
 import { DemoMarquee } from "@/app/components/demo-marquee";
@@ -5,14 +6,16 @@ import { Header } from "@/app/components/header";
 import { JsonLd } from "@/app/components/json-ld";
 import { LandingFaq } from "@/app/components/landing-faq";
 import { SiteFooter } from "@/app/components/site-footer";
+import type { LanguageCode } from "@/app/lib/i18n/language";
 import type { TranslateFn } from "@/app/lib/i18n/server";
 import { LANDING_FAQ_ITEMS } from "@/app/lib/landing-faq-items";
 import { PRICING } from "@/app/lib/pricing";
+import { localePath } from "@/app/lib/seo/locale-path";
 import { absoluteUrl, getPublicSiteUrl } from "@/app/lib/site-url";
 
 type MarketingHomeProps = {
   t: TranslateFn;
-  languageCode: string;
+  languageCode: LanguageCode;
   translationIncomplete?: boolean;
 };
 
@@ -154,6 +157,9 @@ export function MarketingHome({ t, languageCode, translationIncomplete = false }
             <ClaimForm />
           </div>
           <p className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--muted)]">
+            <Link href={localePath(languageCode, "/link-in-bio")} className="underline-offset-2 hover:underline">
+              {t("seo.link_in_bio.h1", "A link in bio page that looks like you")}
+            </Link>
             <Link href="/portfolio-website" className="underline-offset-2 hover:underline">
               {t("seo.portfolio.title", "Portfolio website")}
             </Link>
@@ -166,6 +172,35 @@ export function MarketingHome({ t, languageCode, translationIncomplete = false }
         <div id="examples">
           <DemoMarquee />
         </div>
+
+        <section id="studio-preview" className="border-b border-[var(--line)] bg-[var(--paper)]">
+          <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-14 lg:grid-cols-2 lg:py-20">
+            <div>
+              <h2 className="font-display text-3xl font-bold tracking-[-0.03em]">
+                {t("landing.studio.title", "Build it in a minute")}
+              </h2>
+              <p className="mt-3 max-w-md text-sm leading-relaxed text-[var(--muted)]">
+                {t(
+                  "landing.studio.subtitle",
+                  "The studio shows a live preview while you edit blocks, themes and your public link — no separate publish step for every tweak.",
+                )}
+              </p>
+            </div>
+            <div className="relative mx-auto w-full max-w-xl">
+              <Image
+                src="/marketing/studio-preview.svg"
+                alt={t(
+                  "landing.studio.image_alt",
+                  "Presh.Me studio: editor on the left and phone page preview on the right",
+                )}
+                width={960}
+                height={520}
+                className="h-auto w-full"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </section>
 
         <section className="mt-10 border-y border-[var(--line)] bg-white">
           <div className="mx-auto grid max-w-6xl md:grid-cols-3">

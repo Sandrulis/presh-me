@@ -1,17 +1,23 @@
 import { isLanguageCode, type LanguageCode } from "@/app/lib/i18n/language";
+import {
+  DEFAULT_SEO_LOCALE,
+  localizedMarketingPath,
+  normalizeMarketingPath,
+} from "@/app/lib/seo/localized-slugs";
 import { absoluteUrl } from "@/app/lib/site-url";
 
-/** Default marketing language lives at `/`. */
-export const DEFAULT_SEO_LOCALE: LanguageCode = "en";
+export { DEFAULT_SEO_LOCALE };
 
 export function localeHomePath(locale: LanguageCode): string {
   return locale === DEFAULT_SEO_LOCALE ? "/" : `/${locale}`;
 }
 
+/** Canonical (English) marketing path → public URL for locale, including translated slugs. */
 export function localePath(locale: LanguageCode, path = "/"): string {
-  const clean = !path || path === "/" ? "" : path.startsWith("/") ? path : `/${path}`;
-  if (locale === DEFAULT_SEO_LOCALE) return clean || "/";
-  return `/${locale}${clean}`;
+  const canonical = normalizeMarketingPath(path);
+  const localized = localizedMarketingPath(locale, canonical);
+  if (locale === DEFAULT_SEO_LOCALE) return localized;
+  return localized === "/" ? `/${locale}` : `/${locale}${localized}`;
 }
 
 export function absoluteLocaleUrl(locale: LanguageCode, path = "/"): string {

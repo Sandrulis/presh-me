@@ -1,31 +1,17 @@
-import { IntentLanding } from "@/app/components/intent-landing";
-import { intentMetadata } from "@/app/lib/seo/intent-page";
+import { MarketingIntentPage, marketingIntentMetadata } from "@/app/components/marketing-intent-page";
+import { MARKETING_INTENT_PAGES } from "@/app/lib/marketing-intent-config";
+import { getServerTranslations } from "@/app/lib/i18n/server";
+import { buildIntentPageMetadata } from "@/app/lib/seo/intent-page";
 
-export const metadata = intentMetadata({
-  path: "/portfolio-website",
-  title: "Portfolio website builder",
-  description:
-    "Build a clean one-page portfolio on Presh.Me — work samples, links and contact at one URL you share anywhere.",
-});
+const config = MARKETING_INTENT_PAGES["portfolio-website"];
 
-export default function PortfolioWebsitePage() {
-  return (
-    <IntentLanding
-      path="/portfolio-website"
-      kicker="Portfolio"
-      h1="A portfolio website that fits in one link"
-      lead="Show selected work, a short bio and ways to contact you — without maintaining a full multi-page site. Put the link in email signatures, Instagram or proposals."
-      bullets={[
-        "Image, text, video and resume blocks for case studies and samples.",
-        "Themes and fonts so the page matches your craft, not a generic template farm.",
-        "One stable address: update the studio; keep the same bio link.",
-      ]}
-      related={[
-        { href: "/", label: "← Presh.Me" },
-        { href: "/digital-business-card", label: "Digital business card" },
-        { href: "/for/photographers", label: "For photographers" },
-        { href: "/for/designers", label: "For designers" },
-      ]}
-    />
-  );
+export async function generateMetadata() {
+  const { t } = await getServerTranslations();
+  const meta = marketingIntentMetadata(config, t);
+  return buildIntentPageMetadata({ path: config.path, ...meta });
+}
+
+export default async function Page() {
+  const { t } = await getServerTranslations();
+  return <MarketingIntentPage config={config} t={t} />;
 }

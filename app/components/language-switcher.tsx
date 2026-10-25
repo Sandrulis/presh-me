@@ -12,7 +12,8 @@ import {
   type LanguageCode,
   type UiLanguageOption,
 } from "@/app/lib/i18n/language";
-import { localeHomePath } from "@/app/lib/seo/locale-path";
+import { parseMarketingPathname } from "@/app/lib/seo/localized-slugs";
+import { localeHomePath, localePath } from "@/app/lib/seo/locale-path";
 
 const MENU_WIDTH_PX = 224;
 
@@ -176,13 +177,14 @@ export function LanguageSwitcher({
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const { languageCode, languages, t } = useTranslations();
   const pathname = usePathname() || "/";
-  const preferLocaleLinks =
-    pathname === "/" ||
-    /^\/[a-z]{2}(\/|$)/.test(pathname) ||
-    pathname.startsWith("/portfolio") ||
-    pathname.startsWith("/digital-business-card") ||
-    pathname.startsWith("/for/") ||
-    pathname.startsWith("/compare/");
+  const marketingRoute = parseMarketingPathname(pathname);
+  const preferLocaleLinks = marketingRoute !== null;
+
+  function localeLinkFor(language: LanguageCode) {
+    if (!marketingRoute) return localeHomePath(language);
+    if (marketingRoute.canonical === "/") return localeHomePath(language);
+    return localePath(language, marketingRoute.canonical);
+  }
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState<{
@@ -434,7 +436,7 @@ export function LanguageSwitcher({
                   return (
                     <Link
                       key={language.code}
-                      href={localeHomePath(language.code)}
+                      href={localeLinkFor(language.code)}
                       hrefLang={language.code}
                       role="menuitem"
                       className={className}

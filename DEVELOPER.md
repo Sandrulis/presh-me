@@ -1,6 +1,6 @@
 # Presh - izstrādātāja dokumentācija
 
-Link-in-bio / portfolio lapas (kā liinks.co, bet ne 1:1). Lietotājs reģistrējas, paņem `presh.me/{handle}` un studijā saliek profilu, saites, blokus un izskatu.
+Link-in-bio / portfolio lapas. Lietotājs reģistrējas, paņem `presh.me/{handle}` un studijā saliek profilu, saites, blokus un izskatu.
 
 **Current version:** skatīt `package.json` / `README.md` / `CHANGELOG.md`.
 
@@ -56,7 +56,9 @@ Admin josla: tikai `isSessionAdmin()` (`users.is_admin`).
 | `/bug`, `/suggestions`, `/feedback`, `/contact` | Atbalsta formas (arī dialogi no kreisās joslas); bug/suggestion — neobligāti attēli |
 | `/admin/*` | Admin josla: Todo → Lietotāji → Linki → Ziņojumi → Integrācijas → Moduļi → Valodas → Tulkojumi → Uzstādījumi; `isAdmin` gate; Valodas/Tulkojumi: `+ Pievienot` + side drawer |
 | `/` (viesim) | Claim + soļi + features/pricing/FAQ; JSON-LD; header: logo + valoda + login |
-| `/link-in-bio` | 301 → `/` (rezervēts `SYSTEM_LINKS`, nav atsevišķas lapas) |
+| `/link-in-bio` | SEO intent lapa (`IntentLanding` + `seo.link_in_bio.*`); rezervēts `SYSTEM_LINKS`; publiskais URL ar lokalizētu segmentu (`app/lib/seo/localized-slugs.ts`, middleware rewrite) |
+| Intent lapas (`/portfolio-website`, `/for/*`, …) | `MarketingIntentPage` + `intent.*` atslēgas (`messages.ts` + `_catalog`); metadata caur `buildIntentPageMetadata` |
+| `/compare/*` | Noņemts; `retired-compare-paths.ts` + middleware 302 (rezervēts `compare` handle nākotnei) |
 | `/robots.txt`, `/sitemap.xml` | Crawl + published profiles (skat. `SEO_AUDIT.md`) |
 | `/terms`, `/privacy`, `/cookies` | Juridiskās lapas (EN ceļi); `/rules` → `/terms` |
 | `/{handle}` | Publiskā lapa — **SSR** metadata + `PageView` (published); draft noindex |

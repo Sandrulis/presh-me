@@ -41,10 +41,21 @@ function checkRobotsSource() {
   assert.ok(src.includes("sitemap"), "robots should advertise sitemap");
 }
 
+function checkLocalizedMarketingSlugs() {
+  const fs = require("fs");
+  const src = fs.readFileSync(path.join(root, "app/lib/seo/localized-slugs.ts"), "utf8");
+  assert.ok(src.includes("portfolio-majaslapa"), "LV portfolio slug");
+  assert.ok(!src.includes("salidzinajums"), "compare segment slugs must stay retired");
+  assert.ok(src.includes("localizedMarketingPath"), "localized path helper");
+  const localePath = fs.readFileSync(path.join(root, "app/lib/seo/locale-path.ts"), "utf8");
+  assert.ok(localePath.includes("localizedMarketingPath"), "localePath uses localized slugs");
+}
+
 function checkSitemapSource() {
   const fs = require("fs");
   const src = fs.readFileSync(path.join(root, "app/sitemap.ts"), "utf8");
-  assert.ok(!src.includes('"/link-in-bio"'), "sitemap must not list removed link-in-bio page");
+  assert.ok(src.includes('"/link-in-bio"'), "sitemap must list link-in-bio intent page");
+  assert.ok(!src.includes('"/compare/'), "sitemap must not list compare pages");
   assert.ok(src.includes("getIndexableSeoLocales") || src.includes("absoluteLocaleUrl"), "sitemap uses locale-aware URLs");
   assert.ok(!src.includes('"/studio"'), "sitemap must not list studio as static path");
   assert.ok(src.includes("published"), "sitemap loads published profiles");
@@ -77,6 +88,7 @@ function checkBrandConsistency() {
 async function main() {
   await loadSiteUrlModule();
   checkRobotsSource();
+  checkLocalizedMarketingSlugs();
   checkSitemapSource();
   checkNoLocalhostInSeoSources();
   checkBrandConsistency();

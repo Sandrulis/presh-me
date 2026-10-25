@@ -1,30 +1,17 @@
-import { IntentLanding } from "@/app/components/intent-landing";
-import { intentMetadata } from "@/app/lib/seo/intent-page";
+import { MarketingIntentPage, marketingIntentMetadata } from "@/app/components/marketing-intent-page";
+import { MARKETING_INTENT_PAGES } from "@/app/lib/marketing-intent-config";
+import { getServerTranslations } from "@/app/lib/i18n/server";
+import { buildIntentPageMetadata } from "@/app/lib/seo/intent-page";
 
-export const metadata = intentMetadata({
-  path: "/for/freelancers",
-  title: "Personal page for freelancers",
-  description:
-    "Services, portfolio links and contact on one Presh.Me page — for freelancers and consultants.",
-});
+const config = MARKETING_INTENT_PAGES["for/freelancers"];
 
-export default function Page() {
-  return (
-    <IntentLanding
-      path="/for/freelancers"
-      kicker="Freelancers"
-      h1="One page for clients and social bios"
-      lead="Stop pasting five different URLs into DMs. Offer services, proof of work and a clear next step from a single address."
-      bullets={[
-        "Resume and FAQ blocks for common client questions.",
-        "Links to calendars, invoices portals or case studies.",
-        "Publish when ready — drafts stay private.",
-      ]}
-      related={[
-        { href: "/for/coaches", label: "Coaches" },
-        { href: "/personal-website", label: "Personal website" },
-        { href: "/", label: "Home" },
-      ]}
-    />
-  );
+export async function generateMetadata() {
+  const { t } = await getServerTranslations();
+  const meta = marketingIntentMetadata(config, t);
+  return buildIntentPageMetadata({ path: config.path, ...meta });
+}
+
+export default async function Page() {
+  const { t } = await getServerTranslations();
+  return <MarketingIntentPage config={config} t={t} />;
 }

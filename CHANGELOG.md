@@ -4,6 +4,23 @@
 
 - (none)
 
+## v0.1.12
+
+**SEO valodās, intent tulkojumi, bez salīdzinājumu lapām**
+
+- Lokalizēti marketing URL (`/lv/portfolio-majaslapa`, u.c.) ar rewrite un kanoniskiem redirectiem
+- Salīdzinājumu lapas noņemtas; vecie `/compare/*` un lokalizētie slugi 302 uz mājaslapu
+- Intent landing lapas caur `intent.*` tulkojumiem; labots `claim.*` (piem. DE teksts DA/NL/NO/SV katalogos)
+- `/link-in-bio` atjaunots; landing studijas priekšskats; bez konkurentu nosaukumu landing tekstos
+
+## v0.1.11
+
+**Landing, `/link-in-bio` un valodu middleware**
+
+- Atjaunota `/link-in-bio` SEO lapa, studijas priekšskata bloks landingā, sitemap un footer saites
+- Middleware: vienota valoda neprefiksētām marketing lapām; `/link-in-bio` lokalizēts kā `/ru/link-in-bio` u.c.
+- Footer „Cookie settings” vizuāli kā pārējie Legal linki; valodu izvēlne saglabā tekošo ceļu
+
 ## v0.1.10
 
 - ESLint: atslēgt React Compiler ref/effect noteikumus esošajam kodam; settings MFA gate bez JSX try/catch

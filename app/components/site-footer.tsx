@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CookieSettingsLink } from "@/app/components/cookie-settings-link";
 import { LocaleLinks } from "@/app/components/locale-links";
 import { getActiveUiLanguages, getServerTranslations } from "@/app/lib/i18n/server";
+import { localePath } from "@/app/lib/seo/locale-path";
 import { getIndexableSeoLocales } from "@/app/lib/seo/locale-completeness";
 
 export async function SiteFooter() {
@@ -17,6 +18,10 @@ export async function SiteFooter() {
     { href: "/#features", label: t("landing.nav.features", "Features") },
     { href: "/#pricing", label: t("landing.nav.pricing", "Pricing") },
     { href: "/#faq", label: t("landing.nav.faq", "FAQ") },
+    {
+      href: localePath(languageCode, "/link-in-bio"),
+      label: t("seo.link_in_bio.title", "Link in bio page builder | Presh.Me"),
+    },
     { href: "/portfolio-website", label: t("seo.portfolio_page.title", "Portfolio website") },
     { href: "/digital-business-card", label: t("seo.card_page.title", "Digital business card") },
   ];
@@ -73,21 +78,31 @@ export async function SiteFooter() {
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
             {t("footer.legal", "Legal")}
           </p>
-          <nav className="mt-3 flex flex-col gap-2 text-sm" aria-label={t("legal.nav", "Legal")}>
-            <Link href="/terms" className="underline-offset-2 hover:underline">
-              {t("legal.nav.terms", "Terms")}
-            </Link>
-            <Link href="/privacy" className="underline-offset-2 hover:underline">
-              {t("legal.nav.privacy", "Privacy")}
-            </Link>
-            <Link href="/cookies" className="underline-offset-2 hover:underline">
-              {t("legal.nav.cookies", "Cookies")}
-            </Link>
-            <Link href="/contact" className="underline-offset-2 hover:underline">
-              {t("nav.contact", "Contact")}
-            </Link>
-            <CookieSettingsLink variant="footer" />
-          </nav>
+          <ul className="mt-3 space-y-2 text-sm" aria-label={t("legal.nav", "Legal")}>
+            <li>
+              <Link href="/terms" className="text-[var(--ink)] underline-offset-2 hover:underline">
+                {t("legal.nav.terms", "Terms")}
+              </Link>
+            </li>
+            <li>
+              <Link href="/privacy" className="text-[var(--ink)] underline-offset-2 hover:underline">
+                {t("legal.nav.privacy", "Privacy")}
+              </Link>
+            </li>
+            <li>
+              <Link href="/cookies" className="text-[var(--ink)] underline-offset-2 hover:underline">
+                {t("legal.nav.cookies", "Cookies")}
+              </Link>
+            </li>
+            <li>
+              <Link href="/contact" className="text-[var(--ink)] underline-offset-2 hover:underline">
+                {t("nav.contact", "Contact")}
+              </Link>
+            </li>
+            <li>
+              <CookieSettingsLink variant="footer" />
+            </li>
+          </ul>
         </div>
       </div>
       <div className="border-t border-[var(--line)]">

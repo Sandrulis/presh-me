@@ -1,30 +1,17 @@
-import { IntentLanding } from "@/app/components/intent-landing";
-import { intentMetadata } from "@/app/lib/seo/intent-page";
+import { MarketingIntentPage, marketingIntentMetadata } from "@/app/components/marketing-intent-page";
+import { MARKETING_INTENT_PAGES } from "@/app/lib/marketing-intent-config";
+import { getServerTranslations } from "@/app/lib/i18n/server";
+import { buildIntentPageMetadata } from "@/app/lib/seo/intent-page";
 
-export const metadata = intentMetadata({
-  path: "/for/beauty-professionals",
-  title: "Link in bio for beauty professionals",
-  description:
-    "Services, booking and Instagram in one Presh.Me page for beauty and wellness pros.",
-});
+const config = MARKETING_INTENT_PAGES["for/beauty-professionals"];
 
-export default function Page() {
-  return (
-    <IntentLanding
-      path="/for/beauty-professionals"
-      kicker="Beauty"
-      h1="Services and booking without bio chaos"
-      lead="Keep menus, booking and before/after links on one page clients can open from Instagram or a QR at reception."
-      bullets={[
-        "Links for booking, price lists and product shops.",
-        "Image blocks for selected work — keep private drafts unpublished.",
-        "Mobile-first layout for phones in the waiting area.",
-      ]}
-      related={[
-        { href: "/for/barbers", label: "Barbers" },
-        { href: "/digital-business-card", label: "Digital business card" },
-        { href: "/", label: "Home" },
-      ]}
-    />
-  );
+export async function generateMetadata() {
+  const { t } = await getServerTranslations();
+  const meta = marketingIntentMetadata(config, t);
+  return buildIntentPageMetadata({ path: config.path, ...meta });
+}
+
+export default async function Page() {
+  const { t } = await getServerTranslations();
+  return <MarketingIntentPage config={config} t={t} />;
 }

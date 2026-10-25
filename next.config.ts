@@ -47,10 +47,7 @@ function buildContentSecurityPolicy(): string {
 
 const nextConfig: NextConfig = {
   async redirects() {
-    return [
-      { source: "/link-in-bio", destination: "/", permanent: true },
-      { source: "/:locale(en|lv|de|fr|es|nl|da|no|fi|pl|lt|et|it|sv|ru)/link-in-bio", destination: "/:locale", permanent: true },
-    ];
+    return [];
   },
   turbopack: {
     root: projectRoot,

@@ -1,31 +1,17 @@
-import { IntentLanding } from "@/app/components/intent-landing";
-import { intentMetadata } from "@/app/lib/seo/intent-page";
+import { MarketingIntentPage, marketingIntentMetadata } from "@/app/components/marketing-intent-page";
+import { MARKETING_INTENT_PAGES } from "@/app/lib/marketing-intent-config";
+import { getServerTranslations } from "@/app/lib/i18n/server";
+import { buildIntentPageMetadata } from "@/app/lib/seo/intent-page";
 
-export const metadata = intentMetadata({
-  path: "/digital-business-card",
-  title: "Digital business card",
-  description:
-    "Create a digital business card on Presh.Me — name, services, booking and socials in one page you share as a link or QR.",
-});
+const config = MARKETING_INTENT_PAGES["digital-business-card"];
 
-export default function DigitalBusinessCardPage() {
-  return (
-    <IntentLanding
-      path="/digital-business-card"
-      kicker="Digital card"
-      h1="A digital business card people actually open"
-      lead="Replace a stack of paper cards with one page: who you are, what you offer, and how to reach you. Share the link or print a QR to the same address."
-      bullets={[
-        "Profile, services links, phone/email and social icons in one place.",
-        "Update hours or offers in the studio — the card link stays the same.",
-        "Works on mobile first; visitors need no app.",
-      ]}
-      related={[
-        { href: "/", label: "← Presh.Me" },
-        { href: "/for/barbers", label: "For barbers" },
-        { href: "/for/small-businesses", label: "For small businesses" },
-        { href: "/portfolio-website", label: "Portfolio website" },
-      ]}
-    />
-  );
+export async function generateMetadata() {
+  const { t } = await getServerTranslations();
+  const meta = marketingIntentMetadata(config, t);
+  return buildIntentPageMetadata({ path: config.path, ...meta });
+}
+
+export default async function Page() {
+  const { t } = await getServerTranslations();
+  return <MarketingIntentPage config={config} t={t} />;
 }

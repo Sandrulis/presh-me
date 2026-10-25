@@ -1,13 +1,19 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import {
+  hasExplicitLanguageChoice,
   isLanguageCode,
   LANGUAGE_CHOSEN_COOKIE,
   LANGUAGE_COOKIE,
   LANGUAGE_COOKIE_MAX_AGE,
   type LanguageCode,
 } from "@/app/lib/i18n/language";
-import { DEFAULT_SEO_LOCALE, stripLocalePrefix } from "@/app/lib/seo/locale-path";
+import {
+  isUnprefixedMarketingPath,
+  resolveMarketingLocaleRoute,
+} from "@/app/lib/seo/marketing-middleware";
+import { DEFAULT_SEO_LOCALE } from "@/app/lib/seo/locale-path";
+import { retiredCompareHomePath } from "@/app/lib/seo/retired-compare-paths";
 
 const PROTECTED_PREFIXES = [
   "/studio",
@@ -19,32 +25,12 @@ const PROTECTED_PREFIXES = [
   "/api/source-preview",
 ];
 
-/** Unprefixed paths that may be locale-mirrored as `/{locale}{path}`. */
-const LOCALIZED_MARKETING_PREFIXES = [
-  "/portfolio-website",
-  "/digital-business-card",
-  "/personal-website",
-  "/for",
-  "/compare",
-  "/terms",
-  "/privacy",
-  "/cookies",
-  "/contact",
-];
-
 function isProtectedPath(pathname: string) {
   return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
 function isAuthPage(pathname: string) {
   return pathname === "/login" || pathname === "/register" || pathname.startsWith("/auth/");
-}
-
-function isLocalizedMarketingPath(innerPath: string) {
-  if (innerPath === "/") return true;
-  return LOCALIZED_MARKETING_PREFIXES.some(
-    (prefix) => innerPath === prefix || innerPath.startsWith(`${prefix}/`),
-  );
 }
 
 function withLocaleCookies(response: NextResponse, locale: LanguageCode) {
@@ -67,32 +53,65 @@ function localeFromPath(pathname: string): LanguageCode | null {
   return seg;
 }
 
+/** Explicit UI language cookie (same priority as unprefixed `/` marketing). */
+function localeFromChosenCookie(request: NextRequest): LanguageCode | null {
+  if (!hasExplicitLanguageChoice(request.cookies.get(LANGUAGE_CHOSEN_COOKIE)?.value)) {
+    return null;
+  }
+  const raw = request.cookies.get(LANGUAGE_COOKIE)?.value;
+  if (!raw || !isLanguageCode(raw)) return null;
+  return raw;
+}
+
+function unprefixedMarketingLocale(request: NextRequest): LanguageCode {
+  return localeFromChosenCookie(request) ?? DEFAULT_SEO_LOCALE;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  const retiredCompareTarget = retiredCompareHomePath(pathname);
+  if (retiredCompareTarget) {
+    const url = request.nextUrl.clone();
+    url.pathname = retiredCompareTarget;
+    return NextResponse.redirect(url, 302);
+  }
+
   const pathLocale = localeFromPath(pathname);
   const needsAuthWork = isProtectedPath(pathname) || isAuthPage(pathname);
 
   const requestHeaders = new Headers(request.headers);
 
   if (pathLocale) {
-    const inner = stripLocalePrefix(pathname, pathLocale);
-    if (!isLocalizedMarketingPath(inner)) {
-      return NextResponse.next();
+    const route = resolveMarketingLocaleRoute(request, pathname, pathLocale);
+    if (route?.kind === "redirect") {
+      return withLocaleCookies(route.response, pathLocale);
     }
-    requestHeaders.set("x-presh-locale", pathLocale);
-    const url = request.nextUrl.clone();
-    url.pathname = inner;
-    let response = NextResponse.rewrite(url, { request: { headers: requestHeaders } });
-    response = withLocaleCookies(response, pathLocale);
-    return response;
+    if (route?.kind === "rewrite") {
+      requestHeaders.set("x-presh-locale", pathLocale);
+      const rewriteUrl = request.nextUrl.clone();
+      rewriteUrl.pathname = route.canonicalPath;
+      let response = NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
+      response = withLocaleCookies(response, pathLocale);
+      return response;
+    }
+    if (pathname === `/${pathLocale}` || pathname === `/${pathLocale}/`) {
+      requestHeaders.set("x-presh-locale", pathLocale);
+      const rewriteUrl = request.nextUrl.clone();
+      rewriteUrl.pathname = "/";
+      let response = NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
+      response = withLocaleCookies(response, pathLocale);
+      return response;
+    }
+    return NextResponse.next();
   }
 
-  if (pathname === "/") {
-    requestHeaders.set("x-presh-locale", DEFAULT_SEO_LOCALE);
+  if (!pathLocale && isUnprefixedMarketingPath(pathname)) {
+    requestHeaders.set("x-presh-locale", unprefixedMarketingLocale(request));
   }
 
   if (!needsAuthWork && pathname !== "/") {
-    return NextResponse.next();
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   let response = NextResponse.next({

@@ -7,6 +7,7 @@ import { createClient } from "@/app/lib/supabase/server";
 
 const STATIC_PATHS = [
   "/",
+  "/link-in-bio",
   "/portfolio-website",
   "/digital-business-card",
   "/personal-website",
@@ -18,8 +19,6 @@ const STATIC_PATHS = [
   "/for/content-creators",
   "/for/small-businesses",
   "/for/coaches",
-  "/compare/linktree",
-  "/compare/liinks",
   "/terms",
   "/privacy",
   "/cookies",
@@ -49,7 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         url: absoluteLocaleUrl(locale, path),
         lastModified: now,
         changeFrequency: path === "/" ? "weekly" : "monthly",
-        priority: path === "/" ? 1 : path.startsWith("/for/") || path.startsWith("/compare/") ? 0.7 : 0.8,
+        priority: path === "/" ? 1 : path.startsWith("/for/") ? 0.7 : 0.8,
         alternates: { languages: languageAlternates(path) },
       });
     }

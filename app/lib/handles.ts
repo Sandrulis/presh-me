@@ -1,4 +1,5 @@
 import { LANGUAGE_CODES } from "@/app/lib/i18n/language";
+import { marketingLocalizedFirstSegments } from "@/app/lib/seo/localized-slugs";
 
 const HANDLE_RE = /^[a-z0-9](?:[a-z0-9-]{1,22}[a-z0-9])$/;
 
@@ -35,6 +36,7 @@ export const SYSTEM_LINKS = [
 ] as const;
 
 const EXTRA_RESERVED = [
+  ...marketingLocalizedFirstSegments(),
   "app",
   "auth",
   "public",

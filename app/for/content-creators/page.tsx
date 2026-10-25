@@ -1,30 +1,17 @@
-import { IntentLanding } from "@/app/components/intent-landing";
-import { intentMetadata } from "@/app/lib/seo/intent-page";
+import { MarketingIntentPage, marketingIntentMetadata } from "@/app/components/marketing-intent-page";
+import { MARKETING_INTENT_PAGES } from "@/app/lib/marketing-intent-config";
+import { getServerTranslations } from "@/app/lib/i18n/server";
+import { buildIntentPageMetadata } from "@/app/lib/seo/intent-page";
 
-export const metadata = intentMetadata({
-  path: "/for/content-creators",
-  title: "Link in bio for creators",
-  description:
-    "YouTube, Spotify, shop and socials on one Presh.Me page — a link-in-bio built for creators.",
-});
+const config = MARKETING_INTENT_PAGES["for/content-creators"];
 
-export default function Page() {
-  return (
-    <IntentLanding
-      path="/for/content-creators"
-      kicker="Creators"
-      h1="All your platforms behind one bio link"
-      lead="Point Instagram, TikTok or YouTube to a page that holds your latest video, podcast, shop and newsletter — without stuffing the bio itself."
-      bullets={[
-        "YouTube, Spotify and link blocks for current drops.",
-        "Themes that stay readable on mobile.",
-        "Swap featured links anytime; keep the same handle.",
-      ]}
-      related={[
-        { href: "/portfolio-website", label: "Portfolio website" },
-        { href: "/compare/linktree", label: "Compare Linktree" },
-        { href: "/", label: "Home" },
-      ]}
-    />
-  );
+export async function generateMetadata() {
+  const { t } = await getServerTranslations();
+  const meta = marketingIntentMetadata(config, t);
+  return buildIntentPageMetadata({ path: config.path, ...meta });
+}
+
+export default async function Page() {
+  const { t } = await getServerTranslations();
+  return <MarketingIntentPage config={config} t={t} />;
 }
