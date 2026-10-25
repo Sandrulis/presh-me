@@ -29,7 +29,8 @@ Link-in-bio / portfolio lapas. Lietotājs reģistrējas, paņem `presh.me/{handl
 - `public.users`: **pirmais** ieraksts → `is_admin = true`; pārējie `false`
 - `public.pages`: handle + jsonb `content`; publiski `published`; īpašnieks CRUD; admin redz visu
 - Arī: `admin_todos`, `user_feedback`, `contact_messages`, `site_languages`, `site_translations`, `site_settings`
-- Labā admin josla tikai `is_admin = true`
+- Labā admin josla tikai `is_admin = true`; navigācijas badge: `fetchAdminNavCounts()` (`app/lib/admin-nav-counts.ts`), refresh ~45s + focus (`admin-sidebar.tsx`); Settings bez badge
+- Marketing valodu izvēlne: `language-switcher.tsx` — `setLanguageAction` + `window.location.assign` (ne tikai `Link`), lai cookie un SSR valoda sakrīt
 
 ## Dati un sesija
 

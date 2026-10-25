@@ -4,6 +4,13 @@
 
 - (none)
 
+## v0.1.13
+
+**Valodu izvēlne un admin navigācija**
+
+- Marketing valodu switcher: saglabā valodu ar server action un pilnu navigāciju (cookie + layout)
+- Admin sānjoslā skaitītāju badge uz sadaļām (izņemot Settings); periodiska atjaunošana
+
 ## v0.1.12
 
 **SEO valodās, intent tulkojumi, bez salīdzinājumu lapām**

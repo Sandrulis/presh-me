@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -178,10 +177,9 @@ export function LanguageSwitcher({
   const { languageCode, languages, t } = useTranslations();
   const pathname = usePathname() || "/";
   const marketingRoute = parseMarketingPathname(pathname);
-  const preferLocaleLinks = marketingRoute !== null;
 
-  function localeLinkFor(language: LanguageCode) {
-    if (!marketingRoute) return localeHomePath(language);
+  function targetUrlFor(language: LanguageCode) {
+    if (!marketingRoute) return pathname;
     if (marketingRoute.canonical === "/") return localeHomePath(language);
     return localePath(language, marketingRoute.canonical);
   }
@@ -202,16 +200,22 @@ export function LanguageSwitcher({
   const hint = t("settings.language.hint", "Sistēmas saskarnes valoda.");
   const closeLabel = t("actions.close", "Aizvērt");
 
+  function normalizePath(path: string) {
+    const trimmed = path.replace(/\/+$/, "");
+    return trimmed === "" ? "/" : trimmed;
+  }
+
   function switchLanguage(next: LanguageCode) {
-    if (next === languageCode) {
+    const target = targetUrlFor(next);
+    if (next === languageCode && normalizePath(target) === normalizePath(pathname)) {
       setOpen(false);
       return;
     }
     startTransition(async () => {
       await setLanguageAction(next);
       setOpen(false);
-      // Full reload so root layout re-reads cookies and loads the new message table.
-      window.location.reload();
+      // Full navigation so middleware can set locale cookies and layout reloads messages.
+      window.location.assign(target);
     });
   }
 
@@ -416,8 +420,15 @@ export function LanguageSwitcher({
                 const className = `flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition hover:bg-[var(--paper)] disabled:cursor-not-allowed disabled:opacity-60 ${
                   active ? "font-medium text-[var(--ink)]" : "text-[var(--muted)]"
                 }`;
-                const inner = (
-                  <>
+                return (
+                  <button
+                    key={language.code}
+                    type="button"
+                    role="menuitem"
+                    disabled={pending}
+                    onClick={() => switchLanguage(language.code)}
+                    className={className}
+                  >
                     <LanguageFlag
                       code={language.code}
                       className="inline-flex h-8 w-8 shrink-0 items-center justify-center text-[2rem] leading-none"
@@ -430,32 +441,6 @@ export function LanguageSwitcher({
                     ) : (
                       <span className="inline-block w-2.5" aria-hidden="true" />
                     )}
-                  </>
-                );
-                if (preferLocaleLinks) {
-                  return (
-                    <Link
-                      key={language.code}
-                      href={localeLinkFor(language.code)}
-                      hrefLang={language.code}
-                      role="menuitem"
-                      className={className}
-                      onClick={() => setOpen(false)}
-                    >
-                      {inner}
-                    </Link>
-                  );
-                }
-                return (
-                  <button
-                    key={language.code}
-                    type="button"
-                    role="menuitem"
-                    disabled={pending}
-                    onClick={() => switchLanguage(language.code)}
-                    className={className}
-                  >
-                    {inner}
                   </button>
                 );
               })}

@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AdminTodoDrawer } from "@/app/components/admin-todo-drawer";
 import { useTranslations } from "@/app/components/translations-provider";
+import {
+  countForAdminHref,
+  fetchAdminNavCounts,
+  type AdminNavCounts,
+} from "@/app/lib/admin-nav-counts";
 import { createClient } from "@/app/lib/supabase/client";
 import { parseUmamiShareUrl } from "@/app/lib/integrations/umami/share";
+import { getSessionId, isSessionAdmin, subscribeStore } from "@/app/lib/store";
 
 type AdminSidebarProps = {
   open: boolean;
@@ -22,6 +28,9 @@ export function AdminSidebar({ open, mobile = false, onOpenChange }: AdminSideba
   const leaveTimer = useRef<number | null>(null);
   const [todoOpen, setTodoOpen] = useState(false);
   const [umamiNav, setUmamiNav] = useState(false);
+  const [navCounts, setNavCounts] = useState<AdminNavCounts | null>(null);
+  const sessionId = useSyncExternalStore(subscribeStore, getSessionId, () => null);
+  const isAdmin = useSyncExternalStore(subscribeStore, isSessionAdmin, () => false);
 
   useEffect(() => {
     void (async () => {
@@ -40,6 +49,31 @@ export function AdminSidebar({ open, mobile = false, onOpenChange }: AdminSideba
       }
     })();
   }, [pathname]);
+
+  useEffect(() => {
+    if (!sessionId || !isAdmin) {
+      setNavCounts(null);
+      return;
+    }
+    let cancelled = false;
+    async function refresh() {
+      try {
+        const counts = await fetchAdminNavCounts(sessionId!);
+        if (!cancelled) setNavCounts(counts);
+      } catch {
+        if (!cancelled) setNavCounts(null);
+      }
+    }
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 45_000);
+    const onFocus = () => void refresh();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [sessionId, isAdmin, pathname, todoOpen]);
 
   const links = useMemo(() => {
     const items: { href: string; label: string; icon: ReactNode }[] = [
@@ -136,6 +170,7 @@ export function AdminSidebar({ open, mobile = false, onOpenChange }: AdminSideba
               icon={<IconTodo />}
               active={todoOpen}
               compact={compact}
+              badge={navCounts?.todo}
               onClick={openTodo}
             />
             {links.map((item) => (
@@ -146,6 +181,7 @@ export function AdminSidebar({ open, mobile = false, onOpenChange }: AdminSideba
                 href={item.href}
                 active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
                 compact={compact}
+                badge={navCounts ? countForAdminHref(item.href, navCounts) : null}
                 onNavigate={() => onOpenChange(false)}
               />
             ))}
@@ -158,12 +194,40 @@ export function AdminSidebar({ open, mobile = false, onOpenChange }: AdminSideba
   );
 }
 
+function formatNavBadge(value: number) {
+  if (value > 99) return "99+";
+  return String(value);
+}
+
+function NavCountBadge({ value, compact }: { value: number; compact?: boolean }) {
+  const text = formatNavBadge(value);
+  if (compact) {
+    return (
+      <span
+        className="pointer-events-none absolute -top-0.5 -right-0.5 z-[1] inline-flex min-h-[1rem] min-w-[1rem] items-center justify-center rounded-full bg-[var(--ink)] px-1 text-[9px] font-semibold leading-none text-white tabular-nums"
+        aria-hidden="true"
+      >
+        {text}
+      </span>
+    );
+  }
+  return (
+    <span
+      className="inline-flex min-h-[1.25rem] min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-[var(--ink)] px-1.5 text-[10px] font-semibold leading-none text-white tabular-nums"
+      aria-hidden="true"
+    >
+      {text}
+    </span>
+  );
+}
+
 function AdminSideItem({
   label,
   icon,
   href,
   active,
   compact,
+  badge,
   onClick,
   onNavigate,
 }: {
@@ -172,6 +236,7 @@ function AdminSideItem({
   href?: string;
   active?: boolean;
   compact?: boolean;
+  badge?: number | null;
   onClick?: () => void;
   onNavigate?: () => void;
 }) {
@@ -189,15 +254,22 @@ function AdminSideItem({
     active ? "bg-[var(--paper)] shadow-sm" : ""
   }`;
 
+  const showBadge = badge !== null && badge !== undefined;
+  const ariaLabel = showBadge ? `${label} (${badge})` : label;
+
   const body = (
     <>
-      <span className="inline-grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-5 [&_svg]:w-5">{icon}</span>
+      <span className="relative inline-grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-5 [&_svg]:w-5">
+        {icon}
+        {showBadge && compact ? <NavCountBadge value={badge} compact /> : null}
+      </span>
       <span
-        className={`min-w-0 flex-1 truncate text-right transition-opacity duration-200 ${
+        className={`flex min-w-0 flex-1 items-center justify-end gap-2 transition-opacity duration-200 ${
           compact ? "pointer-events-none opacity-0" : "opacity-100"
         }`}
       >
-        {label}
+        {showBadge && !compact ? <NavCountBadge value={badge} /> : null}
+        <span className="truncate text-right">{label}</span>
       </span>
     </>
   );
@@ -211,8 +283,8 @@ function AdminSideItem({
           }}
           href={href}
           aria-current={active ? "page" : undefined}
-          aria-label={label}
-          title={label}
+          aria-label={ariaLabel}
+          title={ariaLabel}
           onClick={onNavigate}
           onMouseEnter={placeTip}
           onMouseLeave={() => setTip(null)}
@@ -229,8 +301,8 @@ function AdminSideItem({
             tipRef.current = node;
           }}
           aria-pressed={active}
-          aria-label={label}
-          title={label}
+          aria-label={ariaLabel}
+          title={ariaLabel}
           onClick={onClick}
           onMouseEnter={placeTip}
           onMouseLeave={() => setTip(null)}
@@ -248,7 +320,7 @@ function AdminSideItem({
               style={{ top: tip.top, left: tip.left }}
               className="pointer-events-none fixed z-[70] -translate-x-full -translate-y-1/2 rounded-md bg-white px-2 py-1 text-xs font-medium whitespace-nowrap text-[var(--ink)] ring-1 ring-[var(--line)]"
             >
-              {label}
+              {ariaLabel}
             </span>,
             document.body,
           )
