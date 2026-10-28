@@ -8,6 +8,7 @@ import { FeedbackToasts, useNotices } from "@/app/components/feedback-toast";
 import { Logo } from "@/app/components/logo";
 import { SiteContactDialog } from "@/app/components/site-contact-dialog";
 import { SiteFeedbackDialog } from "@/app/components/site-feedback-dialog";
+import { StudioStorageMeter } from "@/app/components/studio-storage-meter";
 import { useTranslations } from "@/app/components/translations-provider";
 import type { FeedbackKind } from "@/app/lib/feedback/types";
 import { isFrontendModuleEnabled } from "@/app/lib/site-admin/modules";
@@ -135,7 +136,7 @@ export function StudioSidebar({ open, mobile = false, onOpenChange }: StudioSide
         open ? "w-60 shadow-xl" : mobile ? "w-60 -translate-x-full shadow-none" : "w-14"
       } ${mobile && open ? "translate-x-0" : ""}`}
     >
-      <div className="flex shrink-0 flex-col gap-1 px-2.5 py-4">
+      <div className="flex min-h-[4.25rem] shrink-0 items-center px-2.5 py-4">
         {mobile ? (
           <button
             type="button"
@@ -211,6 +212,7 @@ export function StudioSidebar({ open, mobile = false, onOpenChange }: StudioSide
             href="/settings"
             onNavigate={() => onOpenChange(false)}
           />
+          <StudioStorageMeter compact={compact} />
         </nav>
       </div>
 
@@ -308,7 +310,7 @@ export function SideItem({
     setTip({ top: rect.top + rect.height / 2, left: rect.right + 8 });
   }
 
-  const className = `inline-flex w-full flex-none flex-row items-center gap-2 overflow-hidden rounded-xl text-left text-sm hover:bg-[var(--paper)] ${
+  const className = `inline-flex h-9 w-full flex-none flex-row items-center gap-2 overflow-hidden rounded-xl text-left text-sm hover:bg-[var(--paper)] ${
     active ? "bg-[var(--paper)] shadow-sm" : ""
   }`;
 
@@ -316,8 +318,8 @@ export function SideItem({
     <>
       <span className="inline-grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-5 [&_svg]:w-5">{icon}</span>
       <span
-        className={`min-w-0 flex-1 truncate transition-opacity duration-200 ${
-          compact ? "pointer-events-none opacity-0" : "opacity-100"
+        className={`min-w-0 flex-1 truncate transition-[opacity,max-width] duration-200 ${
+          compact ? "pointer-events-none max-w-0 overflow-hidden opacity-0" : "max-w-none opacity-100"
         }`}
       >
         {label}

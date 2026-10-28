@@ -9,7 +9,8 @@ import { GoogleSignInButton } from "@/app/components/google-sign-in-button";
 import { PasswordInput } from "@/app/components/password-input";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useAuthTurnstile } from "@/app/lib/auth/use-auth-turnstile";
-import { loginAccount } from "@/app/lib/store";
+import { resolveEntryPathForPortfolio } from "@/app/lib/onboarding/primary-page";
+import { loginAccount, getPageForAccount, getSessionId } from "@/app/lib/store";
 
 /** Avoid double toast from React Strict Mode / Suspense remount with the same ?error=. */
 let loginAuthErrorShown: string | null = null;
@@ -36,6 +37,14 @@ export function LoginForm() {
       notify(t("auth.blocked", "Pieeja sistēmai ar šo e-pastu ir liegta."), "error");
     } else if (authError === "google") {
       notify(t("auth.login.google_error", "Neizdevās pieslēgties ar Google. Mēģini vēlreiz."), "error");
+    } else if (authError === "maintenance") {
+      notify(
+        t(
+          "errors.maintenance_admin_only",
+          "Apkopes režīmā pieslēgties var tikai sistēmas administrators.",
+        ),
+        "error",
+      );
     }
     router.replace("/login", { scroll: false });
   }, [authError, notify, router, t]);
@@ -56,7 +65,9 @@ export function LoginForm() {
       return;
     }
     // Studio layout shows MFA challenge when TOTP is enrolled (AAL1 → AAL2).
-    router.push("/studio");
+    const sessionId = getSessionId();
+    const page = sessionId ? getPageForAccount(sessionId) : null;
+    router.push(resolveEntryPathForPortfolio(page));
   }
 
   return (

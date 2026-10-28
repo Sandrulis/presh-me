@@ -10,9 +10,9 @@ import { LoadingScreen } from "@/app/components/loading-screen";
 import { ColorPicker } from "@/app/components/color-picker";
 import { DevicePreview } from "@/app/components/device-preview";
 import { FieldFrame } from "@/app/components/field-frame";
-import { FontSelect, FontSizeSelect } from "@/app/components/font-select";
+import { FontSelect } from "@/app/components/font-select";
 import { BannerContentAlignSwitch, BannerContentSwitch, HeaderLayoutSwitch } from "@/app/components/header-layout-switch";
-import { ImageDropField } from "@/app/components/image-drop-field";
+import { ImageDropField, useImageFileDrop } from "@/app/components/image-drop-field";
 import { useTranslations } from "@/app/components/translations-provider";
 import { imageFrame, pageImageFrame, panLimits, placedImageStyle } from "@/app/lib/image-frame";
 import { LINK_UNAVAILABLE, linkFieldError, normalizeHandle } from "@/app/lib/handles";
@@ -28,6 +28,7 @@ import {
   savePage,
   subscribeStore,
 } from "@/app/lib/store";
+import { normalizeOnboardingStep } from "@/app/lib/onboarding/destination";
 import { getTheme, themes } from "@/app/lib/themes";
 import type { FontId, Onboarding, Portfolio, SectionId, StepId, StepMark } from "@/app/lib/types";
 
@@ -70,20 +71,20 @@ function sectionChoices(t: TranslateFn): { id: SectionId; title: string; text: s
   ];
 }
 
-const CONFETTI = [
-  { left: "6%", color: "#2f5bff", delay: "0s" },
-  { left: "16%", color: "#d6ff4a", delay: "0.05s" },
-  { left: "28%", color: "#ff8fb8", delay: "0.12s" },
-  { left: "40%", color: "#8d7cff", delay: "0.02s" },
-  { left: "52%", color: "#2f5bff", delay: "0.18s" },
-  { left: "63%", color: "#ffd089", delay: "0.08s" },
-  { left: "74%", color: "#7cffb2", delay: "0.14s" },
-  { left: "86%", color: "#ff8fb8", delay: "0.04s" },
-  { left: "22%", color: "#8d7cff", delay: "0.2s" },
-  { left: "48%", color: "#d6ff4a", delay: "0.16s" },
-  { left: "70%", color: "#2f5bff", delay: "0.1s" },
-  { left: "92%", color: "#ffd089", delay: "0.22s" },
-];
+const CONFETTI_COLORS = ["#2f5bff", "#d6ff4a", "#ff8fb8", "#8d7cff", "#ffd089", "#7cffb2", "#ffffff", "#ff5b7a"];
+
+const CONFETTI = Array.from({ length: 52 }, (_, index) => {
+  const spread = (index * 37 + 11) % 100;
+  return {
+    left: `${Math.min(98, 2 + spread)}%`,
+    color: CONFETTI_COLORS[index % CONFETTI_COLORS.length]!,
+    delay: `${((index * 0.065) % 1.6).toFixed(2)}s`,
+    w: 6 + (index % 5) * 2,
+    h: 9 + (index % 4) * 3,
+    drift: `${-56 + ((index * 23) % 112)}px`,
+    dur: `${(3.6 + (index % 6) * 0.14).toFixed(2)}s`,
+  };
+});
 
 function readPage() {
   const sessionId = getSessionId();
@@ -130,11 +131,19 @@ export function OnboardingApp() {
     if (stored?.onboarding?.finished) router.replace("/studio");
   }, [stored, router]);
 
+  if (stored?.onboarding?.finished) {
+    return <LoadingScreen label="common.loading" backdrop="app" />;
+  }
+
   if (stored && draft?.id !== stored.id) {
-    const onboarding = stored.onboarding ?? emptyOnboarding();
+    const rawOnboarding = stored.onboarding ?? emptyOnboarding();
+    const onboarding = normalizeOnboardingStep(rawOnboarding);
     const base = { ...stored, fontId: stored.fontId ?? "sans", onboarding };
     const next = claimInstagramAvatar(base);
-    if (next !== base) void savePage({ ...next, updatedAt: new Date().toISOString() });
+    const stepChanged = onboarding.step !== rawOnboarding.step && !onboarding.finished;
+    if (stepChanged || next !== base) {
+      void savePage({ ...next, updatedAt: new Date().toISOString() });
+    }
     setDraft(next);
     setLinkDraft(next.handle);
   }
@@ -500,9 +509,6 @@ function StepProfile({
   const layout = draft.headerLayout ?? "center";
   const banner = layout !== "center";
   const theme = getTheme(draft.themeId);
-  const nameFont = draft.nameFontId ?? draft.fontId ?? "sans";
-  const taglineFont = draft.taglineFontId ?? draft.fontId ?? "sans";
-  const bioFont = draft.bioFontId ?? draft.fontId ?? "sans";
   const themeHex = /^#[0-9a-fA-F]{6}$/.test(theme.background) ? theme.background : "#f4f6f8";
   const avatarRadius = draft.avatarRadius ?? 50;
   const avatarBorder = draft.avatarBorder ?? (draft.avatarUrl || layout === "banner-center" ? 3 : 0);
@@ -652,48 +658,6 @@ function StepProfile({
         </>
       ),
     },
-    name: {
-      title: t("common.name", "Vārds"),
-      body: (
-        <TextTune
-          color={draft.nameColor}
-          fallbackColor={theme.text}
-          fontId={nameFont}
-          size={draft.nameFontSize ?? (layout === "banner-left" ? 30 : 36)}
-          onColor={(nameColor) => onChange({ nameColor })}
-          onFont={(nameFontId) => onChange({ nameFontId })}
-          onSize={(nameFontSize) => onChange({ nameFontSize })}
-        />
-      ),
-    },
-    tagline: {
-      title: t("common.tagline", "Tagline"),
-      body: (
-        <TextTune
-          color={draft.taglineColor}
-          fallbackColor={theme.muted}
-          fontId={taglineFont}
-          size={draft.taglineFontSize ?? 13}
-          onColor={(taglineColor) => onChange({ taglineColor })}
-          onFont={(taglineFontId) => onChange({ taglineFontId })}
-          onSize={(taglineFontSize) => onChange({ taglineFontSize })}
-        />
-      ),
-    },
-    bio: {
-      title: t("studio.profile.bio", "Bio"),
-      body: (
-        <TextTune
-          color={draft.bioColor}
-          fallbackColor={theme.muted}
-          fontId={bioFont}
-          size={draft.bioFontSize ?? 14}
-          onColor={(bioColor) => onChange({ bioColor })}
-          onFont={(bioFontId) => onChange({ bioFontId })}
-          onSize={(bioFontSize) => onChange({ bioFontSize })}
-        />
-      ),
-    },
     page: {
       title: t("studio.look.page_bg", "Lapas fons"),
       body: (
@@ -760,6 +724,7 @@ function StepProfile({
           hint={t("onboarding.banner.hint", "Krāsa, attēls un augstums.")}
           open={panel === "banner" && panelVisible}
           onOpen={() => showPanel("banner")}
+          onImageFile={(file) => void readBanner(file, onChange, onError)}
           preview={
             draft.bannerUrl ? (
               <DeletableImage onDelete={() => setRemoveTarget("banner")}>
@@ -776,6 +741,7 @@ function StepProfile({
         hint={t("onboarding.profile.image_hint", "Forma, apmale un attēls.")}
         open={panel === "avatar" && panelVisible}
         onOpen={() => showPanel("avatar")}
+        onImageFile={(file) => void readAvatar(file, onChange, onError)}
         preview={
           <AvatarThumb
             url={draft.avatarUrl}
@@ -792,17 +758,7 @@ function StepProfile({
           />
         }
       />
-      <FieldFrame
-        label={t("common.name", "Vārds")}
-        className="mt-4"
-        action={
-          <OpenOptionsButton
-            label={t("onboarding.name_options", "Vārda opcijas")}
-            open={panel === "name" && panelVisible}
-            onClick={() => showPanel("name")}
-          />
-        }
-      >
+      <FieldFrame label={t("common.name", "Vārds")} className="mt-4">
         <input
           className="auth-field"
           value={draft.displayName}
@@ -810,10 +766,7 @@ function StepProfile({
           onChange={(event) => onChange({ displayName: event.target.value })}
         />
       </FieldFrame>
-      <FieldFrame
-        label={t("studio.profile.tagline", "Tagline")}
-        action={<OpenOptionsButton label={t("onboarding.tagline_options", "Tagline opcijas")} open={panel === "tagline" && panelVisible} onClick={() => showPanel("tagline")} />}
-      >
+      <FieldFrame label={t("studio.profile.tagline", "Tagline")}>
         <input
           className="auth-field"
           value={draft.tagline ?? ""}
@@ -822,10 +775,7 @@ function StepProfile({
           onChange={(event) => onChange({ tagline: event.target.value })}
         />
       </FieldFrame>
-      <FieldFrame
-        label={t("studio.profile.bio", "Bio")}
-        action={<OpenOptionsButton label={t("onboarding.bio_options", "Bio opcijas")} open={panel === "bio" && panelVisible} onClick={() => showPanel("bio")} />}
-      >
+      <FieldFrame label={t("studio.profile.bio", "Bio")}>
         <textarea
           className="auth-area"
           value={draft.bio}
@@ -839,6 +789,7 @@ function StepProfile({
         hint={t("onboarding.page_bg.hint", "Krāsa un fona attēls.")}
         open={panel === "page" && panelVisible}
         onOpen={() => showPanel("page")}
+        onImageFile={(file) => void readPageImage(file, onChange, onError)}
         preview={
           draft.pageImageUrl ? (
             <DeletableImage onDelete={() => setRemoveTarget("page")}>
@@ -896,7 +847,7 @@ function StepProfile({
   );
 }
 
-type ProfilePanel = "banner" | "avatar" | "name" | "tagline" | "bio" | "page" | "icons";
+type ProfilePanel = "banner" | "avatar" | "page" | "icons";
 
 function OptionDrawer({
   title,
@@ -977,32 +928,80 @@ function OptionRow({
   hint,
   open,
   onOpen,
+  onImageFile,
   preview,
 }: {
   title: string;
   hint: string;
   open: boolean;
   onOpen: () => void;
+  onImageFile?: (file: File) => void;
   preview?: ReactNode;
 }) {
   const { t } = useTranslations();
+  const dropEnabled = Boolean(onImageFile);
+  const dropActiveHint = t("onboarding.image.drop_release", "Atlaid šeit");
+  const { active, dragDropProps, openPicker, fileInput } = useImageFileDrop(
+    (file) => {
+      if (file && onImageFile) onImageFile(file);
+    },
+    dropEnabled,
+  );
+
   return (
-    <div className="choice mt-4 flex items-center gap-3">
+    <div
+      className={`choice mt-4 flex items-center gap-3 ${dropEnabled ? "choice-image-drop" : ""} ${active ? "choice-image-drop-active" : ""}`.trim()}
+      {...(dropEnabled ? dragDropProps : {})}
+      onClick={
+        dropEnabled
+          ? (event) => {
+              const target = event.target;
+              if (!(target instanceof Element)) return;
+              if (target.closest("button")) return;
+              openPicker();
+            }
+          : undefined
+      }
+      onKeyDown={
+        dropEnabled
+          ? (event) => {
+              if (event.key !== "Enter" && event.key !== " ") return;
+              if (event.target instanceof Element && event.target.closest("button")) return;
+              event.preventDefault();
+              openPicker();
+            }
+          : undefined
+      }
+      role={dropEnabled ? "button" : undefined}
+      tabIndex={dropEnabled ? 0 : undefined}
+    >
       <div className="min-w-0 flex-1">
         <span className="block font-semibold">{title}</span>
-        <span className="mt-1 block text-sm text-[var(--muted)]">{hint}</span>
+        <span className="mt-1 block text-sm text-[var(--muted)]">{active ? dropActiveHint : hint}</span>
       </div>
       {preview}
       <OpenOptionsButton
         label={t("common.section_options", "{title} opcijas", { title })}
         open={open}
-        onClick={onOpen}
+        onClick={(event) => {
+          event.stopPropagation();
+          onOpen();
+        }}
       />
+      {dropEnabled ? fileInput : null}
     </div>
   );
 }
 
-function OpenOptionsButton({ label, open, onClick }: { label: string; open: boolean; onClick: () => void }) {
+function OpenOptionsButton({
+  label,
+  open,
+  onClick,
+}: {
+  label: string;
+  open: boolean;
+  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+}) {
   return (
     <button
       type="button"
@@ -1338,8 +1337,19 @@ function StepDone({ draft, onFinish }: { draft: Portfolio; onFinish: () => void 
 function Confetti() {
   return (
     <div className="confetti" aria-hidden="true">
-      {CONFETTI.map((piece) => (
-        <i key={`${piece.left}-${piece.delay}`} style={{ left: piece.left, background: piece.color, animationDelay: piece.delay }} />
+      {CONFETTI.map((piece, index) => (
+        <i
+          key={`${piece.left}-${index}`}
+          style={{
+            left: piece.left,
+            background: piece.color,
+            animationDelay: piece.delay,
+            animationDuration: piece.dur,
+            width: piece.w,
+            height: piece.h,
+            ["--confetti-drift" as string]: piece.drift,
+          }}
+        />
       ))}
     </div>
   );
@@ -1505,33 +1515,6 @@ function inkFor(hex: string) {
   const green = Number.parseInt(value.slice(2, 4), 16);
   const blue = Number.parseInt(value.slice(4, 6), 16);
   return (red * 299 + green * 587 + blue * 114) / 1000 > 150 ? "#111111" : "#ffffff";
-}
-
-function TextTune({
-  color,
-  fallbackColor,
-  fontId,
-  size,
-  onColor,
-  onFont,
-  onSize,
-}: {
-  color: string | undefined;
-  fallbackColor: string;
-  fontId: FontId;
-  size: number;
-  onColor: (value: string) => void;
-  onFont: (value: FontId) => void;
-  onSize: (value: number) => void;
-}) {
-  const { t } = useTranslations();
-  return (
-    <div className="mt-2 flex items-center gap-2">
-      <ColorPicker label={t("onboarding.color", "Krāsa")} value={color ?? fallbackColor} onChange={onColor} />
-      <FontSelect value={fontId} onChange={onFont} />
-      <FontSizeSelect value={size} onChange={onSize} />
-    </div>
-  );
 }
 
 async function readPageImage(file: File | undefined, onChange: (patch: Partial<Portfolio>) => void, onError: (message: string) => void) {

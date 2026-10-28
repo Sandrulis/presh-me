@@ -11,10 +11,13 @@ import { FieldFrame } from "@/app/components/field-frame";
 import { LoadingScreen } from "@/app/components/loading-screen";
 import { LookColumn } from "@/app/components/studio-look";
 import { StudioGroup, StudioMenu, StudioScreen } from "@/app/components/studio-nav";
+import { StudioTrialMeter } from "@/app/components/studio-trial-meter";
 import { SocialsEditor } from "@/app/components/socials-editor";
 import { useTranslations } from "@/app/components/translations-provider";
 import { LINK_UNAVAILABLE, linkFieldError, normalizeHandle } from "@/app/lib/handles";
 import { claimInstagramAvatar, getPageForAccount, getSessionId, isHandleTaken, isStoreReady, savePage, subscribeStore } from "@/app/lib/store";
+import { resolveEntryPathForPortfolio } from "@/app/lib/onboarding/primary-page";
+import { isFrontendModuleEnabled } from "@/app/lib/site-admin/modules";
 import { resolveStackOrder, type PageBlock, type Portfolio, type StackSection } from "@/app/lib/types";
 
 type Panel = "info" | "preview" | "look";
@@ -45,7 +48,23 @@ export function StudioApp() {
   const [handleDraft, setHandleDraft] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [blockDraft, setBlockDraft] = useState<PageBlock | null>(null);
+  const [trailModuleEnabled, setTrailModuleEnabled] = useState(false);
   const { notices, notify, dismissNotice } = useNotices();
+
+  useEffect(() => {
+    let cancelled = false;
+    void isFrontendModuleEnabled("module_trail").then((enabled) => {
+      if (!cancelled) setTrailModuleEnabled(enabled);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!page || !trailModuleEnabled || !page.published || page.trialStartedAt) return;
+    void savePage({ ...page, trialStartedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+  }, [page, trailModuleEnabled]);
 
   useEffect(() => {
     if (ready && !sessionId) router.replace("/login");
@@ -53,7 +72,8 @@ export function StudioApp() {
 
   useEffect(() => {
     if (!ready || !sessionId) return;
-    if (!page || (page.onboarding && !page.onboarding.finished)) {
+    if (page === null) return;
+    if (resolveEntryPathForPortfolio(page) === "/start") {
       router.replace("/start");
     }
   }, [ready, sessionId, page, router]);
@@ -65,6 +85,16 @@ export function StudioApp() {
     if (next === page) return;
     void savePage({ ...next, updatedAt: new Date().toISOString() });
   }, [page, router]);
+
+  function togglePublished() {
+    if (!page) return;
+    const nextPublished = !page.published;
+    const patch: Partial<Portfolio> = { published: nextPublished };
+    if (nextPublished && trailModuleEnabled && !page.trialStartedAt) {
+      patch.trialStartedAt = new Date().toISOString();
+    }
+    update(patch);
+  }
 
   function update(patch: Partial<Portfolio>) {
     if (!page) return;
@@ -92,8 +122,12 @@ export function StudioApp() {
     }
   }
 
-  if (!ready || !sessionId || !page || (page.onboarding && !page.onboarding.finished)) {
-    return <LoadingScreen label="studio.loading" />;
+  if (!ready || !sessionId || page === null) {
+    return <LoadingScreen label="studio.loading" backdrop="app" />;
+  }
+
+  if (resolveEntryPathForPortfolio(page) === "/start") {
+    return <LoadingScreen label="studio.loading" backdrop="app" />;
   }
 
   const publicPath = `/${page.handle}`;
@@ -182,6 +216,9 @@ export function StudioApp() {
                   }}
                 />
               )}
+              {trailModuleEnabled && page.trialStartedAt && !infoView ? (
+                <StudioTrialMeter trialStartedAt={page.trialStartedAt} />
+              ) : null}
             </div>
           </section>
 
@@ -190,7 +227,7 @@ export function StudioApp() {
               page={previewPage}
               published={page.published}
               publicPath={publicPath}
-              onTogglePublished={() => update({ published: !page.published })}
+              onTogglePublished={togglePublished}
             />
           </section>
 

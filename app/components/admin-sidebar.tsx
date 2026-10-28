@@ -144,12 +144,12 @@ export function AdminSidebar({ open, mobile = false, onOpenChange }: AdminSideba
         aria-label={t("admin.nav.panel", "Administrācijas panelis")}
         onMouseEnter={onRailEnter}
         onMouseLeave={onRailLeave}
-        className={`fixed top-0 right-0 z-40 flex h-dvh flex-col overflow-hidden border-l border-[var(--line)] bg-white text-[var(--ink)] transition-[width,box-shadow,transform] duration-200 ease-out ${
+        className={`fixed top-0 right-0 z-40 flex h-dvh flex-col overflow-x-visible overflow-y-hidden border-l border-[var(--line)] bg-white text-[var(--ink)] transition-[width,box-shadow,transform] duration-200 ease-out ${
           open ? "w-60 shadow-xl" : mobile ? "w-60 translate-x-full shadow-none" : "w-14"
         } ${mobile && open ? "translate-x-0" : ""}`}
       >
         {mobile ? (
-          <div className="flex shrink-0 justify-end px-2.5 py-4">
+          <div className="flex shrink-0 justify-end px-2.5 pt-2 pb-1">
             <button
               type="button"
               aria-label={t("admin.nav.close", "Aizvērt admin joslu")}
@@ -159,11 +159,12 @@ export function AdminSidebar({ open, mobile = false, onOpenChange }: AdminSideba
               <IconX />
             </button>
           </div>
-        ) : (
-          <div className="h-4 shrink-0" aria-hidden="true" />
-        )}
+        ) : null}
 
-        <nav className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-2.5 ${compact ? "" : "pl-4"}`} aria-label="Admin">
+        <nav
+          className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-2.5 pt-3 ${compact ? "" : "pl-4"}`}
+          aria-label="Admin"
+        >
           <div className="flex flex-col gap-1">
             <AdminSideItem
               label={t("admin.nav.todo", "Todo")}
@@ -204,7 +205,7 @@ function NavCountBadge({ value, compact }: { value: number; compact?: boolean })
   if (compact) {
     return (
       <span
-        className="pointer-events-none absolute -top-0.5 -right-0.5 z-[1] inline-flex min-h-[1rem] min-w-[1rem] items-center justify-center rounded-full bg-[var(--ink)] px-1 text-[9px] font-semibold leading-none text-white tabular-nums"
+        className="pointer-events-none absolute left-0 top-1 z-10 inline-flex min-h-[1rem] min-w-[1rem] -translate-x-1/4 items-center justify-center rounded-full bg-[var(--ink)] px-1 text-[9px] font-semibold leading-none text-white tabular-nums ring-2 ring-white"
         aria-hidden="true"
       >
         {text}
@@ -250,7 +251,7 @@ function AdminSideItem({
     setTip({ top: rect.top + rect.height / 2, left: rect.left - 8 });
   }
 
-  const className = `inline-flex w-full flex-row-reverse items-center gap-2 overflow-hidden rounded-xl text-sm hover:bg-[var(--paper)] ${
+  const className = `relative inline-flex h-9 w-full flex-row-reverse items-center gap-2 rounded-xl text-sm hover:bg-[var(--paper)] ${
     active ? "bg-[var(--paper)] shadow-sm" : ""
   }`;
 
@@ -259,13 +260,13 @@ function AdminSideItem({
 
   const body = (
     <>
-      <span className="relative inline-grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-5 [&_svg]:w-5">
+      <span className="relative inline-grid h-9 w-9 shrink-0 place-items-center overflow-visible [&_svg]:h-5 [&_svg]:w-5">
         {icon}
         {showBadge && compact ? <NavCountBadge value={badge} compact /> : null}
       </span>
       <span
-        className={`flex min-w-0 flex-1 items-center justify-end gap-2 transition-opacity duration-200 ${
-          compact ? "pointer-events-none opacity-0" : "opacity-100"
+        className={`flex min-w-0 flex-1 items-center justify-end gap-2 transition-[opacity,max-width] duration-200 ${
+          compact ? "pointer-events-none max-w-0 overflow-hidden opacity-0" : "max-w-none opacity-100"
         }`}
       >
         {showBadge && !compact ? <NavCountBadge value={badge} /> : null}

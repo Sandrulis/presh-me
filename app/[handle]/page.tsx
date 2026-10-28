@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { PageView } from "@/app/components/page-view";
-import { MissingHandle, UnpublishedPage } from "@/app/components/page-states";
+import { MissingHandle } from "@/app/components/page-states";
 import { localizeDemoPage } from "@/app/lib/demos";
 import { getExample } from "@/app/lib/examples";
 import { isHandleFormat, normalizeHandle } from "@/app/lib/handles";
@@ -12,7 +13,7 @@ import {
   profileIsIndexable,
 } from "@/app/lib/seo/public-page";
 import { siteOgImageUrl } from "@/app/lib/site-url";
-import { createClient } from "@/app/lib/supabase/server";
+import { shouldRedirectPublicProfileAway } from "@/app/lib/trial/public-trial-access";
 
 type HandlePageProps = {
   params: Promise<{ handle: string }>;
@@ -34,14 +35,9 @@ export async function generateMetadata({ params }: HandlePageProps): Promise<Met
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const isOwner = Boolean(user && user.id === page.accountId);
   const indexable = profileIsIndexable(page);
 
-  if (!page.published && !isOwner) {
+  if (!page.published) {
     return {
       title: handle,
       robots: { index: false, follow: false },
@@ -97,14 +93,8 @@ export default async function HandlePage({ params }: HandlePageProps) {
     return <MissingHandle handle={handle} />;
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const isOwner = Boolean(user && user.id === page.accountId);
-
-  if (!page.published && !isOwner) {
-    return <UnpublishedPage />;
+  if (await shouldRedirectPublicProfileAway(page)) {
+    redirect("/");
   }
 
   return <PageView page={page} mode="live" />;

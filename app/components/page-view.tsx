@@ -3,12 +3,13 @@ import type { ReactNode } from "react";
 import { BlockFace } from "@/app/components/block-faces";
 import { PageMedia } from "@/app/components/page-media";
 import { SocialIcon } from "@/app/components/social-icon";
+import { textLookStyle } from "@/app/lib/text-look";
 import { fontFamilyOf } from "@/app/lib/font-catalog";
 import { initials } from "@/app/lib/handles";
 import { imageFrame, pageImageFrame, placedImageStyle } from "@/app/lib/image-frame";
 import { socialDisplayName } from "@/app/lib/socials";
 import { getTheme, type Theme } from "@/app/lib/themes";
-import type { FontId, HeaderLayout, PageContent, SectionId, StackSection } from "@/app/lib/types";
+import type { HeaderLayout, PageContent, SectionId, StackSection } from "@/app/lib/types";
 import { resolveStackOrder } from "@/app/lib/types";
 import { safeHref } from "@/app/lib/urls";
 
@@ -323,19 +324,26 @@ function ProfileHeader({
 }) {
   const NameTag = nameHeading;
   const onCover = layout === "banner-left";
-  const nameStyle = textLook(
-    page.nameColor,
-    page.nameFontId,
-    onCover ? theme.buttonText : theme.text,
-    page.nameFontSize ?? (onCover ? 30 : 36),
-  );
-  const taglineStyle = textLook(
-    page.taglineColor,
-    page.taglineFontId,
-    onCover ? theme.buttonText : theme.muted,
-    page.taglineFontSize ?? 13,
-  );
-  const bioStyle = textLook(page.bioColor, page.bioFontId, onCover ? theme.buttonText : theme.muted, page.bioFontSize ?? 14);
+  const nameStyle = textLookStyle({
+    color: page.nameColor,
+    fallbackColor: onCover ? theme.buttonText : theme.text,
+    fontId: page.nameFontId,
+    fontSize: page.nameFontSize ?? (onCover ? 30 : 36),
+    strokeWidth: page.nameStrokeWidth,
+    strokeColor: page.nameStrokeColor,
+  });
+  const taglineStyle = textLookStyle({
+    color: page.taglineColor,
+    fallbackColor: onCover ? theme.buttonText : theme.muted,
+    fontId: page.taglineFontId,
+    fontSize: page.taglineFontSize ?? 13,
+  });
+  const bioStyle = textLookStyle({
+    color: page.bioColor,
+    fallbackColor: onCover ? theme.buttonText : theme.muted,
+    fontId: page.bioFontId,
+    fontSize: page.bioFontSize ?? 14,
+  });
   const tagline = page.tagline?.trim() ? (
     <p className="mt-0.5 max-w-sm font-medium leading-snug tracking-[0.01em]" style={{ ...taglineStyle, opacity: page.taglineColor ? 0.88 : 0.62 }}>
       {page.tagline.trim()}
@@ -418,15 +426,6 @@ function inkFor(hex: string) {
   const blue = Number.parseInt(value.slice(4, 6), 16);
   return (red * 299 + green * 587 + blue * 114) / 1000 > 150 ? "#111111" : "#ffffff";
 }
-
-function textLook(color: string | undefined, font: FontId | undefined, fallback: string, size?: number) {
-  return {
-    color: color || fallback,
-    fontFamily: fontFamilyOf(font),
-    fontSize: size,
-  };
-}
-
 function Avatar({
   page,
   theme,

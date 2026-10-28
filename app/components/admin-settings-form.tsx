@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import { BrandingImageField } from "@/app/components/branding-image-field";
 import { FeedbackToasts, useNotices } from "@/app/components/feedback-toast";
+import { ConfirmDialog, ToggleSwitch } from "@/app/components/admin-ui";
 import { useTranslations } from "@/app/components/translations-provider";
 import {
   getSiteSettings,
@@ -17,6 +19,8 @@ import type {
   SiteTimeFormat,
   WeekStartDay,
 } from "@/app/lib/site-admin/types";
+import { revalidateMaintenanceModeCache } from "@/app/lib/site-admin/revalidate-maintenance";
+import { COMMON_TIMEZONES } from "@/app/lib/display-preferences";
 
 const fieldClass = "auth-field mt-2 w-full";
 const labelClass = "text-sm font-medium text-[var(--ink)]";
@@ -39,8 +43,11 @@ const DATE_SEPARATOR_KEYS: { id: SiteDateSeparator; key: string; fallback: strin
 
 export function AdminSettingsForm() {
   const { t } = useTranslations();
+  const router = useRouter();
   const saved = useSyncExternalStore(subscribeSiteAdmin, getSiteSettings, getSiteSettings);
   const [draft, setDraft] = useState<SiteSettings>(saved);
+  const [maintenanceConfirmOpen, setMaintenanceConfirmOpen] = useState(false);
+  const [maintenanceBusy, setMaintenanceBusy] = useState(false);
   const { notices, notify, dismissNotice } = useNotices();
 
   useEffect(() => {
@@ -53,25 +60,131 @@ export function AdminSettingsForm() {
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
 
+  const timezoneOptions =
+    draft.timezone && !(COMMON_TIMEZONES as readonly string[]).includes(draft.timezone)
+      ? [draft.timezone, ...COMMON_TIMEZONES]
+      : [...COMMON_TIMEZONES];
+
   function patch<K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
   }
 
   const imageInvalid = () => notify(t("admin.settings.image_invalid", "Augšupielādē attēlu līdz 1.5 MB."), "error");
 
+  async function persistMaintenanceMode(maintenanceMode: boolean) {
+    setMaintenanceBusy(true);
+    try {
+      await saveSiteSettings({ ...saved, maintenanceMode });
+      await revalidateMaintenanceModeCache();
+      setDraft((current) => ({ ...current, maintenanceMode }));
+      notify(
+        maintenanceMode
+          ? t("admin.settings.maintenance_enabled", "Apkopes režīms ieslēgts.")
+          : t("admin.settings.maintenance_disabled", "Apkopes režīms izslēgts."),
+        "ok",
+      );
+      router.refresh();
+    } catch {
+      notify(t("admin.settings.save_failed", "Neizdevās saglabāt."), "error");
+    } finally {
+      setMaintenanceBusy(false);
+    }
+  }
+
+  function onMaintenanceToggle(next: boolean) {
+    if (maintenanceBusy) return;
+    if (next) {
+      setMaintenanceConfirmOpen(true);
+      return;
+    }
+    void persistMaintenanceMode(false);
+  }
+
   return (
     <div className="space-y-4">
       <FeedbackToasts notices={notices} onDismiss={dismissNotice} />
+      <ConfirmDialog
+        open={maintenanceConfirmOpen}
+        busy={maintenanceBusy}
+        confirmTone="default"
+        title={t("admin.settings.maintenance_confirm_title", "Ieslēgt apkopes režīmu?")}
+        description={t(
+          "admin.settings.maintenance_confirm_body",
+          "Publiskā mājaslapa tiks aizsegta ar blur un paziņojumu. Pieslēgties varēs tikai administrators. Vai turpināt?",
+        )}
+        confirmLabel={t("admin.settings.maintenance_confirm_action", "Ieslēgt apkopi")}
+        onClose={() => {
+          if (!maintenanceBusy) setMaintenanceConfirmOpen(false);
+        }}
+        onConfirm={() => {
+          void persistMaintenanceMode(true).then(() => setMaintenanceConfirmOpen(false));
+        }}
+      />
       <form
         className="rounded-2xl border border-[var(--line)] bg-white p-5 md:p-6"
         onSubmit={(event) => {
           event.preventDefault();
           if (!dirty) return;
-          void saveSiteSettings(draft);
-          notify(t("admin.settings.saved", "Sistēmas uzstādījumi saglabāti."), "ok");
+          void saveSiteSettings(draft).then(async () => {
+            await revalidateMaintenanceModeCache();
+            notify(t("admin.settings.saved", "Sistēmas uzstādījumi saglabāti."), "ok");
+            router.refresh();
+          });
         }}
       >
         <div className="space-y-8">
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[var(--line)] bg-[var(--paper)]/60 p-4">
+            <div className="min-w-0 flex-1">
+              <p className={labelClass}>{t("admin.settings.maintenance_mode", "Apkopes režīms")}</p>
+              <p className={hintClass}>
+                {t(
+                  "admin.settings.maintenance_mode_hint",
+                  "Slēdz publisko mājaslapu: blur un paziņojums apmeklētājiem. /login paliek atvērts — pieslēgties var tikai administrators.",
+                )}
+              </p>
+            </div>
+            <ToggleSwitch
+              checked={saved.maintenanceMode}
+              disabled={maintenanceBusy}
+              label={t("admin.settings.maintenance_mode", "Apkopes režīms")}
+              onChange={onMaintenanceToggle}
+            />
+          </div>
+
+          <div className="space-y-4 rounded-2xl border border-[var(--line)] bg-[var(--paper)]/60 p-4">
+            <p className="text-sm font-semibold text-[var(--ink)]">{t("admin.settings.billing", "Abonements")}</p>
+            <div className="max-w-xs">
+              <label htmlFor="trialPeriodDays" className={labelClass}>
+                {t("admin.settings.trial_period_days", "Izmēģinājuma periods")}
+              </label>
+              <span className="auth-field-suffix-wrap mt-2">
+                <input
+                  id="trialPeriodDays"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={365}
+                  className="auth-field w-full"
+                  value={draft.trialPeriodDays}
+                  onChange={(event) => {
+                    const parsed = Number.parseInt(event.target.value, 10);
+                    if (!Number.isFinite(parsed)) return;
+                    patch("trialPeriodDays", Math.min(365, Math.max(1, parsed)));
+                  }}
+                />
+                <span className="auth-field-suffix" aria-hidden="true">
+                  {t("admin.settings.trial_period_days_unit", "dienas")}
+                </span>
+              </span>
+              <p className={hintClass}>
+                {t(
+                  "admin.settings.trial_period_days_hint",
+                  "Cik dienas jauns lietotājs var izmantot trial pirms maksas plāna (kad billing būs ieslēgts).",
+                )}
+              </p>
+            </div>
+          </div>
+
           <div>
             <label htmlFor="systemName" className={labelClass}>
               {t("admin.settings.system_name", "Sistēmas nosaukums")}
@@ -172,13 +285,18 @@ export function AdminSettingsForm() {
               <label htmlFor="timezone" className={labelClass}>
                 {t("admin.settings.timezone", "Laika josla")}
               </label>
-              <input
+              <select
                 id="timezone"
                 className={fieldClass}
                 value={draft.timezone}
                 onChange={(event) => patch("timezone", event.target.value)}
-                placeholder="Europe/Riga"
-              />
+              >
+                {timezoneOptions.map((zone) => (
+                  <option key={zone} value={zone}>
+                    {zone}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>

@@ -61,6 +61,8 @@ const CONTENT_KEYS = [
   "nameColor",
   "nameFontId",
   "nameFontSize",
+  "nameStrokeWidth",
+  "nameStrokeColor",
   "tagline",
   "taglineColor",
   "taglineFontId",
@@ -79,6 +81,7 @@ const CONTENT_KEYS = [
   "faqs",
   "carousel",
   "onboarding",
+  "trialStartedAt",
 ] as const;
 
 export function rowToAccount(row: UserRow): Account {

@@ -34,6 +34,8 @@ let cache: SiteAdminStore = {
     logoUrl: null,
     faviconUrl: null,
     notificationFaviconUrl: null,
+    maintenanceMode: false,
+    trialPeriodDays: 14,
     updatedAt: "",
   },
 };
@@ -64,6 +66,8 @@ function defaultSettings(): SiteSettings {
     logoUrl: null,
     faviconUrl: null,
     notificationFaviconUrl: null,
+    maintenanceMode: false,
+    trialPeriodDays: 14,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -173,6 +177,8 @@ export async function refreshSiteAdmin() {
         logoUrl: normalizeBrandImageUrl(settingsRow.logo_url),
         faviconUrl: normalizeBrandImageUrl(settingsRow.favicon_url),
         notificationFaviconUrl: normalizeBrandImageUrl(settingsRow.notification_favicon_url),
+        maintenanceMode: settingsRow.maintenance_mode === true,
+        trialPeriodDays: Number(settingsRow.trial_period_days ?? 14),
         updatedAt: settingsRow.updated_at as string,
       }
     : defaultSettings();
@@ -311,6 +317,8 @@ export async function saveSiteSettings(patch: Partial<SiteSettings>): Promise<Si
     logo_url: next.logoUrl,
     favicon_url: next.faviconUrl,
     notification_favicon_url: next.notificationFaviconUrl,
+    maintenance_mode: next.maintenanceMode,
+    trial_period_days: next.trialPeriodDays,
     updated_at: next.updatedAt,
   });
   await refreshSiteAdmin();

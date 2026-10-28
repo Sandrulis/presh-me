@@ -8,7 +8,7 @@ export const metadata: Metadata = privatePageMetadata("Reģistrēties");
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<LoadingScreen />}>
+    <Suspense fallback={<LoadingScreen backdrop="auth" />}>
       <RegisterForm />
     </Suspense>
   );

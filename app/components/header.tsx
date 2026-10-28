@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
-import { useSessionHint } from "@/app/components/auth-provider";
+import { useHideMarketingHeader } from "@/app/components/auth-provider";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
 import { Logo } from "@/app/components/logo";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -14,10 +14,10 @@ function useSessionId() {
 
 export function Header() {
   const sessionId = useSessionId();
-  const sessionHint = useSessionHint();
+  const hideMarketingHeader = useHideMarketingHeader();
   const { t } = useTranslations();
 
-  if (sessionId || sessionHint) return null;
+  if (sessionId || hideMarketingHeader) return null;
 
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--paper)]/85 backdrop-blur-md">

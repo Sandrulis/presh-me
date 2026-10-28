@@ -55,5 +55,5 @@ export function UnpublishedPage() {
 }
 
 export function PageSkeleton() {
-  return <LoadingScreen label="page.loading" />;
+  return <LoadingScreen label="page.loading" backdrop="public" />;
 }

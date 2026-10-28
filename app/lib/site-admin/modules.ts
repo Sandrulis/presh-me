@@ -15,6 +15,7 @@ export const KNOWN_MODULE_LABEL_KEYS: Record<string, string> = {
   public_claim: "admin.modules.known.public_claim",
   support_forms: "admin.modules.known.support_forms",
   module_multisites: "admin.modules.known.module_multisites",
+  module_trail: "admin.modules.known.module_trail",
 };
 
 /** @deprecated Use KNOWN_MODULE_LABEL_KEYS + `t()` in components. */

@@ -1,10 +1,12 @@
 "use client";
 
 import { clearSessionHintCookie, setSessionHintCookie } from "@/app/lib/auth/session-hint";
+import { fetchMaintenanceModeClient } from "@/app/lib/site-admin/maintenance-client";
 import type { UserDisplayPreferences } from "@/app/lib/display-preferences";
 import { getExample } from "@/app/lib/examples";
 import { handleError, normalizeHandle, RESERVED_HANDLES } from "@/app/lib/handles";
 import { createClient } from "@/app/lib/supabase/client";
+import { fetchMyStorageUsage, type StorageUsage } from "@/app/lib/storage/usage";
 import {
   portfolioToRowPatch,
   rowToAccount,
@@ -13,6 +15,7 @@ import {
   type UserRow,
 } from "@/app/lib/supabase/map-page";
 import type { Account, Onboarding, Portfolio } from "@/app/lib/types";
+import { isAdminListedLink } from "@/app/lib/onboarding/admin-listed-link";
 
 const ADMIN_PAGE_SIZE = 200;
 const PAGE_SELECT =
@@ -29,6 +32,7 @@ type StoreState = {
   adminListsComplete: boolean;
   sidebarCollapsed: boolean;
   publicByHandle: Record<string, Portfolio | null>;
+  storageUsage: StorageUsage | null;
 };
 
 const listeners = new Set<() => void>();
@@ -44,6 +48,7 @@ let state: StoreState = {
   adminListsComplete: true,
   sidebarCollapsed: true,
   publicByHandle: {},
+  storageUsage: null,
 };
 
 function emit() {
@@ -96,6 +101,19 @@ export function setSidebarCollapsed(collapsed: boolean) {
   setState({ sidebarCollapsed: collapsed });
 }
 
+export function getStorageUsage() {
+  return state.storageUsage;
+}
+
+export async function refreshSessionStorageUsage() {
+  if (!state.sessionId) {
+    setState({ storageUsage: null });
+    return;
+  }
+  const usage = await fetchMyStorageUsage();
+  setState({ storageUsage: usage });
+}
+
 export const EMPTY_PAGES: Portfolio[] = [];
 
 export function readSessionPages(): Portfolio[] {
@@ -135,17 +153,15 @@ export function listAllPages(): Portfolio[] {
   return state.allPages;
 }
 
-/** Admin „Linki”: tikai pēc pabeigta onboarding (procesā esošie rādās kā melnraksts DB, ne sarakstā). */
-export function isAdminListedLink(page: Portfolio) {
-  return page.onboarding?.finished === true;
-}
+/** @see isAdminListedLink in onboarding/admin-listed-link.ts */
+export { isAdminListedLink } from "@/app/lib/onboarding/admin-listed-link";
 
 let adminListedPagesSnap: Portfolio[] = EMPTY_PAGES;
 let adminListedPagesKey = "";
 
 export function listAdminListedPages(): Portfolio[] {
   const key = state.allPages
-    .map((page) => `${page.id}:${page.onboarding?.finished === true ? "1" : "0"}:${page.updatedAt}`)
+    .map((page) => `${page.id}:${isAdminListedLink(page) ? "1" : "0"}:${page.updatedAt}`)
     .join("|");
   if (key === adminListedPagesKey) return adminListedPagesSnap;
   const next = state.allPages.filter(isAdminListedLink);
@@ -233,11 +249,13 @@ async function fetchAdminLists(isAdmin: boolean, offset = 0) {
   }
   const supabase = createClient();
   const end = offset + ADMIN_PAGE_SIZE - 1;
-  // Speed H1: admin lists without heavy pages.content jsonb / data URLs.
+  // Speed H1: skip heavy content blobs; keep onboarding for „finished link” filter.
   const [pagesRes, usersRes] = await Promise.all([
     supabase
       .from("pages")
-      .select("id, account_id, handle, display_name, published, created_at, updated_at")
+      .select(
+        "id, account_id, handle, display_name, published, created_at, updated_at, onboarding:content->onboarding, trialStartedAt:content->trialStartedAt",
+      )
       .order("updated_at", { ascending: false })
       .range(offset, end),
     supabase
@@ -250,9 +268,27 @@ async function fetchAdminLists(isAdmin: boolean, offset = 0) {
   ]);
   if (pagesRes.error) throw pagesRes.error;
   if (usersRes.error) throw usersRes.error;
-  const pages = ((pagesRes.data ?? []) as Omit<PageRow, "content">[]).map((row) =>
-    rowToPortfolio({ ...row, content: null }),
-  );
+  type AdminPageListRow = Omit<PageRow, "content"> & {
+    onboarding?: Onboarding | null;
+    trialStartedAt?: string | null;
+  };
+  const pages = ((pagesRes.data ?? []) as AdminPageListRow[]).map((row) => {
+    const content: Record<string, unknown> = {};
+    if (row.onboarding != null) content.onboarding = row.onboarding;
+    if (typeof row.trialStartedAt === "string" && row.trialStartedAt) {
+      content.trialStartedAt = row.trialStartedAt;
+    }
+    return rowToPortfolio({
+      id: row.id,
+      account_id: row.account_id,
+      handle: row.handle,
+      display_name: row.display_name,
+      published: row.published,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      content: Object.keys(content).length ? content : null,
+    });
+  });
   const accounts = ((usersRes.data ?? []) as UserRow[]).map(rowToAccount);
   const complete =
     pages.length < ADMIN_PAGE_SIZE && accounts.length < ADMIN_PAGE_SIZE;
@@ -360,6 +396,7 @@ export async function hydrateSession() {
     adminListsComplete: account.isAdmin ? admin.complete : true,
   });
 
+  void refreshSessionStorageUsage();
   void reportPresence();
 }
 
@@ -480,6 +517,7 @@ export async function logoutAccount() {
     activePageId: null,
     allPages: [],
     allAccounts: [],
+    storageUsage: null,
   });
 }
 
@@ -556,6 +594,43 @@ export async function setPagePublished(pageId: string, published: boolean) {
   await savePage({ ...page, published, updatedAt: new Date().toISOString() });
 }
 
+export async function setPageTrialStartedAt(
+  pageId: string,
+  trialStartedAt: string | null,
+): Promise<{ ok: true; trialStartedAt: string | null; updatedAt: string } | { ok: false; message: string }> {
+  const response = await fetch("/api/admin/pages/trial", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: pageId, trialStartedAt }),
+  });
+  const payload = (await response.json().catch(() => null)) as {
+    ok?: boolean;
+    message?: string;
+    trialStartedAt?: string | null;
+    updatedAt?: string;
+  } | null;
+  if (!response.ok || !payload?.ok) {
+    return { ok: false, message: payload?.message ?? "Neizdevās saglabāt trial datumu." };
+  }
+
+  const nextStarted = payload.trialStartedAt ?? null;
+  const updatedAt = payload.updatedAt ?? new Date().toISOString();
+  const patchPage = (item: Portfolio): Portfolio => {
+    if (item.id !== pageId) return item;
+    const next = { ...item, updatedAt };
+    if (nextStarted) next.trialStartedAt = nextStarted;
+    else delete next.trialStartedAt;
+    return next;
+  };
+
+  setState({
+    pages: state.pages.map(patchPage),
+    allPages: state.allPages.map(patchPage),
+  });
+
+  return { ok: true, trialStartedAt: nextStarted, updatedAt };
+}
+
 export async function loadPublicPage(handle: string): Promise<Portfolio | null> {
   const normalized = normalizeHandle(handle);
   const example = getExample(normalized);
@@ -575,12 +650,18 @@ export async function loadPublicPage(handle: string): Promise<Portfolio | null> 
   return page;
 }
 
+const MAINTENANCE_LOGIN_MESSAGE =
+  "Apkopes režīmā pieslēgties var tikai sistēmas administrators.";
+
 export async function registerAccount(input: {
   name: string;
   email: string;
   password: string;
   handle: string;
 }): Promise<{ ok: true } | { ok: false; message: string }> {
+  if (await fetchMaintenanceModeClient()) {
+    return { ok: false, message: MAINTENANCE_LOGIN_MESSAGE };
+  }
   const name = input.name.trim();
   const email = input.email.trim().toLowerCase();
   const requested = normalizeHandle(input.handle);
@@ -720,6 +801,24 @@ export async function loginAccount(
       ok: false,
       message: "Pieeja sistēmai ar šo e-pastu ir liegta.",
     };
+  }
+
+  if (await fetchMaintenanceModeClient()) {
+    if (!state.account?.isAdmin) {
+      await supabase.auth.signOut();
+      clearSessionHintCookie();
+      setState({
+        ready: true,
+        sessionId: null,
+        account: null,
+        pages: [],
+        activePageId: null,
+        allPages: [],
+        allAccounts: [],
+        adminListsComplete: true,
+      });
+      return { ok: false, message: MAINTENANCE_LOGIN_MESSAGE };
+    }
   }
 
   let needsMfa = false;

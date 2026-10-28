@@ -13,6 +13,7 @@ import {
   readSessionPage,
   subscribeStore,
 } from "@/app/lib/store";
+import { useExpiredTrialClientRedirect } from "@/app/lib/trial/use-expired-trial-client-redirect";
 
 function useIsMobileShell() {
   const [mobile, setMobile] = useState(false);
@@ -39,6 +40,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const anyOpen = menuOpen || adminOpen;
+
+  useExpiredTrialClientRedirect();
 
   useEffect(() => {
     if (!anyOpen) return;

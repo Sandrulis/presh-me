@@ -1,4 +1,5 @@
 import { createClient } from "@/app/lib/supabase/client";
+import { fileExtensionFromMime, recordUserStorageUpload, type StorageUploadMeta } from "@/app/lib/storage/usage";
 
 const BUCKET = "page-assets";
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -9,6 +10,7 @@ export async function uploadPageAsset(
   userId: string,
   file: File,
   folder = "uploads",
+  meta?: StorageUploadMeta,
 ): Promise<{ ok: true; url: string; path: string } | { ok: false; error: string }> {
   if (!ALLOWED.has(file.type)) {
     return { ok: false, error: "Atļauti tikai PNG, JPEG, WebP, GIF." };
@@ -26,5 +28,20 @@ export async function uploadPageAsset(
   });
   if (error) return { ok: false, error: error.message };
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+
+  const extension = fileExtensionFromMime(file.type, ext);
+  void recordUserStorageUpload({
+    bucket: BUCKET,
+    path,
+    byteSize: file.size,
+    mimeType: file.type,
+    extension,
+    meta,
+  }).then((recorded) => {
+    if (recorded.ok) {
+      void import("@/app/lib/store").then((mod) => mod.refreshSessionStorageUsage());
+    }
+  });
+
   return { ok: true, url: data.publicUrl, path };
 }

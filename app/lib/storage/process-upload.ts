@@ -28,7 +28,10 @@ export async function processAndUploadImage(
     return { ok: false, error: "Neizdevās nolasīt attēlu." };
   }
 
-  const uploaded = await uploadPageAsset(user.id, jpeg, opts.folder ?? "uploads");
+  const uploaded = await uploadPageAsset(user.id, jpeg, opts.folder ?? "uploads", {
+    originalName: file.name,
+    sourceMime: file.type,
+  });
   if (!uploaded.ok) return { ok: false, error: uploaded.error };
   return { ok: true, url: uploaded.url };
 }

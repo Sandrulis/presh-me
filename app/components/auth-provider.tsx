@@ -6,17 +6,24 @@ import { bindAuthListener, hydrateSession, reportPresence } from "@/app/lib/stor
 const PRESENCE_INTERVAL_MS = 5 * 60 * 1000;
 
 const SessionHintContext = createContext(false);
+const HideMarketingHeaderContext = createContext(false);
 
 export function useSessionHint() {
   return useContext(SessionHintContext);
 }
 
+export function useHideMarketingHeader() {
+  return useContext(HideMarketingHeaderContext);
+}
+
 export function AuthProvider({
   children,
   sessionHint = false,
+  hideMarketingHeader = false,
 }: {
   children: ReactNode;
   sessionHint?: boolean;
+  hideMarketingHeader?: boolean;
 }) {
   useEffect(() => {
     void hydrateSession();
@@ -30,5 +37,11 @@ export function AuthProvider({
     };
   }, []);
 
-  return <SessionHintContext.Provider value={sessionHint}>{children}</SessionHintContext.Provider>;
+  return (
+    <SessionHintContext.Provider value={sessionHint}>
+      <HideMarketingHeaderContext.Provider value={hideMarketingHeader}>
+        {children}
+      </HideMarketingHeaderContext.Provider>
+    </SessionHintContext.Provider>
+  );
 }

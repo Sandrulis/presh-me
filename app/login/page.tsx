@@ -8,7 +8,7 @@ export const metadata: Metadata = privatePageMetadata("Pieslēgties");
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<LoadingScreen />}>
+    <Suspense fallback={<LoadingScreen backdrop="auth" />}>
       <LoginForm />
     </Suspense>
   );

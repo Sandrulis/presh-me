@@ -31,3 +31,17 @@ export async function getServerSiteBranding(): Promise<ServerSiteBranding> {
     };
   }
 }
+
+export async function getServerMaintenanceMode(): Promise<boolean> {
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("site_settings")
+      .select("maintenance_mode")
+      .eq("id", 1)
+      .maybeSingle();
+    return data?.maintenance_mode === true;
+  } catch {
+    return false;
+  }
+}

@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { AdminLinkTrialModal } from "@/app/components/admin-link-trial-modal";
 import {
   AdminStat,
   ConfirmDialog,
   formatAdminDate,
   IconActionButton,
+  IconCalendar,
   IconExternal,
   IconTrash,
   ToggleSwitch,
@@ -14,6 +16,9 @@ import {
 import { AdminLoadMore } from "@/app/components/admin-load-more";
 import { FeedbackToasts, useNotices } from "@/app/components/feedback-toast";
 import { useTranslations } from "@/app/components/translations-provider";
+import { isFrontendModuleEnabled } from "@/app/lib/site-admin/modules";
+import { getSiteSettings, refreshSiteAdmin, subscribeSiteAdmin } from "@/app/lib/site-admin/store";
+import { computeTrialEndMs } from "@/app/lib/trial/compute-trial-progress";
 import {
   deletePageById,
   listAdminListedPages,
@@ -21,14 +26,69 @@ import {
   setPagePublished,
   subscribeStore,
 } from "@/app/lib/store";
+import type { Portfolio } from "@/app/lib/types";
+
+function AdminLinkTrialSummary({
+  page,
+  trialPeriodDays,
+}: {
+  page: Portfolio;
+  trialPeriodDays: number;
+}) {
+  const { t } = useTranslations();
+  const [nowMs] = useState(() => Date.now());
+
+  if (!page.trialStartedAt) {
+    return (
+      <p className="mt-1.5 text-xs text-[var(--muted)]">
+        {t("admin.links.trial.not_started", "Izmēģinājums vēl nav sācies")}
+      </p>
+    );
+  }
+
+  const endMs = computeTrialEndMs(page.trialStartedAt, trialPeriodDays);
+  const expired = endMs != null && nowMs >= endMs;
+  const endIso = endMs != null ? new Date(endMs).toISOString() : null;
+
+  return (
+    <div className="mt-1.5 space-y-0.5 text-xs">
+      <p className="text-[var(--muted)]">
+        {t("admin.links.trial.started", "Sākums: {date}", {
+          date: formatAdminDate(page.trialStartedAt),
+        })}
+      </p>
+      {endIso ? (
+        <p className={expired ? "font-medium text-red-600" : "text-[var(--muted)]"}>
+          {expired
+            ? t("admin.links.trial.ended", "Beidzās: {date}", { date: formatAdminDate(endIso) })
+            : t("admin.links.trial.ends", "Beigsies: {date}", { date: formatAdminDate(endIso) })}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 export function AdminLinksManager() {
   const { t } = useTranslations();
   const pages = useSyncExternalStore(subscribeStore, listAdminListedPages, () => []);
   const accounts = useSyncExternalStore(subscribeStore, listAllAccounts, () => []);
+  const siteSettings = useSyncExternalStore(subscribeSiteAdmin, getSiteSettings, getSiteSettings);
   const { notices, notify, dismissNotice } = useNotices();
   const [query, setQuery] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [trialModuleEnabled, setTrialModuleEnabled] = useState(false);
+  const [trialEditPage, setTrialEditPage] = useState<Portfolio | null>(null);
+
+  useEffect(() => {
+    void refreshSiteAdmin();
+    let cancelled = false;
+    void isFrontendModuleEnabled("module_trail").then((enabled) => {
+      if (!cancelled) setTrialModuleEnabled(enabled);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const accountById = useMemo(() => new Map(accounts.map((item) => [item.id, item])), [accounts]);
 
@@ -59,7 +119,7 @@ export function AdminLinksManager() {
       <p className="text-sm text-[var(--muted)]">
         {t(
           "admin.links.hint",
-          "Rāda tikai pabeigtus linkus (pēc onboarding). Kamēr lietotājs vēl veido lapu, šeit nerādās.",
+          "Rāda linkus, kur lietotājs ir sācis veidot lapu (onboarding) vai to publicējis. Konti, kas vēl nav sākuši, šeit nerādās.",
         )}
       </p>
 
@@ -92,6 +152,9 @@ export function AdminLinksManager() {
                     <td className="px-5 py-4">
                       <p className="font-semibold text-[var(--ink)]">/{page.handle}</p>
                       <p className="mt-0.5 text-sm text-[var(--muted)]">{page.displayName || "—"}</p>
+                      {trialModuleEnabled ? (
+                        <AdminLinkTrialSummary page={page} trialPeriodDays={siteSettings.trialPeriodDays} />
+                      ) : null}
                     </td>
                     <td className="px-5 py-4">
                       <p className="font-medium text-[var(--ink)]">{owner?.name || "—"}</p>
@@ -117,6 +180,14 @@ export function AdminLinksManager() {
                     <td className="px-5 py-4 text-[var(--muted)]">{formatAdminDate(page.updatedAt)}</td>
                     <td className="px-5 py-4">
                       <div className="flex justify-end gap-1">
+                        {trialModuleEnabled ? (
+                          <IconActionButton
+                            label={t("admin.links.trial.button", "Trial periods")}
+                            onClick={() => setTrialEditPage(page)}
+                          >
+                            <IconCalendar />
+                          </IconActionButton>
+                        ) : null}
                         <Link
                           href={`/${page.handle}`}
                           target="_blank"
@@ -142,7 +213,7 @@ export function AdminLinksManager() {
                 <tr>
                   <td colSpan={5} className="px-5 py-8 text-center text-[var(--muted)]">
                     {pages.length === 0
-                      ? t("admin.links.empty", "Nav neviena pabeigta linka.")
+                      ? t("admin.links.empty", "Nav neviena sākta linka.")
                       : t("admin.links.empty_search", "Nav atrasts neviens links.")}
                   </td>
                 </tr>
@@ -153,6 +224,16 @@ export function AdminLinksManager() {
       </div>
 
       <AdminLoadMore onError={(message) => notify(message, "error")} />
+
+      {trialEditPage ? (
+        <AdminLinkTrialModal
+          page={trialEditPage}
+          open={trialEditPage !== null}
+          onClose={() => setTrialEditPage(null)}
+          onSaved={(message) => notify(message, "ok")}
+          onError={(message) => notify(message, "error")}
+        />
+      ) : null}
 
       <ConfirmDialog
         open={deleteTarget !== null}

@@ -144,7 +144,7 @@ export function MfaVerifyModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[var(--ink)]/40 px-5">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[var(--ink)]/40 px-5">
       <div
         role="dialog"
         aria-modal="true"

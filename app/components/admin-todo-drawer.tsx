@@ -117,6 +117,7 @@ function AdminTodoPanel({ onClose, busy }: { onClose: () => void; busy?: boolean
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(() => new Set());
   const listRef = useRef<HTMLUListElement>(null);
   const dragId = useRef<string | null>(null);
   const overRef = useRef<string | null>(null);
@@ -148,6 +149,21 @@ function AdminTodoPanel({ onClose, busy }: { onClose: () => void; busy?: boolean
       setTodos(items);
       setSiteHasAlert(items.some((item) => !item.isDone));
     });
+  }
+
+  async function toggleTodo(id: string, done: boolean) {
+    setTogglingIds((current) => new Set(current).add(id));
+    try {
+      const items = await setAdminTodoDone(userId, id, done);
+      setTodos(items);
+      setSiteHasAlert(items.some((item) => !item.isDone));
+    } finally {
+      setTogglingIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+    }
   }
 
   function moveOpen(fromId: string, toId: string) {
@@ -251,7 +267,8 @@ function AdminTodoPanel({ onClose, busy }: { onClose: () => void; busy?: boolean
                 canDrag={canReorder}
                 dragging={draggingId === item.id}
                 dropTarget={overId === item.id && draggingId != null && draggingId !== item.id}
-                onToggle={() => refresh(setAdminTodoDone(userId, item.id, !item.isDone))}
+                toggling={togglingIds.has(item.id)}
+                onToggle={() => void toggleTodo(item.id, !item.isDone)}
                 onRename={(title) => refresh(renameAdminTodo(userId, item.id, title))}
                 onDelete={() => refresh(deleteAdminTodo(userId, item.id))}
                 onPointerDown={(event) => {
@@ -301,6 +318,7 @@ function TodoRow({
   canDrag,
   dragging,
   dropTarget,
+  toggling,
   onToggle,
   onRename,
   onDelete,
@@ -315,6 +333,7 @@ function TodoRow({
   canDrag: boolean;
   dragging: boolean;
   dropTarget: boolean;
+  toggling: boolean;
   onToggle: () => void;
   onRename: (title: string) => void;
   onDelete: () => void;
@@ -405,20 +424,32 @@ function TodoRow({
       ) : (
         <span className="size-6 shrink-0" aria-hidden="true" />
       )}
-      <button
-        type="button"
-        role="checkbox"
-        aria-checked={item.isDone}
-        aria-label={item.title}
-        onClick={onToggle}
-        className={`mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded border transition ${
-          item.isDone
-            ? "border-emerald-500 bg-emerald-500 text-white"
-            : "border-[var(--line)] bg-white text-transparent hover:border-[var(--muted)]"
-        }`}
-      >
-        <CheckIcon />
-      </button>
+      {toggling ? (
+        <span
+          className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          aria-label={t("common.loading", "Ielādē...")}
+        >
+          <span className="size-3.5 animate-spin rounded-full border-2 border-[var(--line)] border-t-[var(--ink)]" />
+        </span>
+      ) : (
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={item.isDone}
+          aria-label={item.title}
+          onClick={onToggle}
+          className={`mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded border transition ${
+            item.isDone
+              ? "border-emerald-500 bg-emerald-500 text-white"
+              : "border-[var(--line)] bg-white text-transparent hover:border-[var(--muted)]"
+          }`}
+        >
+          <CheckIcon />
+        </button>
+      )}
       <div className={`min-w-0 flex-1 ${editing ? "" : "cursor-text"}`} onClick={editing ? undefined : startEdit}>
         {editing ? (
           <input

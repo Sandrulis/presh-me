@@ -281,6 +281,9 @@ export type PageContent = {
   nameColor?: string;
   nameFontId?: FontId;
   nameFontSize?: number;
+  /** px; burtu apmale (teksta stroke), nevis bloka rāmis. */
+  nameStrokeWidth?: number;
+  nameStrokeColor?: string;
   /** Īss slogan zem vārda. */
   tagline?: string;
   taglineColor?: string;
@@ -302,6 +305,8 @@ export type PageContent = {
   faqs?: FaqItem[];
   carousel?: CarouselItem[];
   onboarding?: Onboarding;
+  /** ISO laiks, kad sākās publiskās saites izmēģinājuma periods (module_trail). */
+  trialStartedAt?: string | null;
 };
 
 export type Portfolio = PageContent & {

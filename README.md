@@ -1,6 +1,6 @@
 # Presh
 
-**Current version:** `0.1.13`
+**Current version:** `0.1.14`
 
 Viena lapa visam, ko dari. Lietotājs reģistrējas (e-pasts vai Google), paņem savu `presh.me/vards` linku un studijā saliek portfolio: profilu, tagline, saites un tēmu. Ielogotam `/` ved uz studiju vai onboarding; ir kreisā studijas josla un labā admin josla.
 
@@ -22,7 +22,7 @@ Atver [http://localhost:3130](http://localhost:3130).
 1. Sākumlapā ievadi vēlamo linku.
 2. Reģistrējies. Tiek izveidots konts un lapa.
 3. Studijā pievieno profilu, sociālos, blokus un tēmu.
-4. Publiskā lapa ir `/{links}`. Melnrakstu redz tikai īpašnieks šajā pārlūkā.
+4. Publiskā lapa ir `/{links}`. Nepublicēts vai beidzies izmēģinājuma periods — apmeklētāji redz sākumlapu, ne profilu.
 5. Gatavs piemērs bez konta: `/paraugs`.
 
 ## Datubāze

@@ -14,6 +14,11 @@ import {
 } from "@/app/lib/seo/marketing-middleware";
 import { DEFAULT_SEO_LOCALE } from "@/app/lib/seo/locale-path";
 import { retiredCompareHomePath } from "@/app/lib/seo/retired-compare-paths";
+import {
+  fetchPrimaryPageForUser,
+  resolveEntryPathFromPage,
+} from "@/app/lib/onboarding/primary-page";
+import { withMaintenanceKick } from "@/app/lib/site-admin/maintenance-middleware";
 
 const PROTECTED_PREFIXES = [
   "/studio",
@@ -78,14 +83,19 @@ export async function middleware(request: NextRequest) {
   }
 
   const pathLocale = localeFromPath(pathname);
-  const needsAuthWork = isProtectedPath(pathname) || isAuthPage(pathname);
+  const needsAuthWork = isProtectedPath(pathname) || isAuthPage(pathname) || pathname === "/";
 
   const requestHeaders = new Headers(request.headers);
 
   if (pathLocale) {
     const route = resolveMarketingLocaleRoute(request, pathname, pathLocale);
     if (route?.kind === "redirect") {
-      return withLocaleCookies(route.response, pathLocale);
+      return withMaintenanceKick(
+        request,
+        pathname,
+        requestHeaders,
+        withLocaleCookies(route.response, pathLocale),
+      );
     }
     if (route?.kind === "rewrite") {
       requestHeaders.set("x-presh-locale", pathLocale);
@@ -93,7 +103,7 @@ export async function middleware(request: NextRequest) {
       rewriteUrl.pathname = route.canonicalPath;
       let response = NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
       response = withLocaleCookies(response, pathLocale);
-      return response;
+      return withMaintenanceKick(request, pathname, requestHeaders, response);
     }
     if (pathname === `/${pathLocale}` || pathname === `/${pathLocale}/`) {
       requestHeaders.set("x-presh-locale", pathLocale);
@@ -101,9 +111,9 @@ export async function middleware(request: NextRequest) {
       rewriteUrl.pathname = "/";
       let response = NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
       response = withLocaleCookies(response, pathLocale);
-      return response;
+      return withMaintenanceKick(request, pathname, requestHeaders, response);
     }
-    return NextResponse.next();
+    return withMaintenanceKick(request, pathname, requestHeaders, NextResponse.next());
   }
 
   if (!pathLocale && isUnprefixedMarketingPath(pathname)) {
@@ -111,18 +121,27 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!needsAuthWork && pathname !== "/") {
-    return NextResponse.next({ request: { headers: requestHeaders } });
+    return withMaintenanceKick(
+      request,
+      pathname,
+      requestHeaders,
+      NextResponse.next({ request: { headers: requestHeaders } }),
+    );
   }
 
   let response = NextResponse.next({
     request: { headers: requestHeaders },
   });
 
-  if (!needsAuthWork) return response;
+  if (!needsAuthWork) {
+    return withMaintenanceKick(request, pathname, requestHeaders, response);
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !anonKey) return response;
+  if (!supabaseUrl || !anonKey) {
+    return withMaintenanceKick(request, pathname, requestHeaders, response);
+  }
 
   const supabase = createServerClient(supabaseUrl, anonKey, {
     cookies: {
@@ -141,6 +160,13 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (pathname === "/" && user) {
+    const page = await fetchPrimaryPageForUser(supabase, user.id);
+    const target = request.nextUrl.clone();
+    target.pathname = resolveEntryPathFromPage(page);
+    return withMaintenanceKick(request, pathname, requestHeaders, NextResponse.redirect(target));
+  }
+
   if (isProtectedPath(pathname) && !pathname.startsWith("/api/") && !user) {
     const login = request.nextUrl.clone();
     login.pathname = "/login";
@@ -148,7 +174,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  return response;
+  return withMaintenanceKick(request, pathname, requestHeaders, response);
 }
 
 /**

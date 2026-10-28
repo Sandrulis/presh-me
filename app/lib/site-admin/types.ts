@@ -34,6 +34,8 @@ export type SiteSettings = {
   logoUrl: string | null;
   faviconUrl: string | null;
   notificationFaviconUrl: string | null;
+  maintenanceMode: boolean;
+  trialPeriodDays: number;
   updatedAt: string;
 };
 

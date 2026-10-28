@@ -6,12 +6,10 @@ import type { ReactNode } from "react";
 export function FieldFrame({
   label,
   children,
-  action,
   className = "",
 }: {
   label: string;
   children: ReactNode;
-  action?: ReactNode;
   className?: string;
 }) {
   return (
@@ -20,7 +18,6 @@ export function FieldFrame({
         <span className="field-frame-dot" aria-hidden="true" />
         {label}
       </span>
-      {action ? <div className="field-frame-action">{action}</div> : null}
       {children}
     </div>
   );

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
+import { LoadingScreen } from "@/app/components/loading-screen";
 import { privatePageMetadata } from "@/app/lib/seo/private-metadata";
 
 export const metadata: Metadata = privatePageMetadata("Studija");
@@ -8,8 +9,8 @@ const StudioApp = dynamic(
   () => import("@/app/components/studio-app").then((mod) => mod.StudioApp),
   {
     loading: () => (
-      <div className="grid min-h-[50vh] place-items-center text-sm text-[var(--muted)]">Ielādē studiju…</div>
-    ),
+    <LoadingScreen label="studio.loading" backdrop="app" />
+  ),
   },
 );
 

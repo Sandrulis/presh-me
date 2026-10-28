@@ -62,6 +62,16 @@ const EXTRA_RESERVED = [
 
 export const RESERVED_HANDLES = new Set<string>([...SYSTEM_LINKS, ...EXTRA_RESERVED]);
 
+const SYSTEM_PATH_SEGMENTS = new Set<string>(SYSTEM_LINKS);
+
+/** Single-segment URL served by `app/[handle]` (demos + live pages), not a system route. */
+export function isPublicProfilePathname(pathname: string): boolean {
+  const segment = pathname.split("/").filter(Boolean)[0];
+  if (!segment || pathname.split("/").filter(Boolean).length !== 1) return false;
+  if (!isHandleFormat(segment)) return false;
+  return !SYSTEM_PATH_SEGMENTS.has(segment);
+}
+
 export function normalizeHandle(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, "");
 }

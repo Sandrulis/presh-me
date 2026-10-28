@@ -1,6 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
+import {
+  fetchPrimaryPageForUser,
+  resolveEntryPathFromPage,
+} from "@/app/lib/onboarding/primary-page";
+import { readMaintenanceModeWithAdmin } from "@/app/lib/auth/maintenance-access";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import { getSupabasePublicEnv } from "@/app/lib/supabase/env";
 
@@ -199,9 +204,11 @@ function readRequestCookies(request: Request) {
     .filter((cookie): cookie is { name: string; value: string } => cookie !== null);
 }
 
-function authErrorPath(from: "login" | "register", reason: "google" | "blocked" = "google") {
+function authErrorPath(from: "login" | "register", reason: "google" | "blocked" | "maintenance" = "google") {
   const base = from === "register" ? "/register" : "/login";
-  return `${base}?error=${reason}`;
+  if (reason === "blocked") return `${base}?error=blocked`;
+  if (reason === "maintenance") return `${base}?error=maintenance`;
+  return `${base}?error=google`;
 }
 
 export function clearGoogleOAuthCookie(response: NextResponse) {
@@ -224,6 +231,10 @@ export async function completeGoogleSignIn(
     admin = createAdminClient();
   } catch {
     return fail();
+  }
+
+  if (state.from === "register" && (await readMaintenanceModeWithAdmin(admin))) {
+    return clearGoogleOAuthCookie(NextResponse.redirect(`${origin}/register?error=maintenance`));
   }
 
   const accessToken = await exchangeCode(origin, code);
@@ -303,8 +314,8 @@ export async function completeGoogleSignIn(
     }
     await admin.from("users").update({ active_page_id: pageRow.id }).eq("id", userId);
   } else {
-    const onboarding = (pages[0].content as { onboarding?: { finished?: boolean } } | null)?.onboarding;
-    needsOnboarding = !onboarding || onboarding.finished === false;
+    const primary = await fetchPrimaryPageForUser(admin, userId);
+    needsOnboarding = resolveEntryPathFromPage(primary) === "/start";
   }
 
   const link = await admin.auth.admin.generateLink({ type: "magiclink", email: profile.email });
@@ -335,5 +346,14 @@ export async function completeGoogleSignIn(
   });
   const verified = await supabase.auth.verifyOtp({ type: "magiclink", token_hash: tokenHash });
   if (verified.error || !verified.data.session) return fail();
+
+  if (await readMaintenanceModeWithAdmin(admin)) {
+    const { data: adminProfile } = await admin.from("users").select("is_admin").eq("id", userId).maybeSingle();
+    if (!adminProfile?.is_admin) {
+      await supabase.auth.signOut();
+      return clearGoogleOAuthCookie(NextResponse.redirect(`${origin}/login?error=maintenance`));
+    }
+  }
+
   return clearGoogleOAuthCookie(redirectResponse);
 }

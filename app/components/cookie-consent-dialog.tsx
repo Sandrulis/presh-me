@@ -45,13 +45,13 @@ function ConsentSwitch({
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-60 ${
+      className={`relative inline-flex h-6 w-11 shrink-0 rounded-full p-0.5 transition disabled:cursor-not-allowed disabled:opacity-60 ${
         checked ? "bg-[var(--ink)]" : "bg-[#d8dee8]"
       }`}
     >
       <span
-        className={`inline-block size-5 rounded-full bg-white shadow-sm transition ${
-          checked ? "translate-x-5" : "translate-x-0.5"
+        className={`block size-5 rounded-full bg-white shadow-sm transition-transform ${
+          checked ? "translate-x-5" : "translate-x-0"
         }`}
       />
     </button>

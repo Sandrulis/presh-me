@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { AuthProvider } from "@/app/components/auth-provider";
 import { CookieConsentProvider } from "@/app/components/cookie-consent-provider";
 import { NotificationFavicon } from "@/app/components/notification-favicon";
 import { SiteAlertsBridge } from "@/app/components/site-alerts-bridge";
 import { TranslationsProvider } from "@/app/components/translations-provider";
 import { UmamiAnalytics } from "@/app/components/umami-analytics";
-import { SESSION_HINT_COOKIE } from "@/app/lib/auth/session-hint";
+import { getServerMaintenanceMode } from "@/app/lib/site-admin/settings-server";
+import { getCachedSiteBranding, getCachedUmamiPublicConfig } from "@/app/lib/site-admin/settings-cache";
 import { fontClassName, fontVariables } from "@/app/lib/font-faces";
 import { getServerTranslations } from "@/app/lib/i18n/server";
 import {
@@ -14,7 +14,9 @@ import {
   BRAND_LOGO_PATH,
   BRAND_NOTIFICATION_ICON_PATH,
 } from "@/app/lib/site-admin/branding";
-import { getCachedSiteBranding, getCachedUmamiPublicConfig } from "@/app/lib/site-admin/settings-cache";
+import { MaintenanceSessionGuard } from "@/app/components/maintenance-session-guard";
+import { MaintenanceShell } from "@/app/components/maintenance-shell";
+import { resolveSessionHintForRequest } from "@/app/lib/auth/resolve-session-hint";
 import { getPublicSiteUrl } from "@/app/lib/site-url";
 import "./globals.css";
 
@@ -58,8 +60,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const branding = await getCachedSiteBranding();
   const i18n = await getServerTranslations();
   const umami = await getCachedUmamiPublicConfig();
-  const cookieStore = await cookies();
-  const sessionHint = cookieStore.get(SESSION_HINT_COOKIE)?.value === "1";
+  const { sessionHint, hideMarketingHeader } = await resolveSessionHintForRequest();
+  const maintenanceActive = await getServerMaintenanceMode();
 
   return (
     <html lang={i18n.languageCode} className={`${fontVariables} ${fontClassName}`}>
@@ -70,7 +72,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           table={i18n.table}
           languages={i18n.languages}
         >
-          <AuthProvider sessionHint={sessionHint}>
+          <AuthProvider sessionHint={sessionHint} hideMarketingHeader={hideMarketingHeader}>
+            <MaintenanceSessionGuard />
             <CookieConsentProvider>
               <SiteAlertsBridge />
               <NotificationFavicon
@@ -80,7 +83,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                 }
               />
               {umami ? <UmamiAnalytics {...umami} /> : null}
-              {children}
+              <MaintenanceShell active={maintenanceActive} sessionHint={sessionHint}>
+                {children}
+              </MaintenanceShell>
             </CookieConsentProvider>
           </AuthProvider>
         </TranslationsProvider>

@@ -23,13 +23,13 @@ export function ToggleSwitch({
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-60 ${
+      className={`relative inline-flex h-6 w-11 shrink-0 rounded-full p-0.5 transition disabled:cursor-not-allowed disabled:opacity-60 ${
         checked ? "bg-[var(--ink)]" : "bg-[#d8dee8]"
       }`}
     >
       <span
-        className={`inline-block size-5 rounded-full bg-white shadow-sm transition ${
-          checked ? "translate-x-5" : "translate-x-0.5"
+        className={`block size-5 rounded-full bg-white shadow-sm transition-transform ${
+          checked ? "translate-x-5" : "translate-x-0"
         }`}
       />
     </button>
@@ -75,6 +75,7 @@ export function ConfirmDialog({
   onConfirm,
   onClose,
   busy,
+  confirmTone = "danger",
 }: {
   open: boolean;
   title: string;
@@ -83,6 +84,7 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onClose: () => void;
   busy?: boolean;
+  confirmTone?: "danger" | "default";
 }) {
   const { t } = useTranslations();
   const resolvedConfirm = confirmLabel ?? t("actions.delete", "Dzēst");
@@ -123,7 +125,7 @@ export function ConfirmDialog({
           <button
             type="button"
             className="btn-ink"
-            style={{ background: "#c43b3b" }}
+            style={confirmTone === "danger" ? { background: "#c43b3b" } : undefined}
             disabled={busy}
             onClick={onConfirm}
           >
@@ -236,6 +238,15 @@ export function IconExternal() {
   return (
     <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
       <path d="M14 5h5v5M10 14 19 5M19 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function IconCalendar() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <rect x="4" y="5" width="16" height="15" rx="2" />
+      <path d="M8 3v4M16 3v4M4 10h16" strokeLinecap="round" />
     </svg>
   );
 }

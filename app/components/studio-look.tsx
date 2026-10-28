@@ -299,6 +299,19 @@ export function LookColumn({
               onFont={(nameFontId) => update({ nameFontId })}
               onSize={(nameFontSize) => update({ nameFontSize })}
             />
+            <RangeField
+              label={t("studio.look.name_stroke_width", "Burtu apmales biezums")}
+              min={0}
+              max={8}
+              value={page.nameStrokeWidth ?? 0}
+              suffix=" px"
+              onChange={(nameStrokeWidth) => update({ nameStrokeWidth })}
+            />
+            <ColorRow
+              label={t("studio.look.name_stroke_color", "Burtu apmales krāsa")}
+              value={page.nameStrokeColor ?? "#111111"}
+              onChange={(nameStrokeColor) => update({ nameStrokeColor })}
+            />
           </StudioGroup>
           <StudioGroup title={t("studio.profile.tagline", "Tagline")}>
             <TextTune

@@ -4,6 +4,15 @@
 
 - (none)
 
+## v0.1.14
+
+**Izmēģinājuma periods, pieejas un studijas uzlabojumi**
+
+- Modulis `module_trail`: trial sākas publicējot; metrs studijā; admin linkos trial info un datuma labošana; beidzies trial vai nepublisks profils → redirect uz `/` (publiskā URL un `/studio`/`/start`/`/settings`)
+- Uzturēšanas režīms (`site_settings.maintenance`); glabātuves izmantošanas uzskaite un metrs studijā
+- Vārda burtu apmale (teksta stroke) Izskats → Teksts; onboarding/studio bez `/start`↔`/studio` mirgošanas (`active_page_id`)
+- Drošība: login lockout, CSP enforce, storage `page-assets`, publiskā lapas šaurāka ielāde
+
 ## v0.1.13
 
 **Valodu izvēlne un admin navigācija**

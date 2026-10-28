@@ -28,9 +28,9 @@ Link-in-bio / portfolio lapas. Lietotājs reģistrējas, paņem `presh.me/{handl
 - Google: pašu OAuth (`app/lib/auth/google-oauth.ts`) — `/auth/google/sign-in` → Google → `/auth/callback`; lietotājs caur admin `createUser` + magiclink `verifyOtp` (ne Supabase Google provider)
 - `public.users`: **pirmais** ieraksts → `is_admin = true`; pārējie `false`
 - `public.pages`: handle + jsonb `content`; publiski `published`; īpašnieks CRUD; admin redz visu
-- Arī: `admin_todos`, `user_feedback`, `contact_messages`, `site_languages`, `site_translations`, `site_settings`
+- Arī: `admin_todos`, `user_feedback`, `contact_messages`, `site_languages`, `site_translations`, `site_settings` (t.sk. `maintenance`, `trial_period_days`), `auth_lockouts`, storage usage kolonnas
 - Labā admin josla tikai `is_admin = true`; navigācijas badge: `fetchAdminNavCounts()` (`app/lib/admin-nav-counts.ts`), refresh ~45s + focus (`admin-sidebar.tsx`); Settings bez badge
-- Marketing valodu izvēlne: `language-switcher.tsx` — `setLanguageAction` + `window.location.assign` (ne tikai `Link`), lai cookie un SSR valoda sakrīt
+- Marketing top nav: `Header` slēpj tikai ar apstiprinātu sesiju (`sessionId` vai SSR `hideMarketingHeader`); novecojusi `presh_session` tiek notīrīta (`resolveSessionHintForRequest`)
 
 ## Dati un sesija
 
@@ -62,7 +62,7 @@ Admin josla: tikai `isSessionAdmin()` (`users.is_admin`).
 | `/compare/*` | Noņemts; `retired-compare-paths.ts` + middleware 302 (rezervēts `compare` handle nākotnei) |
 | `/robots.txt`, `/sitemap.xml` | Crawl + published profiles (skat. `SEO_AUDIT.md`) |
 | `/terms`, `/privacy`, `/cookies` | Juridiskās lapas (EN ceļi); `/rules` → `/terms` |
-| `/{handle}` | Publiskā lapa — **SSR** metadata + `PageView` (published); draft noindex |
+| `/{handle}` | Publiskā lapa — **SSR** metadata + `PageView`; **nepublisks** vai beidzies `module_trail` trial → redirect `/` |
 | `/paraugs` u.c. | Demo piemēri (`app/lib/examples.ts`) |
 
 ### Rezervētie handle
@@ -92,7 +92,8 @@ Soļi: sākums → profils (vārds, **tagline**, bio) → sadaļas → izskats �
 Trīs kolonnas (xl+): Pamati | priekšskats (`DevicePreview`) | Izskats.
 
 - Nav atsevišķa studijas top bara; **Publicēta / Nepublisks** + **Skatīt lapu** blakus ierīces pārslēdzējam (`DevicePreview`). Nepubliskam: atslēdziņa, neaktīva skatīt poga.
-- Profils: `displayName`, `tagline` (+ `taglineColor` / `taglineFontId` / `taglineFontSize`), `bio`.
+- **`module_trail`:** publicējot iestata `content.trialStartedAt`; `StudioTrialMeter` + admin Links trial modālis; beidzot trial `useExpiredTrialClientRedirect()` met no studijas zonas uz `/`.
+- Profils: `displayName`, `tagline` (+ tipogrāfija), `bio`; vārdam opcija **burtu apmale** (`nameStrokeWidth` / `nameStrokeColor`, `app/lib/text-look.ts`).
 - Sociālie: `SocialsEditor` (`app/components/socials-editor.tsx`) — kompaktas rindas, FLIP DnD, „+ Pievienot” → kreisais picker sidemodāls; katalogs `app/lib/socials.ts` (`popular` karodziņš).
 - Pamatu izvēlnē Sociālie/Bloki ir sortable (`stackOrder`); secība atspoguļojas `PageView`.
 - Bloki: `BlocksEditor` + `block-faces` / `lib/blocks.ts` — tipi: saite, teksts, YouTube, attēls, Spotify, resumē (timeline), Instagram režģis, citāts, FAQ; DnD; sidemodāļi bez blur; draft priekšskats.
