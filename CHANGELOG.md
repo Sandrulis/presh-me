@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.1.19
+
+- Security smoke atpazīst cron maršrutu `authorizeCron` (`CRON_SECRET`)
+
 ## v0.1.18
 
 **Abonementi, konta dzēšana un e-pasti**
