@@ -53,7 +53,7 @@ jobs:
 
       - name: Security - API routes have auth checks
         run: |
-          AUTH_MARKERS='(getUser|requireAdmin|createClient|auth\.getUser|requireTurnstileToken|constructEvent|loadPageOwnerUmamiReport|loadPublicBookingReservations)'
+          AUTH_MARKERS='(getUser|requireAdmin|createClient|auth\.getUser|requireTurnstileToken|constructEvent|loadPageOwnerUmamiReport|loadPublicBookingReservations|authorizeCron)'
           for file in $(find app/api -name "route.ts"); do
             if grep -qE "export async function (GET|POST|PUT|DELETE|PATCH)" "$file"; then
               if ! grep -qE "$AUTH_MARKERS" "$file"; then
