@@ -6,6 +6,7 @@ export type SiteFrontendModule = {
   id: string;
   moduleKey: string;
   isEnabled: boolean;
+  isPaid: boolean;
   sortOrder: number;
 };
 
@@ -16,6 +17,8 @@ export const KNOWN_MODULE_LABEL_KEYS: Record<string, string> = {
   support_forms: "admin.modules.known.support_forms",
   module_multisites: "admin.modules.known.module_multisites",
   module_trail: "admin.modules.known.module_trail",
+  module_paid_plans: "admin.modules.known.module_paid_plans",
+  module_umami: "admin.modules.known.module_umami",
 };
 
 /** @deprecated Use KNOWN_MODULE_LABEL_KEYS + `t()` in components. */
@@ -36,6 +39,7 @@ type ModuleRow = {
   id: string;
   module_key: string;
   is_enabled: boolean;
+  is_paid: boolean;
   sort_order: number;
 };
 
@@ -44,6 +48,7 @@ function mapRow(row: ModuleRow): SiteFrontendModule {
     id: row.id,
     moduleKey: row.module_key,
     isEnabled: row.is_enabled,
+    isPaid: row.is_paid,
     sortOrder: row.sort_order,
   };
 }
@@ -61,7 +66,7 @@ export async function listFrontendModules(): Promise<SiteFrontendModule[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("site_frontend_modules")
-    .select("id, module_key, is_enabled, sort_order")
+    .select("id, module_key, is_enabled, is_paid, sort_order")
     .order("sort_order", { ascending: true })
     .order("module_key", { ascending: true });
   if (error) throw error;
@@ -70,11 +75,43 @@ export async function listFrontendModules(): Promise<SiteFrontendModule[]> {
 
 export async function setFrontendModuleEnabled(id: string, enabled: boolean) {
   const supabase = createClient();
+  if (enabled) {
+    const { data: row, error: readError } = await supabase
+      .from("site_frontend_modules")
+      .select("module_key")
+      .eq("id", id)
+      .maybeSingle();
+    if (readError) throw readError;
+    const moduleKey = row?.module_key as string | undefined;
+    if (moduleKey === "module_trail" || moduleKey === "module_paid_plans") {
+      const { data: stripe, error: stripeError } = await supabase
+        .from("site_integrations")
+        .select("is_enabled, is_configured")
+        .eq("integration_key", "stripe")
+        .maybeSingle();
+      if (stripeError) throw stripeError;
+      if (!stripe?.is_enabled || !stripe?.is_configured) {
+        throw new Error("Stripe nav ieslēgts vai nav konfigurēts.");
+      }
+    }
+  }
   const { data, error } = await supabase
     .from("site_frontend_modules")
     .update({ is_enabled: enabled })
     .eq("id", id)
-    .select("id, module_key, is_enabled, sort_order")
+    .select("id, module_key, is_enabled, is_paid, sort_order")
+    .single();
+  if (error) throw error;
+  return mapRow(data as ModuleRow);
+}
+
+export async function setFrontendModulePaid(id: string, isPaid: boolean) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("site_frontend_modules")
+    .update({ is_paid: isPaid })
+    .eq("id", id)
+    .select("id, module_key, is_enabled, is_paid, sort_order")
     .single();
   if (error) throw error;
   return mapRow(data as ModuleRow);
@@ -93,7 +130,7 @@ export async function createFrontendModule(moduleKey: string) {
   const { data, error } = await supabase
     .from("site_frontend_modules")
     .insert({ module_key: key, is_enabled: false, sort_order: sortOrder })
-    .select("id, module_key, is_enabled, sort_order")
+    .select("id, module_key, is_enabled, is_paid, sort_order")
     .single();
   if (error) throw error;
   return mapRow(data as ModuleRow);

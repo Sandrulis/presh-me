@@ -11,6 +11,7 @@ const KEY_FALLBACKS: Record<string, string> = {
   "page.loading": "Ielādē lapu...",
   "page.creating": "Veidoju lapu...",
   "studio.loading": "Ielādē studiju...",
+  "studio.subscription.activating": "Aktivizē abonementu…",
 };
 
 export function LoadingIndicator({ label }: { label?: string }) {

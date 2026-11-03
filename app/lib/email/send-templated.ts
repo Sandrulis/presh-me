@@ -1,10 +1,11 @@
-import { buildEmailHtml } from "@/app/lib/email/build-email-html";
+import { buildEmailHtml, buildNotificationEmailHtml } from "@/app/lib/email/build-email-html";
 import {
   FALLBACK_TEMPLATES,
   TEMPLATE_KEYS,
   fallbackButton,
   fallbackFooter,
   fallbackFor,
+  isSimpleEmailKind,
   type EmailTemplateKind,
 } from "@/app/lib/email/templates";
 import { interpolate } from "@/app/lib/i18n/interpolate";
@@ -143,6 +144,68 @@ export async function sendTemplatedEmail(input: {
   } catch (error) {
     console.error(
       "sendTemplatedEmail failed",
+      error instanceof Error ? error.message : error,
+    );
+    return { ok: false, error: "errors.integrations_resend_send_failed" };
+  }
+}
+
+export async function sendNotificationEmail(input: {
+  kind: Extract<EmailTemplateKind, "booking_owner" | "booking_guest">;
+  to: string;
+  languageCode?: string | null;
+  params: EmailTemplateParams;
+  details?: { label: string; value: string }[];
+  heading?: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!isSimpleEmailKind(input.kind)) {
+    return { ok: false, error: "errors.email_template_invalid" };
+  }
+  try {
+    const email = input.to.trim().toLowerCase();
+    if (!email) return { ok: false, error: "errors.email_invalid" };
+
+    const lang = await resolveEmailLanguageCode(input.languageCode);
+    const [systemName, dictionary] = await Promise.all([getSystemName(), loadEmailDictionary(lang)]);
+    const keys = TEMPLATE_KEYS[input.kind];
+    const params = { system: systemName, ...input.params };
+
+    const subject = interpolate(
+      dictionary[keys.subjectKey] || fallbackFor(input.kind, "subject", lang),
+      params,
+    );
+    const bodyText = interpolate(
+      dictionary[keys.bodyKey] || fallbackFor(input.kind, "body", lang),
+      params,
+    );
+    const heading =
+      input.heading?.trim() ||
+      subject.replace(/\s*[—–-]\s*.*$/, "").trim() ||
+      FALLBACK_TEMPLATES[input.kind].subject.lv;
+
+    const html = buildNotificationEmailHtml({
+      systemName,
+      heading,
+      bodyText,
+      details: input.details,
+      accentColor: "#2f9e57",
+    });
+
+    const sent = await sendResendEmail({
+      to: email,
+      subject,
+      html,
+      text: bodyText,
+      fromName: systemName,
+    });
+    if (!sent.ok) {
+      console.error("sendNotificationEmail failed", sent.error);
+      return sent;
+    }
+    return { ok: true };
+  } catch (error) {
+    console.error(
+      "sendNotificationEmail failed",
       error instanceof Error ? error.message : error,
     );
     return { ok: false, error: "errors.integrations_resend_send_failed" };

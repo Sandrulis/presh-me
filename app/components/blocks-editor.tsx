@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { BlockStyleFields } from "@/app/components/block-style-fields";
 import { DropLine } from "@/app/components/drop-line";
 import { FieldFrame } from "@/app/components/field-frame";
+import { BookingBlockFields } from "@/app/components/studio-booking-editor";
 import { useTranslations } from "@/app/components/translations-provider";
 import { ImageDropField } from "@/app/components/image-drop-field";
 import {
@@ -19,12 +20,14 @@ import {
   instagramMediaUrlsFromText,
   readImageFile,
 } from "@/app/lib/blocks";
+import { normalizeLinkUrl, isValidLinkUrl } from "@/app/lib/urls";
 import { commitDropReorder, dropWouldMove, edgeFromPointer, type DropTarget } from "@/app/lib/dnd-reorder";
 import type {
   BlockType,
   FaqBlock,
   FaqBlockItem,
   InstagramBlock,
+  LinkBlock,
   PageBlock,
   Portfolio,
   ResumeBlock,
@@ -53,6 +56,7 @@ export function BlocksEditor({
 
   const editing = page.blocks.find((item) => item.id === editId) ?? null;
   const blockIds = page.blocks.map((item) => item.id);
+  const hasBookingBlock = page.blocks.some((block) => block.type === "booking");
 
   const onPreviewDraftRef = useRef(onPreviewDraft);
   onPreviewDraftRef.current = onPreviewDraft;
@@ -97,8 +101,9 @@ export function BlocksEditor({
 
       {page.blocks.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--muted)]">{t("studio.blocks.empty", "Pievieno blokus. Secību maini ar vilkšanu.")}</p>
-      ) : (
-        <ul className="mt-3 flex flex-col gap-2">
+      ) : null}
+
+      <ul className="mt-3 flex flex-col gap-2">
           {page.blocks.map((block) => {
             const dragging = dragId === block.id;
             const incomplete = !blockIsComplete(block);
@@ -204,10 +209,15 @@ export function BlocksEditor({
               </li>
             );
           })}
-        </ul>
-      )}
+      </ul>
 
-      {pickerOpen ? <BlockTypePicker onClose={() => setPickerOpen(false)} onPick={startCreate} /> : null}
+      {pickerOpen ? (
+        <BlockTypePicker
+          onClose={() => setPickerOpen(false)}
+          onPick={startCreate}
+          hasBookingBlock={hasBookingBlock}
+        />
+      ) : null}
 
       {creating ? (
         <BlockEditDrawer
@@ -234,9 +244,11 @@ export function BlocksEditor({
 function BlockTypePicker({
   onClose,
   onPick,
+  hasBookingBlock,
 }: {
   onClose: () => void;
   onPick: (type: BlockType) => void;
+  hasBookingBlock: boolean;
 }) {
   const { t } = useTranslations();
   return (
@@ -252,7 +264,7 @@ function BlockTypePicker({
       )}
     >
       <div className="flex flex-col gap-2">
-        {BLOCK_TYPE_OPTIONS.map((item) => (
+        {BLOCK_TYPE_OPTIONS.filter((item) => item.id !== "booking" || !hasBookingBlock).map((item) => (
           <button
             key={item.id}
             type="button"
@@ -337,7 +349,7 @@ function BlockFields({ block, onChange }: { block: PageBlock; onChange: (next: P
             <input className="auth-field" autoFocus placeholder={t("common.title", "Nosaukums")} value={block.title} maxLength={80} onChange={(e) => onChange({ ...block, title: e.target.value })} />
           </FieldFrame>
           <FieldFrame label={t("common.link", "Saite")}>
-            <input className="auth-field" placeholder="https://" value={block.url} onChange={(e) => onChange({ ...block, url: e.target.value })} />
+            <LinkUrlInput block={block} onChange={onChange} />
           </FieldFrame>
           <FieldFrame label={t("studio.blocks.field.note", "Piezīme")}>
             <input className="auth-field" placeholder={optionalPh} value={block.note} maxLength={80} onChange={(e) => onChange({ ...block, note: e.target.value })} />
@@ -458,7 +470,46 @@ function BlockFields({ block, onChange }: { block: PageBlock; onChange: (next: P
           <FaqItemsEditor block={block} onChange={onChange} />
         </>
       );
+    case "booking":
+      return <BookingBlockFields block={block} onChange={onChange} />;
   }
+}
+
+function LinkUrlInput({
+  block,
+  onChange,
+}: {
+  block: LinkBlock;
+  onChange: (next: LinkBlock) => void;
+}) {
+  const { t } = useTranslations();
+  const invalid = block.url.trim().length > 0 && !isValidLinkUrl(block.url);
+
+  return (
+    <>
+      <input
+        className={`auth-field${invalid ? " !border-[var(--stamp)]" : ""}`}
+        type="url"
+        inputMode="url"
+        autoComplete="url"
+        placeholder="https://"
+        value={block.url}
+        aria-invalid={invalid}
+        onChange={(event) => onChange({ ...block, url: event.target.value })}
+        onBlur={() => {
+          const normalized = normalizeLinkUrl(block.url);
+          if (normalized && normalized !== block.url) {
+            onChange({ ...block, url: normalized });
+          }
+        }}
+      />
+      {invalid ? (
+        <p className="mt-1.5 text-xs text-[var(--stamp)]" role="alert">
+          {t("studio.blocks.field.link_invalid", "Ievadi derīgu saiti (https://…).")}
+        </p>
+      ) : null}
+    </>
+  );
 }
 
 function InstagramFields({

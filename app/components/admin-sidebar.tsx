@@ -91,6 +91,11 @@ export function AdminSidebar({ open, mobile = false, onOpenChange }: AdminSideba
         icon: <IconPlug />,
       },
       { href: "/admin/modules", label: t("admin.nav.modules", "Moduļi"), icon: <IconModules /> },
+      {
+        href: "/admin/subscription-plans",
+        label: t("admin.nav.subscription_plans", "Abonementu plāni"),
+        icon: <IconPlans />,
+      },
       { href: "/admin/languages", label: t("admin.nav.languages", "Valodas"), icon: <IconLang /> },
       {
         href: "/admin/translations",
@@ -394,6 +399,16 @@ function IconModules() {
       <rect x="13" y="4" width="7" height="7" rx="1.5" />
       <rect x="4" y="13" width="7" height="7" rx="1.5" />
       <rect x="13" y="13" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+
+function IconPlans() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M5 7h14v10H5V7Z" strokeLinejoin="round" />
+      <path d="M8 11h8M8 14h5" strokeLinecap="round" />
+      <path d="M8 5.5V4M16 5.5V4" strokeLinecap="round" />
     </svg>
   );
 }

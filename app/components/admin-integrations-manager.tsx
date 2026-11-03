@@ -21,6 +21,32 @@ import {
   type SiteIntegration,
 } from "@/app/lib/site-admin/integrations";
 
+const EXPANDED_STORAGE_KEY = "presh.admin.integrations.expanded";
+
+function readExpandedPrefs(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(EXPANDED_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+    const prefs: Record<string, boolean> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (typeof value === "boolean") prefs[key] = value;
+    }
+    return prefs;
+  } catch {
+    return {};
+  }
+}
+
+function writeExpandedPrefs(next: Record<string, boolean>) {
+  try {
+    localStorage.setItem(EXPANDED_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Private mode or a full store should not block the toggle.
+  }
+}
+
 function resolveIntegrationMeta(
   itemKey: string,
   keys: IntegrationMeta,
@@ -57,6 +83,7 @@ export function AdminIntegrationsManager() {
           string,
           { clientId: string; clientSecret: string; accountEmail: string }
         > = {};
+        const savedExpanded = readExpandedPrefs();
         const nextExpanded: Record<string, boolean> = {};
         for (const row of rows) {
           nextDrafts[row.key] = {
@@ -64,7 +91,8 @@ export function AdminIntegrationsManager() {
             clientSecret: "",
             accountEmail: row.configuredAccountEmail,
           };
-          nextExpanded[row.key] = row.configured;
+          nextExpanded[row.key] =
+            row.key in savedExpanded ? savedExpanded[row.key] : row.configured;
         }
         setDrafts(nextDrafts);
         setExpanded(nextExpanded);
@@ -202,7 +230,12 @@ export function AdminIntegrationsManager() {
               ? t("admin.integrations.status_configured", "Konfigurēts")
               : t("admin.integrations.status_off", "Nav iestatīts");
         return (
-          <section key={item.key} className="rounded-2xl border border-[var(--line)] bg-white p-5">
+          <section
+            key={item.key}
+            className={`rounded-2xl border bg-white p-5 ${
+              item.configured ? "border-emerald-500" : "border-[var(--line)]"
+            }`}
+          >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -225,12 +258,19 @@ export function AdminIntegrationsManager() {
                 <ToggleSwitch
                   checked={item.enabled}
                   disabled={busy || !item.configured}
+                  tone="green"
                   label={t("admin.integrations.enable_label", "Ieslēgt {name}", { name: meta.title })}
                   onChange={(checked) => void toggle(item.key, checked)}
                 />
                 <IconActionButton
                   label={open ? t("actions.collapse", "Sakļaut") : t("actions.expand", "Izvērst")}
-                  onClick={() => setExpanded((current) => ({ ...current, [item.key]: !open }))}
+                  onClick={() =>
+                    setExpanded((current) => {
+                      const next = { ...current, [item.key]: !open };
+                      writeExpandedPrefs(next);
+                      return next;
+                    })
+                  }
                 >
                   <IconChevron className={open ? "rotate-180" : ""} />
                 </IconActionButton>
@@ -317,22 +357,23 @@ export function AdminIntegrationsManager() {
                     </span>
                   </label>
                 ) : null}
-                <div className="flex flex-wrap justify-end gap-2 pt-1">
+                <div className="flex items-center gap-2 pt-1">
                   <button
                     type="button"
-                    className="btn-line px-3 py-2 text-sm text-[var(--stamp)]"
-                    disabled={busy || !item.configured}
-                    onClick={() => setResetKey(item.key)}
-                  >
-                    {t("admin.integrations.reset", "Atiestatīt")}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-auth w-auto px-4"
+                    className="btn-auth min-w-0 flex-1 px-4"
+                    style={{ width: "auto" }}
                     disabled={busy}
                     onClick={() => void save(item.key)}
                   >
                     {busy ? t("common.loading", "Ielādē...") : t("actions.save", "Saglabāt")}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-line h-12 shrink-0 px-4 text-sm text-[var(--stamp)]"
+                    disabled={busy || !item.configured}
+                    onClick={() => setResetKey(item.key)}
+                  >
+                    {t("admin.integrations.reset", "Atiestatīt")}
                   </button>
                 </div>
               </div>

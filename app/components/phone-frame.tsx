@@ -1,3 +1,4 @@
+import { PageLanguageScope } from "@/app/components/page-language-scope";
 import { PageView } from "@/app/components/page-view";
 import type { PageContent } from "@/app/lib/types";
 
@@ -31,7 +32,9 @@ export function PhoneFrame({ page }: { page: PageContent }) {
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto bg-white" style={{ containerType: "size" }}>
-          <PageView page={page} mode="preview" framed />
+          <PageLanguageScope languageCode={page.publicLanguageCode}>
+            <PageView page={page} mode="preview" framed />
+          </PageLanguageScope>
         </div>
         <div className="flex shrink-0 justify-center bg-[#f4f5f7] py-2" aria-hidden="true">
           <span className="h-[5px] w-28 rounded-full bg-[#1c1c1e]" />

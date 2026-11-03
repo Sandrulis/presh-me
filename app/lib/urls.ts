@@ -32,3 +32,13 @@ export function safeHref(raw: string, platform: SocialPlatform | "link" = "link"
     return null;
   }
 }
+
+/** Derīga http(s) saite linku blokam (tā pati loģika kā publiskajā lapā). */
+export function isValidLinkUrl(raw: string): boolean {
+  return safeHref(raw, "link") !== null;
+}
+
+/** Normalizē uz http(s) URL vai atgriež null. */
+export function normalizeLinkUrl(raw: string): string | null {
+  return safeHref(raw, "link");
+}

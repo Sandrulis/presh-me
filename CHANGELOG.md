@@ -4,6 +4,32 @@
 
 - (none)
 
+## v0.1.17
+
+**Ātrdarbība un booking drošība**
+
+- Middleware/layout maintenance kešs; booking reservations bez pilna jsonb; lazy booking UI chunk
+- Booking Turnstile (kad ieslēgts), servera handle/blockId limiti; migrācija `025` garumu CHECK
+- Auditu atjauninājumi `system_speed_upgrades.md`, `system_security_upgrades.md`
+
+## v0.1.16
+
+**Booking pieteikumi, lapas valoda un admin UX**
+
+- Booking drawer: e-pasts, komentārs, pieteikums → `POST /api/booking/request`; rezervācijas `page_booking_reservations`, sarkani aizņemti laiki, spinner kamēr ielādē slotus
+- Divi e-pasta dizaini (īpašnieks / pieteicējs) admin E-pasta dizainos; migrācijas `023`–`024`
+- Pamati → **Valoda**: fiksēta lapas UI valoda (`publicLanguageCode`) ar kreiso sidemodāli; publiskajā lapā un priekšskatā
+- Admin todo dzēšanā X → loading, rinda pazūd pēc API; `textarea.auth-field` vertikāls padding
+
+## v0.1.15
+
+**Booking bloks, Contact/Share, Umami un abonementi**
+
+- Booking kā parasts bloks studijā (+ Pievienot, DnD secība, sidemodālis); pilna platuma poga ar krāsu un noapaļojumu kā linkiem; migrācija no `bookingEnabled`
+- Pamatos Contact un Share (drawer, avatari, QR/URL); linku bloki vienmēr redzami publiskajā lapā
+- Modulis `module_umami`: Analytics Pamatos, Umami dashboard, per-page tracker
+- Abonementu plāni un Stripe billing (migrācijas 019–021), `module_paid` plūsma studijā
+
 ## v0.1.14
 
 **Izmēģinājuma periods, pieejas un studijas uzlabojumi**

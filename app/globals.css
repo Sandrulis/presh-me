@@ -167,6 +167,8 @@ textarea::placeholder {
 
 .btn-ink,
 .btn-line,
+.btn-danger,
+.btn-success,
 .btn-quiet,
 .btn-light {
   display: inline-flex;
@@ -200,6 +202,26 @@ textarea::placeholder {
 
 .btn-line:hover:not(:disabled) {
   border-color: var(--ink);
+}
+
+.btn-danger {
+  border: 1px solid transparent;
+  background: #c43b3b;
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #a83232;
+}
+
+.btn-success {
+  border: 1px solid transparent;
+  background: #15803d;
+  color: #fff;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: #166534;
 }
 
 .btn-light {
@@ -361,6 +383,14 @@ textarea::placeholder {
   font: inherit;
   font-size: 0.95rem;
   outline: none;
+}
+
+textarea.auth-field {
+  height: auto;
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+  resize: vertical;
+  line-height: 1.45;
 }
 
 /* Select bultiņai vairāk vietas no labās malas */
@@ -537,6 +567,8 @@ select.auth-field {
 
 .btn-ink:disabled,
 .btn-line:disabled,
+.btn-danger:disabled,
+.btn-success:disabled,
 .btn-light:disabled,
 .btn-auth:disabled,
 .btn-google:disabled {

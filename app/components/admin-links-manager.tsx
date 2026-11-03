@@ -28,6 +28,15 @@ import {
 } from "@/app/lib/store";
 import type { Portfolio } from "@/app/lib/types";
 
+type AdminSubscriptionSummary = {
+  planKey: string | null;
+  planName: string | null;
+  status: string;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  isActive: boolean;
+};
+
 function AdminLinkTrialSummary({
   page,
   trialPeriodDays,
@@ -68,8 +77,47 @@ function AdminLinkTrialSummary({
   );
 }
 
-export function AdminLinksManager() {
+function AdminLinkSubscriptionSummary({
+  summary,
+  nowMs,
+}: {
+  summary: AdminSubscriptionSummary;
+  nowMs: number;
+}) {
   const { t } = useTranslations();
+  const planLabel = summary.planName?.trim() || summary.planKey || "—";
+  const endDate = summary.currentPeriodEnd ? formatAdminDate(summary.currentPeriodEnd) : null;
+  const endMs = summary.currentPeriodEnd ? Date.parse(summary.currentPeriodEnd) : NaN;
+  const periodPassed = Number.isFinite(endMs) && nowMs >= endMs;
+
+  return (
+    <div className="mt-1.5 space-y-0.5 text-xs">
+      <p className="font-medium text-[var(--ink)]">
+        {t("admin.links.subscription.plan", "Plāns: {name}", { name: planLabel })}
+      </p>
+      {summary.isActive && endDate && summary.cancelAtPeriodEnd ? (
+        <p className="font-medium text-amber-700">
+          {t("admin.links.subscription.ends_cancel_prefix", "Beidzas:")} {endDate}{" "}
+          {t("admin.links.subscription.ends_cancel_suffix", "(atcelts)")}
+        </p>
+      ) : summary.isActive && endDate ? (
+        <p className="text-[var(--muted)]">
+          {t("admin.links.subscription.renews_prefix", "Nākamā maksa:")} {endDate}
+        </p>
+      ) : endDate ? (
+        <p className={periodPassed ? "font-medium text-red-600" : "font-medium text-[var(--muted)]"}>
+          {periodPassed
+            ? t("admin.links.subscription.ended_prefix", "Abonements beidzās:")
+            : t("admin.links.subscription.ends_prefix", "Beidzas:")}{" "}
+          {endDate}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+export function AdminLinksManager() {
+  const { t, languageCode } = useTranslations();
   const pages = useSyncExternalStore(subscribeStore, listAdminListedPages, () => []);
   const accounts = useSyncExternalStore(subscribeStore, listAllAccounts, () => []);
   const siteSettings = useSyncExternalStore(subscribeSiteAdmin, getSiteSettings, getSiteSettings);
@@ -77,7 +125,10 @@ export function AdminLinksManager() {
   const [query, setQuery] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [trialModuleEnabled, setTrialModuleEnabled] = useState(false);
+  const [paidPlansModuleEnabled, setPaidPlansModuleEnabled] = useState(false);
+  const [subscriptionsByUserId, setSubscriptionsByUserId] = useState<Record<string, AdminSubscriptionSummary>>({});
   const [trialEditPage, setTrialEditPage] = useState<Portfolio | null>(null);
+  const [nowMs] = useState(() => Date.now());
 
   useEffect(() => {
     void refreshSiteAdmin();
@@ -85,10 +136,35 @@ export function AdminLinksManager() {
     void isFrontendModuleEnabled("module_trail").then((enabled) => {
       if (!cancelled) setTrialModuleEnabled(enabled);
     });
+    void isFrontendModuleEnabled("module_paid_plans").then((enabled) => {
+      if (!cancelled) setPaidPlansModuleEnabled(enabled);
+    });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!paidPlansModuleEnabled) {
+      setSubscriptionsByUserId({});
+      return;
+    }
+    let cancelled = false;
+    void fetch(`/api/admin/subscriptions/summary?lang=${encodeURIComponent(languageCode)}`, {
+      credentials: "same-origin",
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.byUserId) return;
+        setSubscriptionsByUserId(data.byUserId as Record<string, AdminSubscriptionSummary>);
+      })
+      .catch(() => {
+        if (!cancelled) setSubscriptionsByUserId({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [paidPlansModuleEnabled, languageCode, pages.length]);
 
   const accountById = useMemo(() => new Map(accounts.map((item) => [item.id, item])), [accounts]);
 
@@ -147,13 +223,24 @@ export function AdminLinksManager() {
             <tbody className="divide-y divide-[var(--line)]">
               {filtered.map((page) => {
                 const owner = accountById.get(page.accountId);
+                const subscription = subscriptionsByUserId[page.accountId];
+                const hasSubscriptionPlan = Boolean(subscription?.planKey || subscription?.planName);
+                const trialEndMs = page.trialStartedAt
+                  ? computeTrialEndMs(page.trialStartedAt, siteSettings.trialPeriodDays)
+                  : null;
+                const trialExpired = trialEndMs != null && nowMs >= trialEndMs;
+                const hideTrialSummary = hasSubscriptionPlan && trialExpired;
+
                 return (
                   <tr key={page.id} className="align-top">
                     <td className="px-5 py-4">
                       <p className="font-semibold text-[var(--ink)]">/{page.handle}</p>
                       <p className="mt-0.5 text-sm text-[var(--muted)]">{page.displayName || "—"}</p>
-                      {trialModuleEnabled ? (
+                      {trialModuleEnabled && !hideTrialSummary ? (
                         <AdminLinkTrialSummary page={page} trialPeriodDays={siteSettings.trialPeriodDays} />
+                      ) : null}
+                      {paidPlansModuleEnabled && subscription ? (
+                        <AdminLinkSubscriptionSummary summary={subscription} nowMs={nowMs} />
                       ) : null}
                     </td>
                     <td className="px-5 py-4">

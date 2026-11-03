@@ -5,8 +5,7 @@ import { NotificationFavicon } from "@/app/components/notification-favicon";
 import { SiteAlertsBridge } from "@/app/components/site-alerts-bridge";
 import { TranslationsProvider } from "@/app/components/translations-provider";
 import { UmamiAnalytics } from "@/app/components/umami-analytics";
-import { getServerMaintenanceMode } from "@/app/lib/site-admin/settings-server";
-import { getCachedSiteBranding, getCachedUmamiPublicConfig } from "@/app/lib/site-admin/settings-cache";
+import { getCachedSiteBranding, getCachedUmamiPublicConfig, getCachedMaintenanceMode } from "@/app/lib/site-admin/settings-cache";
 import { fontClassName, fontVariables } from "@/app/lib/font-faces";
 import { getServerTranslations } from "@/app/lib/i18n/server";
 import {
@@ -61,7 +60,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const i18n = await getServerTranslations();
   const umami = await getCachedUmamiPublicConfig();
   const { sessionHint, hideMarketingHeader } = await resolveSessionHintForRequest();
-  const maintenanceActive = await getServerMaintenanceMode();
+  const maintenanceActive = await getCachedMaintenanceMode();
 
   return (
     <html lang={i18n.languageCode} className={`${fontVariables} ${fontClassName}`}>

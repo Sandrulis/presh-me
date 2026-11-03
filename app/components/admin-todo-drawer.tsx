@@ -118,6 +118,7 @@ function AdminTodoPanel({ onClose, busy }: { onClose: () => void; busy?: boolean
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [togglingIds, setTogglingIds] = useState<Set<string>>(() => new Set());
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(() => new Set());
   const listRef = useRef<HTMLUListElement>(null);
   const dragId = useRef<string | null>(null);
   const overRef = useRef<string | null>(null);
@@ -159,6 +160,21 @@ function AdminTodoPanel({ onClose, busy }: { onClose: () => void; busy?: boolean
       setSiteHasAlert(items.some((item) => !item.isDone));
     } finally {
       setTogglingIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
+  async function deleteTodo(id: string) {
+    setDeletingIds((current) => new Set(current).add(id));
+    try {
+      const items = await deleteAdminTodo(userId, id);
+      setTodos(items);
+      setSiteHasAlert(items.some((item) => !item.isDone));
+    } finally {
+      setDeletingIds((current) => {
         const next = new Set(current);
         next.delete(id);
         return next;
@@ -268,9 +284,10 @@ function AdminTodoPanel({ onClose, busy }: { onClose: () => void; busy?: boolean
                 dragging={draggingId === item.id}
                 dropTarget={overId === item.id && draggingId != null && draggingId !== item.id}
                 toggling={togglingIds.has(item.id)}
+                deleting={deletingIds.has(item.id)}
                 onToggle={() => void toggleTodo(item.id, !item.isDone)}
                 onRename={(title) => refresh(renameAdminTodo(userId, item.id, title))}
-                onDelete={() => refresh(deleteAdminTodo(userId, item.id))}
+                onDelete={() => void deleteTodo(item.id)}
                 onPointerDown={(event) => {
                   if (event.button !== 0) return;
                   event.preventDefault();
@@ -319,6 +336,7 @@ function TodoRow({
   dragging,
   dropTarget,
   toggling,
+  deleting,
   onToggle,
   onRename,
   onDelete,
@@ -334,6 +352,7 @@ function TodoRow({
   dragging: boolean;
   dropTarget: boolean;
   toggling: boolean;
+  deleting: boolean;
   onToggle: () => void;
   onRename: (title: string) => void;
   onDelete: () => void;
@@ -435,12 +454,13 @@ function TodoRow({
           <span className="size-3.5 animate-spin rounded-full border-2 border-[var(--line)] border-t-[var(--ink)]" />
         </span>
       ) : (
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={item.isDone}
-          aria-label={item.title}
-          onClick={onToggle}
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={item.isDone}
+        aria-label={item.title}
+        disabled={deleting}
+        onClick={onToggle}
           className={`mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded border transition ${
             item.isDone
               ? "border-emerald-500 bg-emerald-500 text-white"
@@ -481,15 +501,28 @@ function TodoRow({
           </p>
         ) : null}
       </div>
-      <button
-        type="button"
-        aria-label={t("actions.delete", "Dzēst")}
-        title={t("actions.delete", "Dzēst")}
-        onClick={onDelete}
-        className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-[var(--muted)] opacity-0 transition group-hover/item:opacity-100 hover:bg-[var(--paper)] hover:text-[var(--stamp)] focus-visible:opacity-100"
-      >
-        <CloseIcon />
-      </button>
+      {deleting ? (
+        <span
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-[var(--muted)]"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          aria-label={t("common.loading", "Ielādē...")}
+        >
+          <span className="size-3.5 animate-spin rounded-full border-2 border-[var(--line)] border-t-[var(--ink)]" />
+        </span>
+      ) : (
+        <button
+          type="button"
+          aria-label={t("actions.delete", "Dzēst")}
+          title={t("actions.delete", "Dzēst")}
+          disabled={toggling}
+          onClick={onDelete}
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-[var(--muted)] opacity-0 transition group-hover/item:opacity-100 hover:bg-[var(--paper)] hover:text-[var(--stamp)] focus-visible:opacity-100 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <CloseIcon />
+        </button>
+      )}
     </li>
   );
 }

@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { PublicPageI18nShell } from "@/app/components/public-page-i18n-shell";
 import { PageView } from "@/app/components/page-view";
+import { PageUmamiTracker } from "@/app/components/page-umami-tracker";
 import { MissingHandle } from "@/app/components/page-states";
 import { localizeDemoPage } from "@/app/lib/demos";
 import { getExample } from "@/app/lib/examples";
+import { isValidUmamiWebsiteId } from "@/app/lib/integrations/umami/sanitize";
+import { getUmamiPublicConfig } from "@/app/lib/integrations/umami/config";
 import { isHandleFormat, normalizeHandle } from "@/app/lib/handles";
 import { getServerTranslations } from "@/app/lib/i18n/server";
 import { publicShareImage, truncateMeta } from "@/app/lib/seo/json-ld";
@@ -97,5 +101,22 @@ export default async function HandlePage({ params }: HandlePageProps) {
     redirect("/");
   }
 
-  return <PageView page={page} mode="live" />;
+  const umamiSite = await getUmamiPublicConfig();
+  const pageUmami =
+    umamiSite && isValidUmamiWebsiteId(page.umamiWebsiteId ?? "")
+      ? {
+          websiteId: page.umamiWebsiteId!.trim(),
+          scriptSrc: umamiSite.scriptSrc,
+          integrity: umamiSite.integrity,
+        }
+      : null;
+
+  return (
+    <>
+      {pageUmami ? <PageUmamiTracker {...pageUmami} /> : null}
+      <PublicPageI18nShell page={page}>
+        <PageView page={page} mode="live" />
+      </PublicPageI18nShell>
+    </>
+  );
 }

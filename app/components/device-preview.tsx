@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
+import { PageLanguageScope } from "@/app/components/page-language-scope";
 import { PageView } from "@/app/components/page-view";
 import { PhoneFrame } from "@/app/components/phone-frame";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -130,7 +131,9 @@ function DesktopFrame({ page }: { page: PageContent }) {
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto bg-white" style={{ containerType: "size" }}>
-        <PageView page={page} mode="preview" framed />
+        <PageLanguageScope languageCode={page.publicLanguageCode}>
+          <PageView page={page} mode="preview" framed />
+        </PageLanguageScope>
       </div>
     </div>
   );

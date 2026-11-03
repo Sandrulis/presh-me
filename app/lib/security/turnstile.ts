@@ -67,18 +67,32 @@ export async function verifyTurnstileToken(token: string, remoteIp?: string): Pr
   }
 }
 
+export type TurnstileReject = {
+  ok: false;
+  message: string;
+  error: "auth.turnstile.required" | "auth.turnstile.failed";
+};
+
 export async function requireTurnstileToken(
   token: string | null | undefined,
   remoteIp?: string,
-): Promise<{ ok: true } | { ok: false; message: string }> {
+): Promise<{ ok: true } | TurnstileReject> {
   if (!(await isTurnstileEnabled())) return { ok: true };
   const trimmed = token?.trim();
   if (!trimmed) {
-    return { ok: false, message: "Apstiprini, ka neesi robots." };
+    return {
+      ok: false,
+      message: "Apstiprini, ka neesi robots.",
+      error: "auth.turnstile.required",
+    };
   }
   const valid = await verifyTurnstileToken(trimmed, remoteIp);
   if (!valid) {
-    return { ok: false, message: "Botu pārbaude neizdevās. Mēģini vēlreiz." };
+    return {
+      ok: false,
+      message: "Botu pārbaude neizdevās. Mēģini vēlreiz.",
+      error: "auth.turnstile.failed",
+    };
   }
   return { ok: true };
 }

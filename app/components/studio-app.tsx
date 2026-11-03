@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { Suspense, useEffect, useState, useSyncExternalStore } from "react";
 import { AppShell } from "@/app/components/app-shell";
 import { BlocksEditor } from "@/app/components/blocks-editor";
 import { FeedbackToasts, useNotices } from "@/app/components/feedback-toast";
@@ -11,17 +11,24 @@ import { FieldFrame } from "@/app/components/field-frame";
 import { LoadingScreen } from "@/app/components/loading-screen";
 import { LookColumn } from "@/app/components/studio-look";
 import { StudioGroup, StudioMenu, StudioScreen } from "@/app/components/studio-nav";
-import { StudioTrialMeter } from "@/app/components/studio-trial-meter";
+import { StudioBillingSidebar } from "@/app/components/studio-billing-sidebar";
+import { StudioAnalyticsEditor } from "@/app/components/studio-analytics-editor";
+import { StudioContactEditor } from "@/app/components/studio-contact-editor";
+import { StudioShareEditor } from "@/app/components/studio-share-editor";
+import { StudioPageLanguageDrawer } from "@/app/components/studio-page-language-drawer";
 import { SocialsEditor } from "@/app/components/socials-editor";
 import { useTranslations } from "@/app/components/translations-provider";
+import { pagePublicLanguageLabel } from "@/app/lib/i18n/resolve-page-public-language";
 import { LINK_UNAVAILABLE, linkFieldError, normalizeHandle } from "@/app/lib/handles";
-import { claimInstagramAvatar, getPageForAccount, getSessionId, isHandleTaken, isStoreReady, savePage, subscribeStore } from "@/app/lib/store";
+import { claimInstagramAvatar, getAccount, getPageForAccount, getSessionId, isHandleTaken, isStoreReady, savePage, subscribeStore } from "@/app/lib/store";
 import { resolveEntryPathForPortfolio } from "@/app/lib/onboarding/primary-page";
 import { isFrontendModuleEnabled } from "@/app/lib/site-admin/modules";
+import { useFrontendModuleAccess } from "@/app/lib/modules/use-frontend-module-access";
+import { parseUmamiShareUrl } from "@/app/lib/integrations/umami/share";
 import { resolveStackOrder, type PageBlock, type Portfolio, type StackSection } from "@/app/lib/types";
 
 type Panel = "info" | "preview" | "look";
-type InfoId = "link" | "profile" | "socials" | "blocks";
+type InfoId = "link" | "profile" | "share" | "contact" | "analytics" | "socials" | "blocks";
 
 function handleStatus(raw: string, pageId: string) {
   const invalid = linkFieldError(raw);
@@ -37,24 +44,38 @@ function readStudioPage() {
   return getPageForAccount(sessionId);
 }
 
+function readStudioAccount() {
+  const sessionId = getSessionId();
+  if (!sessionId) return null;
+  return getAccount(sessionId);
+}
+
 export function StudioApp() {
-  const { t } = useTranslations();
+  const { t, languages } = useTranslations();
   const router = useRouter();
   const ready = useSyncExternalStore(subscribeStore, isStoreReady, () => false);
   const sessionId = useSyncExternalStore(subscribeStore, getSessionId, () => null);
   const page = useSyncExternalStore(subscribeStore, readStudioPage, () => null);
+  const account = useSyncExternalStore(subscribeStore, readStudioAccount, () => null);
   const [panel, setPanel] = useState<Panel>("info");
   const [infoView, setInfoView] = useState<InfoId | null>(null);
   const [handleDraft, setHandleDraft] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [blockDraft, setBlockDraft] = useState<PageBlock | null>(null);
+  const [languageDrawerOpen, setLanguageDrawerOpen] = useState(false);
   const [trailModuleEnabled, setTrailModuleEnabled] = useState(false);
+  const [paidPlansModuleEnabled, setPaidPlansModuleEnabled] = useState(false);
   const { notices, notify, dismissNotice } = useNotices();
+  const { access: umamiAccess } = useFrontendModuleAccess("module_umami");
+  const showUmamiBasics = umamiAccess.moduleEnabled && umamiAccess.canUse;
 
   useEffect(() => {
     let cancelled = false;
     void isFrontendModuleEnabled("module_trail").then((enabled) => {
       if (!cancelled) setTrailModuleEnabled(enabled);
+    });
+    void isFrontendModuleEnabled("module_paid_plans").then((enabled) => {
+      if (!cancelled) setPaidPlansModuleEnabled(enabled);
     });
     return () => {
       cancelled = true;
@@ -122,6 +143,16 @@ export function StudioApp() {
     }
   }
 
+  function setContactEnabled(contactEnabled: boolean) {
+    if (!page) return;
+    const suggestedEmail = account?.email?.trim() ?? "";
+    if (contactEnabled && !page.contactEmail?.trim() && suggestedEmail) {
+      update({ contactEnabled, contactEmail: suggestedEmail });
+      return;
+    }
+    update({ contactEnabled });
+  }
+
   if (!ready || !sessionId || page === null) {
     return <LoadingScreen label="studio.loading" backdrop="app" />;
   }
@@ -132,10 +163,12 @@ export function StudioApp() {
 
   const publicPath = `/${page.handle}`;
   const linkStatus = handleStatus(handleDraft ?? page.handle, page.id);
+  const umamiShareReady = Boolean(parseUmamiShareUrl(page.umamiShareUrl ?? ""));
   const previewPage =
     blockDraft && !page.blocks.some((item) => item.id === blockDraft.id)
       ? { ...page, blocks: [...page.blocks, blockDraft] }
       : page;
+  const visitorLanguageLabel = t("studio.language.visitor_default", "Apmeklētāja valoda");
 
   return (
     <AppShell>
@@ -173,6 +206,12 @@ export function StudioApp() {
                   onCopy={() => void copyLink()}
                   update={update}
                   onBlockDraft={setBlockDraft}
+                  onError={(message) => notify(message, "error")}
+                  onAnalyticsSaved={() =>
+                    notify(t("studio.analytics.saved", "Analytics dati saglabāti."), "ok")
+                  }
+                  accountEmail={account?.email ?? null}
+                  umamiAccess={umamiAccess}
                 />
               ) : (
                 <StudioMenu
@@ -191,6 +230,50 @@ export function StudioApp() {
                       hint: t("studio.info.profile.hint", "Vārds, tagline un bio."),
                       icon: <IconUser />,
                     },
+                    {
+                      id: "language",
+                      title: t("studio.info.language", "Valoda"),
+                      hint: pagePublicLanguageLabel(
+                        page.publicLanguageCode,
+                        languages,
+                        visitorLanguageLabel,
+                      ),
+                      icon: <IconLanguage />,
+                    },
+                    {
+                      id: "contact",
+                      title: t("studio.info.contact", "Contact"),
+                      hint: t("studio.info.contact.hint", "Kontakta poga un VCF fails."),
+                      icon: <IconContact />,
+                      switch: {
+                        checked: page.contactEnabled === true,
+                        label: t("studio.contact.enabled", "Contact poga lapā"),
+                        onChange: setContactEnabled,
+                      },
+                    },
+                    {
+                      id: "share",
+                      title: t("studio.info.share", "Share"),
+                      hint: t("studio.info.share.hint", "Share poga, avatars, saite un QR."),
+                      icon: <IconShareOut />,
+                      switch: {
+                        checked: page.shareEnabled === true,
+                        label: t("studio.share.enabled", "Share poga lapā"),
+                        onChange: (shareEnabled) => update({ shareEnabled }),
+                      },
+                    },
+                    ...(showUmamiBasics
+                      ? [
+                          {
+                            id: "analytics" as const,
+                            title: t("studio.info.analytics", "Analytics"),
+                            hint: umamiShareReady
+                              ? t("studio.info.analytics.stats_hint", "Skatīt lapas Umami statistiku.")
+                              : t("studio.info.analytics.hint", "Umami Website ID un Share saite."),
+                            icon: <IconAnalytics />,
+                          },
+                        ]
+                      : []),
                     ...resolveStackOrder(page).map((id) =>
                       id === "socials"
                         ? {
@@ -209,15 +292,35 @@ export function StudioApp() {
                           },
                     ),
                   ]}
-                  onOpen={(id) => setInfoView(id as InfoId)}
+                  onOpen={(id) => {
+                    if (id === "language") {
+                      setLanguageDrawerOpen(true);
+                      return;
+                    }
+                    setInfoView(id as InfoId);
+                  }}
                   onReorder={(orderedIds) => {
                     const next = orderedIds.filter((id): id is StackSection => id === "socials" || id === "blocks");
                     if (next.length >= 2) update({ stackOrder: next });
                   }}
                 />
               )}
-              {trailModuleEnabled && page.trialStartedAt && !infoView ? (
-                <StudioTrialMeter trialStartedAt={page.trialStartedAt} />
+              {(trailModuleEnabled || paidPlansModuleEnabled) && page.trialStartedAt && !infoView ? (
+                <Suspense fallback={null}>
+                  <StudioBillingSidebar
+                    trialStartedAt={page.trialStartedAt}
+                    trailModuleEnabled={trailModuleEnabled}
+                    paidPlansModuleEnabled={paidPlansModuleEnabled}
+                  />
+                </Suspense>
+              ) : paidPlansModuleEnabled && !infoView ? (
+                <Suspense fallback={null}>
+                  <StudioBillingSidebar
+                    trialStartedAt={page.trialStartedAt ?? new Date(0).toISOString()}
+                    trailModuleEnabled={false}
+                    paidPlansModuleEnabled={paidPlansModuleEnabled}
+                  />
+                </Suspense>
               ) : null}
             </div>
           </section>
@@ -237,6 +340,12 @@ export function StudioApp() {
             </div>
           </section>
         </div>
+        <StudioPageLanguageDrawer
+          open={languageDrawerOpen}
+          page={page}
+          onClose={() => setLanguageDrawerOpen(false)}
+          update={update}
+        />
       </div>
     </AppShell>
   );
@@ -255,10 +364,14 @@ function InfoScreen({
   onCopy,
   update,
   onBlockDraft,
+  onError,
+  onAnalyticsSaved,
+  accountEmail,
+  umamiAccess,
 }: {
   view: InfoId;
   page: Portfolio;
-  linkStatus: { free: boolean; message: string | null };
+  linkStatus: { free: boolean; message: null | string };
   handleDraft: string | null;
   copied: boolean;
   publicPath: string;
@@ -268,14 +381,23 @@ function InfoScreen({
   onCopy: () => void;
   update: (patch: Partial<Portfolio>) => void;
   onBlockDraft: (draft: PageBlock | null) => void;
+  onError: (message: string) => void;
+  onAnalyticsSaved: () => void;
+  accountEmail: string | null;
+  umamiAccess: { moduleEnabled: boolean; canUse: boolean; isPaid: boolean; paidPlansEnabled: boolean };
 }) {
   const { t } = useTranslations();
   const title = {
     link: t("studio.info.link", "Tavs links"),
     profile: t("studio.info.profile", "Profils"),
+    share: t("studio.info.share", "Share"),
+    contact: t("studio.info.contact", "Contact"),
+    analytics: t("studio.info.analytics", "Analytics"),
     socials: t("studio.info.socials", "Sociālie"),
     blocks: t("studio.info.blocks", "Bloki"),
   }[view];
+  const paidLocked =
+    umamiAccess.moduleEnabled && umamiAccess.isPaid && umamiAccess.paidPlansEnabled && !umamiAccess.canUse;
   return (
     <StudioScreen title={title} onBack={onBack}>
       {view === "link" ? (
@@ -345,6 +467,22 @@ function InfoScreen({
         </StudioGroup>
       ) : null}
 
+      {view === "share" ? <StudioShareEditor page={page} update={update} onError={onError} /> : null}
+
+      {view === "contact" ? (
+        <StudioContactEditor page={page} update={update} onError={onError} accountEmail={accountEmail} />
+      ) : null}
+
+      {view === "analytics" ? (
+        <StudioAnalyticsEditor
+          page={page}
+          update={update}
+          onError={onError}
+          onSaved={onAnalyticsSaved}
+          paidLocked={paidLocked}
+        />
+      ) : null}
+
       {view === "socials" ? <SocialsEditor page={page} update={update} /> : null}
 
       {view === "blocks" ? <BlocksEditor page={page} update={update} onPreviewDraft={onBlockDraft} /> : null}
@@ -366,6 +504,45 @@ function IconUser() {
     <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
       <circle cx="12" cy="8" r="3.25" />
       <path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" />
+    </svg>
+  );
+}
+
+function IconLanguage() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c2.5 2.8 4 6 4 9s-1.5 6.2-4 9M12 3c-2.5 2.8-4 6-4 9s1.5 6.2 4 9" />
+    </svg>
+  );
+}
+
+function IconContact() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="3.2" />
+      <path d="M19 8v6M22 11h-6" />
+    </svg>
+  );
+}
+
+function IconShareOut() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="7" cy="12" r="2.2" />
+      <circle cx="17" cy="7" r="2.2" />
+      <circle cx="17" cy="17" r="2.2" />
+      <path d="m9 11 6-3M9 13l6 3" />
+    </svg>
+  );
+}
+
+function IconAnalytics() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
+      <path d="M4 19V5M4 19h16" />
+      <path d="M8 17V11M12 17V7M16 17v-4" />
     </svg>
   );
 }

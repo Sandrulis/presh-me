@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AuthShell } from "@/app/components/auth-shell";
+import { EmailSentModal } from "@/app/components/email-sent-modal";
 import { FeedbackToasts, useNotices } from "@/app/components/feedback-toast";
 import { GoogleSignInButton } from "@/app/components/google-sign-in-button";
 import { PasswordInput } from "@/app/components/password-input";
@@ -26,6 +27,8 @@ export function RegisterForm() {
   const [password, setPassword] = useState("");
   const { notices, notify, dismissNotice } = useNotices();
   const [pending, setPending] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmEmail, setConfirmEmail] = useState("");
   const turnstile = useAuthTurnstile();
 
   const authError = params.get("error");
@@ -62,14 +65,8 @@ export function RegisterForm() {
     });
     if (viaResend.ok && viaResend.mode === "confirm") {
       setPending(false);
-      notify(
-        t(
-          "auth.register.confirm_sent",
-          "Konts izveidots. Apstiprini e-pastu — saite ir nosūtīta.",
-        ),
-        "ok",
-      );
-      router.push("/login");
+      setConfirmEmail(email.trim());
+      setConfirmOpen(true);
       return;
     }
     if (viaResend.ok === false && viaResend.message !== "__use_client_signup__") {
@@ -163,6 +160,21 @@ export function RegisterForm() {
         </p>
       </form>
       <FeedbackToasts notices={notices} onDismiss={dismissNotice} />
+      <EmailSentModal
+        open={confirmOpen}
+        title={t("auth.register.confirm_modal.title", "Reģistrācija izdevās")}
+        description={t(
+          "auth.register.confirm_modal.description",
+          "Konts ir izveidots. Atlicis apstiprināt e-pastu.",
+        )}
+        body={t(
+          "auth.register.confirm_modal.body",
+          "Uz {email} nosūtīts apstiprinājuma e-pasts. Atver to un apstiprini adresi, lai varētu pieslēgties.",
+        )}
+        email={confirmEmail}
+        actionLabel={t("nav.login", "Pieslēgties")}
+        onLeave={() => router.push("/login")}
+      />
     </AuthShell>
   );
 }

@@ -556,7 +556,19 @@ export async function createPageForAccount(accountId: string): Promise<Portfolio
   return page;
 }
 
-export async function savePage(page: Portfolio) {
+function applyPortfolioToState(page: Portfolio) {
+  const pages = state.pages.map((item) => (item.id === page.id ? page : item));
+  const allPages = state.allPages.map((item) => (item.id === page.id ? page : item));
+  setState({
+    pages: state.sessionId === page.accountId ? pages : state.pages,
+    allPages: state.account?.isAdmin ? allPages : pages,
+  });
+}
+
+let queuedSavePage: Portfolio | null = null;
+let savePageTail: Promise<void> = Promise.resolve();
+
+async function persistPageToServer(page: Portfolio) {
   const supabase = createClient();
   const patch = portfolioToRowPatch({ ...page, updatedAt: new Date().toISOString() });
   const { data, error } = await supabase
@@ -566,13 +578,30 @@ export async function savePage(page: Portfolio) {
     .select(PAGE_SELECT)
     .single();
   if (error) throw error;
-  const saved = rowToPortfolio(data as PageRow);
-  const pages = state.pages.map((item) => (item.id === saved.id ? saved : item));
-  const allPages = state.allPages.map((item) => (item.id === saved.id ? saved : item));
-  setState({
-    pages: state.sessionId === saved.accountId ? pages : state.pages,
-    allPages: state.account?.isAdmin ? allPages : pages,
-  });
+  return rowToPortfolio(data as PageRow);
+}
+
+async function flushSavePageQueue() {
+  while (queuedSavePage) {
+    const snapshot = queuedSavePage;
+    queuedSavePage = null;
+    const saved = await persistPageToServer(snapshot);
+    if (!queuedSavePage) {
+      applyPortfolioToState(saved);
+    }
+  }
+}
+
+export function savePage(page: Portfolio) {
+  applyPortfolioToState(page);
+  queuedSavePage = page;
+  savePageTail = savePageTail
+    .then(() => flushSavePageQueue())
+    .catch((error) => {
+      console.error("savePage failed", error);
+      throw error;
+    });
+  return savePageTail;
 }
 
 export async function deletePageById(pageId: string) {

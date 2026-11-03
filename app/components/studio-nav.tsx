@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
+import { ToggleSwitch } from "@/app/components/admin-ui";
 import { DropLine } from "@/app/components/drop-line";
 import { useTranslations } from "@/app/components/translations-provider";
 import { commitDropReorder, dropWouldMove, edgeFromPointer, type DropTarget } from "@/app/lib/dnd-reorder";
@@ -12,6 +13,12 @@ export type StudioMenuItem = {
   icon: ReactNode;
   /** Var vilkt, lai mainītu prioritāti starp citām sortable kartītēm. */
   sortable?: boolean;
+  /** Slēdzis Pamatu sarakstā (neatver detaļu skatu). */
+  switch?: {
+    checked: boolean;
+    label: string;
+    onChange: (checked: boolean) => void;
+  };
 };
 
 export function StudioMenu({
@@ -127,20 +134,31 @@ export function StudioMenu({
                   <DragHandle />
                 </button>
               ) : null}
-              <button
-                type="button"
-                onClick={() => onOpen(item.id)}
-                className={`choice flex min-w-0 flex-1 items-center gap-2.5 !px-[0.6rem] !py-[0.54rem] ${sortable ? "!pl-1" : ""}`}
-              >
-                <span className="grid size-5 shrink-0 place-items-center text-[var(--ink)]" aria-hidden="true">
-                  {item.icon}
-                </span>
-                <span className="min-w-0 flex-1 text-left">
-                  <span className="block text-sm font-semibold leading-snug">{item.title}</span>
-                  {item.hint ? <span className="mt-0.5 block text-xs leading-snug text-[var(--muted)]">{item.hint}</span> : null}
-                </span>
-                <Chevron />
-              </button>
+              <div className="choice flex min-w-0 flex-1 items-center gap-2.5 !px-[0.6rem] !py-[0.54rem] !shadow-none">
+                <button
+                  type="button"
+                  onClick={() => onOpen(item.id)}
+                  className={`flex min-w-0 flex-1 items-center gap-2.5 text-left ${sortable ? "-ml-1" : ""}`}
+                >
+                  <span className="grid size-5 shrink-0 place-items-center text-[var(--ink)]" aria-hidden="true">
+                    {item.icon}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold leading-snug">{item.title}</span>
+                    {item.hint ? <span className="mt-0.5 block text-xs leading-snug text-[var(--muted)]">{item.hint}</span> : null}
+                  </span>
+                  {!item.switch ? <Chevron /> : null}
+                </button>
+                {item.switch ? (
+                  <ToggleSwitch
+                    checked={item.switch.checked}
+                    label={item.switch.label}
+                    tone="green"
+                    onChange={item.switch.onChange}
+                  />
+                ) : null}
+                {item.switch ? <Chevron /> : null}
+              </div>
             </div>
           );
         })}

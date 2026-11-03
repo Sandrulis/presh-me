@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { FeedbackToasts, useNotices } from "@/app/components/feedback-toast";
 import { useTranslations } from "@/app/components/translations-provider";
-import { buildEmailHtml } from "@/app/lib/email/build-email-html";
+import { buildEmailHtml, buildNotificationEmailHtml } from "@/app/lib/email/build-email-html";
 import { saveEmailTemplateDrafts } from "@/app/lib/email/templates-server";
 import {
   fallbackFooter,
+  isSimpleEmailKind,
   type EmailTemplateDraft,
   type EmailTemplateKind,
 } from "@/app/lib/email/templates";
@@ -23,12 +24,26 @@ const TEMPLATE_LABELS: Record<EmailTemplateKind, { key: string; fallback: string
     key: "admin.email_templates.kind.email_change",
     fallback: "E-pasta maiņa",
   },
+  booking_owner: {
+    key: "admin.email_templates.kind.booking_owner",
+    fallback: "Booking — īpašniekam",
+  },
+  booking_guest: {
+    key: "admin.email_templates.kind.booking_guest",
+    fallback: "Booking — pieteicējam",
+  },
 };
 
 const PREVIEW_PARAMS = {
   name: "Lietotājs",
   system: "Presh",
-  link: "https://example.com/auth/confirm?token_hash=…&type=signup",
+  link: "https://example.com/vards",
+  page: "Mans profils",
+  date: "2026. gada 15. marts",
+  time: "10:00",
+  email: "klients@example.com",
+  comment: "Vēlos īsu konsultāciju.",
+  comment_line: "Tavs komentārs: Vēlos īsu konsultāciju.",
 };
 
 function cloneTemplates(templates: EmailTemplateDraft[]) {
@@ -66,10 +81,27 @@ export function AdminEmailTemplatesForm({
     if (!current) return "";
     const subject = interpolate(current.subjects[lang] || "", PREVIEW_PARAMS);
     const body = interpolate(current.bodies[lang] || "", PREVIEW_PARAMS);
+    const heading = subject.replace(/\s*[—–-]\s*.*$/, "").trim() || subject;
+    if (isSimpleEmailKind(current.kind)) {
+      return buildNotificationEmailHtml({
+        systemName: PREVIEW_PARAMS.system,
+        heading,
+        bodyText: body,
+        accentColor: "#2f9e57",
+        details: [
+          { label: lang === "lv" ? "Datums" : "Date", value: PREVIEW_PARAMS.date },
+          { label: lang === "lv" ? "Laiks" : "Time", value: PREVIEW_PARAMS.time },
+          ...(current.kind === "booking_owner"
+            ? [{ label: lang === "lv" ? "E-pasts" : "Email", value: PREVIEW_PARAMS.email }]
+            : []),
+          { label: lang === "lv" ? "Komentārs" : "Comment", value: PREVIEW_PARAMS.comment },
+        ],
+      });
+    }
     const button = interpolate(current.buttons[lang] || "", PREVIEW_PARAMS);
     return buildEmailHtml({
       systemName: PREVIEW_PARAMS.system,
-      heading: subject.replace(/\s*[—–-]\s*.*$/, "").trim() || subject,
+      heading,
       bodyText: body,
       buttonLabel: button,
       actionLink: PREVIEW_PARAMS.link,
@@ -162,15 +194,29 @@ export function AdminEmailTemplatesForm({
               value={current?.bodies[lang] ?? ""}
               onChange={(event) => patch("bodies", event.target.value)}
             />
+            {current && isSimpleEmailKind(current.kind) ? (
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                {t(
+                  "admin.email_templates.placeholders_booking",
+                  "Placeholders: {page}, {date}, {time}, {email}, {comment}, {comment_line}, {system}",
+                )}
+              </p>
+            ) : null}
           </label>
-          <label className="block">
-            <span className="auth-label">{t("admin.email_templates.button", "Pogas teksts")}</span>
-            <input
-              className="auth-field"
-              value={current?.buttons[lang] ?? ""}
-              onChange={(event) => patch("buttons", event.target.value)}
-            />
-          </label>
+          {current && !isSimpleEmailKind(current.kind) ? (
+            <label className="block">
+              <span className="auth-label">{t("admin.email_templates.button", "Pogas teksts")}</span>
+              <input
+                className="auth-field"
+                value={current?.buttons[lang] ?? ""}
+                onChange={(event) => patch("buttons", event.target.value)}
+              />
+            </label>
+          ) : (
+            <p className="text-sm text-[var(--muted)]">
+              {t("admin.email_templates.no_button", "Šim dizainam nav CTA pogas — tikai teksts un detaļu bloks.")}
+            </p>
+          )}
           <div className="flex justify-end pt-2">
             <button
               type="button"

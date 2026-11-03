@@ -9,11 +9,13 @@ export function ToggleSwitch({
   disabled,
   label,
   onChange,
+  tone = "ink",
 }: {
   checked: boolean;
   disabled?: boolean;
   label: string;
   onChange: (checked: boolean) => void;
+  tone?: "ink" | "green";
 }) {
   return (
     <button
@@ -24,7 +26,7 @@ export function ToggleSwitch({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-6 w-11 shrink-0 rounded-full p-0.5 transition disabled:cursor-not-allowed disabled:opacity-60 ${
-        checked ? "bg-[var(--ink)]" : "bg-[#d8dee8]"
+        checked ? (tone === "green" ? "bg-emerald-500" : "bg-[var(--ink)]") : "bg-[#d8dee8]"
       }`}
     >
       <span
@@ -46,7 +48,7 @@ export function IconActionButton({
   label: string;
   onClick: () => void;
   disabled?: boolean;
-  variant?: "default" | "danger";
+  variant?: "default" | "danger" | "active";
   children: ReactNode;
 }) {
   return (
@@ -59,7 +61,9 @@ export function IconActionButton({
       className={`grid size-9 place-items-center rounded-lg transition disabled:cursor-not-allowed disabled:opacity-40 ${
         variant === "danger"
           ? "text-[var(--stamp)] hover:bg-red-50"
-          : "text-[var(--muted)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"
+          : variant === "active"
+            ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+            : "text-[var(--muted)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"
       }`}
     >
       {children}
@@ -247,6 +251,15 @@ export function IconCalendar() {
     <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
       <rect x="4" y="5" width="16" height="15" rx="2" />
       <path d="M8 3v4M16 3v4M4 10h16" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconCoin() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 7.5v9M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" strokeLinecap="round" />
     </svg>
   );
 }

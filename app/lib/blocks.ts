@@ -1,16 +1,19 @@
 import type {
   BlockType,
+  BookingBlock,
   FaqBlockItem,
   PageBlock,
+  PageContent,
   ResumeItem,
 } from "@/app/lib/types";
+import { isValidLinkUrl } from "@/app/lib/urls";
 
 export const BLOCK_TYPE_OPTIONS: {
   id: BlockType;
   label: string;
   hint: string;
 }[] = [
-  { id: "link", label: "Saite", hint: "Poga ar nosaukumu un URL" },
+  { id: "link", label: "Linki", hint: "Poga ar nosaukumu un URL" },
   { id: "text", label: "Teksts", hint: "Brīvs teksts ar stilu" },
   { id: "youtube", label: "YouTube", hint: "Video no YouTube saites" },
   { id: "image", label: "Attēls", hint: "Viens attēls lapā" },
@@ -19,6 +22,7 @@ export const BLOCK_TYPE_OPTIONS: {
   { id: "instagram", label: "Instagram", hint: "Bildžu režģis no ierakstu saitēm" },
   { id: "quote", label: "Citāts", hint: "Izcelts citāts" },
   { id: "faq", label: "FAQ", hint: "Jautājumi un atbildes" },
+  { id: "booking", label: "Booking", hint: "Darba laiki un rezervācijas poga" },
 ];
 
 export function emptyBlock(type: BlockType): PageBlock {
@@ -61,6 +65,19 @@ export function emptyBlock(type: BlockType): PageBlock {
         questionFontSize: 15,
         answerFontSize: 14,
       };
+    case "booking":
+      return {
+        id,
+        type: "booking",
+        buttonText: "",
+        buttonColor: "#111111",
+        buttonBorderRadius: 8,
+        workDays: [1, 2, 3, 4, 5],
+        dayStart: "09:00",
+        dayEnd: "17:00",
+        sessionMinutes: 60,
+        horizonDays: 42,
+      };
   }
 }
 
@@ -79,7 +96,7 @@ export function blockTypeLabel(type: BlockType) {
 export function blockIsComplete(block: PageBlock): boolean {
   switch (block.type) {
     case "link":
-      return Boolean(block.title.trim() && block.url.trim());
+      return Boolean(block.title.trim() && isValidLinkUrl(block.url));
     case "text":
       return Boolean(block.body.trim());
     case "youtube":
@@ -96,6 +113,8 @@ export function blockIsComplete(block: PageBlock): boolean {
       return Boolean(block.text.trim());
     case "faq":
       return block.items.some((item) => item.question.trim());
+    case "booking":
+      return true;
   }
 }
 
@@ -125,12 +144,15 @@ export function blockDisplayTitle(block: PageBlock) {
     }
     case "faq":
       return `FAQ (${block.items.length})`;
+    case "booking":
+      return block.buttonText?.trim() || "Booking";
   }
 }
 
 export function blockDisplayHint(block: PageBlock) {
   switch (block.type) {
     case "link":
+      if (block.url.trim() && !isValidLinkUrl(block.url)) return "Nederīga saite";
       return block.url.trim() || block.note.trim() || "Saite";
     case "text":
       return "Teksta bloks";
@@ -148,6 +170,8 @@ export function blockDisplayHint(block: PageBlock) {
       return block.author?.trim() || "Citāts";
     case "faq":
       return "Jautājumi un atbildes";
+    case "booking":
+      return "Darba laiki un rezervācijas poga";
   }
 }
 
@@ -267,4 +291,52 @@ export async function readImageFile(
     return;
   }
   onUrl(result.url);
+}
+
+const PAGE_BLOCK_TYPES = new Set<BlockType>([
+  "link",
+  "text",
+  "youtube",
+  "image",
+  "audio",
+  "resume",
+  "instagram",
+  "quote",
+  "faq",
+  "booking",
+]);
+
+function isPageBlockRecord(value: unknown): value is PageBlock {
+  if (!value || typeof value !== "object") return false;
+  const record = value as { id?: unknown; type?: unknown };
+  if (typeof record.id !== "string" || !record.id.trim()) return false;
+  return typeof record.type === "string" && PAGE_BLOCK_TYPES.has(record.type as BlockType);
+}
+
+export function legacyContentToBookingBlock(content: Partial<PageContent>): BookingBlock {
+  return {
+    id: crypto.randomUUID(),
+    type: "booking",
+    buttonText: content.bookingButtonText,
+    buttonColor: content.bookingButtonColor,
+    buttonBorderRadius: content.bookingButtonBorderRadius,
+    workDays: content.bookingWorkDays,
+    dayStart: content.bookingDayStart,
+    dayEnd: content.bookingDayEnd,
+    sessionMinutes: content.bookingSessionMinutes,
+    horizonDays: content.bookingHorizonDays,
+  };
+}
+
+/** Validē blokus; veco bookingEnabled migrē uz booking bloku. */
+export function normalizePageBlocks(content: Partial<PageContent>): PageBlock[] {
+  const raw = Array.isArray(content.blocks) ? content.blocks : [];
+  const blocks: PageBlock[] = [];
+  for (const item of raw) {
+    if (isPageBlockRecord(item)) blocks.push(item);
+  }
+  if (!blocks.some((block) => block.type === "booking") && content.bookingEnabled === true) {
+    blocks.push(legacyContentToBookingBlock(content));
+  }
+  return blocks;
 }

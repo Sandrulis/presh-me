@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { BlockFace } from "@/app/components/block-faces";
+import { PageContactUi } from "@/app/components/page-contact-ui";
+import { PageShareUi } from "@/app/components/page-share-ui";
 import { PageMedia } from "@/app/components/page-media";
 import { SocialIcon } from "@/app/components/social-icon";
 import { textLookStyle } from "@/app/lib/text-look";
@@ -80,6 +82,8 @@ export function PageView({
           />
         </div>
       ) : null}
+      <PageContactUi page={page} framed={framed} />
+      <PageShareUi page={page} framed={framed} />
       {banner ? (
         <div className="relative z-10 -mx-5 overflow-hidden" style={{ height: bandHeight }}>
           <CoverFill page={page} cover={cover} fade={fade} pageColor={pageColor} />
@@ -152,20 +156,16 @@ export function PageView({
             ) : null,
             blocks: (
               <div key="blocks" className="mt-6 flex w-full flex-col gap-3">
-                {page.blocks
-                  .filter((block) => {
-                    if (block.type === "link") return !page.sections || show("links");
-                    return true;
-                  })
-                  .map((block) => (
-                    <BlockFace
-                      key={block.id}
-                      block={block}
-                      mode={mode}
-                      theme={theme}
-                      pageFontFamily={fontFamily}
-                    />
-                  ))}
+                {page.blocks.map((block) => (
+                  <BlockFace
+                    key={block.id}
+                    block={block}
+                    mode={mode}
+                    theme={theme}
+                    pageFontFamily={fontFamily}
+                    pageHandle={page.handle}
+                  />
+                ))}
               </div>
             ),
           };

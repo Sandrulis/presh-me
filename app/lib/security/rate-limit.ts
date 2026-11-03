@@ -26,13 +26,18 @@ export function rateLimit(key: string, limit: number, windowMs: number): RateLim
   return { ok: true };
 }
 
-export function clientKeyFromRequest(request: Request, prefix: string): string {
+export function requestRemoteIp(request: Request): string | undefined {
   const headers = request.headers;
-  const ip =
-    headers.get("cf-connecting-ip") ||
-    headers.get("x-real-ip") ||
+  return (
+    headers.get("cf-connecting-ip")?.trim() ||
+    headers.get("x-real-ip")?.trim() ||
     headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    "unknown";
+    undefined
+  );
+}
+
+export function clientKeyFromRequest(request: Request, prefix: string): string {
+  const ip = requestRemoteIp(request) || "unknown";
   return `${prefix}:${ip}`;
 }
 

@@ -166,6 +166,20 @@ export type FaqBlock = {
   answerFontSize?: number;
 };
 
+export type BookingBlock = {
+  id: string;
+  type: "booking";
+  buttonText?: string;
+  buttonColor?: string;
+  buttonBorderRadius?: number;
+  /** ISO weekday 1=Mon … 7=Sun */
+  workDays?: number[];
+  dayStart?: string;
+  dayEnd?: string;
+  sessionMinutes?: number;
+  horizonDays?: number;
+};
+
 export type PageBlock =
   | LinkBlock
   | TextBlock
@@ -175,7 +189,8 @@ export type PageBlock =
   | ResumeBlock
   | InstagramBlock
   | QuoteBlock
-  | FaqBlock;
+  | FaqBlock
+  | BookingBlock;
 
 export type BlockType = PageBlock["type"];
 
@@ -307,6 +322,45 @@ export type PageContent = {
   onboarding?: Onboarding;
   /** ISO laiks, kad sākās publiskās saites izmēģinājuma periods (module_trail). */
   trialStartedAt?: string | null;
+  /** Share poga lapā (labais augšējais stūris) un share modālis. */
+  shareEnabled?: boolean;
+  /** Share modāļa avatars: profila attēls vai atsevišķs. */
+  shareAvatarSource?: "profile" | "custom";
+  shareAvatarUrl?: string | null;
+  shareAvatarRadius?: number;
+  shareAvatarBorder?: number;
+  shareAvatarBorderColor?: string;
+  shareAvatarX?: number;
+  shareAvatarY?: number;
+  shareAvatarZoom?: number;
+  /** Contact poga lapā (kreisais augšējais stūris) un VCF eksports. */
+  contactEnabled?: boolean;
+  contactAvatarSource?: "profile" | "custom";
+  contactAvatarUrl?: string | null;
+  contactAvatarX?: number;
+  contactAvatarY?: number;
+  contactAvatarZoom?: number;
+  contactPhone?: string;
+  contactEmail?: string;
+  contactCompany?: string;
+  /** Umami website ID for this public page (module_umami). */
+  umamiWebsiteId?: string;
+  /** Umami share URL for in-app analytics dashboard. */
+  umamiShareUrl?: string;
+  /** Fixed UI language on the public page (booking, contact, …). Empty = visitor default. */
+  publicLanguageCode?: string;
+  /** Booking poga un kalendāra modālis. */
+  bookingEnabled?: boolean;
+  /** ISO weekday 1=Mon … 7=Sun */
+  bookingWorkDays?: number[];
+  bookingDayStart?: string;
+  bookingDayEnd?: string;
+  bookingSessionMinutes?: number;
+  bookingHorizonDays?: number;
+  bookingButtonText?: string;
+  bookingButtonColor?: string;
+  bookingButtonTextColor?: string;
+  bookingButtonBorderRadius?: number;
 };
 
 export type Portfolio = PageContent & {

@@ -237,7 +237,7 @@ export function BlockStyleFields({
   }
 }
 
-function RangeRow({
+export function RangeRow({
   label,
   min,
   max,

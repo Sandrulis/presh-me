@@ -1,4 +1,5 @@
 import type { Account, PageContent, Portfolio } from "@/app/lib/types";
+import { normalizePageBlocks } from "@/app/lib/blocks";
 
 export type PageRow = {
   id: string;
@@ -82,6 +83,37 @@ const CONTENT_KEYS = [
   "carousel",
   "onboarding",
   "trialStartedAt",
+  "shareEnabled",
+  "shareAvatarSource",
+  "shareAvatarUrl",
+  "shareAvatarRadius",
+  "shareAvatarBorder",
+  "shareAvatarBorderColor",
+  "shareAvatarX",
+  "shareAvatarY",
+  "shareAvatarZoom",
+  "contactEnabled",
+  "contactAvatarSource",
+  "contactAvatarUrl",
+  "contactAvatarX",
+  "contactAvatarY",
+  "contactAvatarZoom",
+  "contactPhone",
+  "contactEmail",
+  "contactCompany",
+  "umamiWebsiteId",
+  "umamiShareUrl",
+  "publicLanguageCode",
+  "bookingEnabled",
+  "bookingWorkDays",
+  "bookingDayStart",
+  "bookingDayEnd",
+  "bookingSessionMinutes",
+  "bookingHorizonDays",
+  "bookingButtonText",
+  "bookingButtonColor",
+  "bookingButtonTextColor",
+  "bookingButtonBorderRadius",
 ] as const;
 
 export function rowToAccount(row: UserRow): Account {
@@ -114,7 +146,7 @@ export function rowToPortfolio(row: PageRow): Portfolio {
     avatarUrl: content.avatarUrl ?? null,
     themeId: content.themeId ?? "stamp",
     socials: Array.isArray(content.socials) ? content.socials : [],
-    blocks: Array.isArray(content.blocks) ? content.blocks : [],
+    blocks: normalizePageBlocks(content),
     published: row.published,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

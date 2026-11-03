@@ -1,4 +1,13 @@
-export type EmailTemplateKind = "signup" | "password_reset" | "email_change";
+export type EmailTemplateKind =
+  | "signup"
+  | "password_reset"
+  | "email_change"
+  | "booking_owner"
+  | "booking_guest";
+
+export function isSimpleEmailKind(kind: EmailTemplateKind): boolean {
+  return kind === "booking_owner" || kind === "booking_guest";
+}
 
 export type EmailTemplateDraft = {
   kind: EmailTemplateKind;
@@ -14,6 +23,8 @@ export const EMAIL_TEMPLATE_KINDS: EmailTemplateKind[] = [
   "signup",
   "password_reset",
   "email_change",
+  "booking_owner",
+  "booking_guest",
 ];
 
 export const TEMPLATE_KEYS: Record<
@@ -34,6 +45,16 @@ export const TEMPLATE_KEYS: Record<
     subjectKey: "email.email_change.subject",
     bodyKey: "email.email_change.body",
     buttonKey: "email.email_change.button",
+  },
+  booking_owner: {
+    subjectKey: "email.booking_owner.subject",
+    bodyKey: "email.booking_owner.body",
+    buttonKey: "email.booking_owner.button",
+  },
+  booking_guest: {
+    subjectKey: "email.booking_guest.subject",
+    bodyKey: "email.booking_guest.body",
+    buttonKey: "email.booking_guest.button",
   },
 };
 
@@ -73,6 +94,40 @@ export const BUTTON_FALLBACK: Record<EmailTemplateKind, LangPack> = {
     et: "Lähtesta parool",
     it: "Reimposta password",
     sv: "Återställ lösenord",
+  },
+  booking_owner: {
+    lv: "",
+    en: "",
+    ru: "",
+    de: "",
+    fr: "",
+    es: "",
+    nl: "",
+    da: "",
+    no: "",
+    fi: "",
+    pl: "",
+    lt: "",
+    et: "",
+    it: "",
+    sv: "",
+  },
+  booking_guest: {
+    lv: "",
+    en: "",
+    ru: "",
+    de: "",
+    fr: "",
+    es: "",
+    nl: "",
+    da: "",
+    no: "",
+    fi: "",
+    pl: "",
+    lt: "",
+    et: "",
+    it: "",
+    sv: "",
   },
   email_change: {
     lv: "Apstiprināt jauno e-pastu",
@@ -221,6 +276,78 @@ export const FALLBACK_TEMPLATES: Record<
       et: "Tere, {name}!\n\nSa taotlesid e-posti muutmist süsteemis {system}.\n\nVajuta allolevale nupule, et kinnitada uus aadress. Kui sa seda ei taotlenud, võid kirja eirata.",
       it: "Ciao, {name}!\n\nHai richiesto di cambiare l'e-mail di {system}.\n\nPremi il pulsante qui sotto per confermare il nuovo indirizzo. Se non l'hai richiesto tu, ignora questa e-mail.",
       sv: "Hej {name}!\n\nDu begärde att byta e-post för {system}.\n\nTryck på knappen nedan för att bekräfta den nya adressen. Om du inte begärde detta kan du ignorera mejlet.",
+    },
+  },
+  booking_owner: {
+    subject: {
+      lv: "Jauns pieteikums — {page}",
+      en: "New booking request — {page}",
+      ru: "Новая заявка — {page}",
+      de: "Neue Buchungsanfrage — {page}",
+      fr: "Nouvelle demande — {page}",
+      es: "Nueva solicitud — {page}",
+      nl: "Nieuwe aanvraag — {page}",
+      da: "Ny bookingforespørgsel — {page}",
+      no: "Ny bookingforespørsel — {page}",
+      fi: "Uusi varauspyyntö — {page}",
+      pl: "Nowe zgłoszenie — {page}",
+      lt: "Nauja užklausa — {page}",
+      et: "Uus broneeringutaotlus — {page}",
+      it: "Nuova richiesta — {page}",
+      sv: "Ny bokningsförfrågan — {page}",
+    },
+    body: {
+      lv: "Sveiki!\n\nKāds iesniedza pieteikumu tavā lapā {page}.\n\nPārskatī detaļas zemāk un sazinies ar pieteicēju, ja vajag.",
+      en: "Hello!\n\nSomeone submitted a booking request on your page {page}.\n\nReview the details below and reach out to the guest if needed.",
+      ru: "Здравствуйте!\n\nКто-то оставил заявку на вашей странице {page}.\n\nДетали ниже — свяжитесь с заявителем при необходимости.",
+      de: "Hallo!\n\nJemand hat eine Buchungsanfrage auf deiner Seite {page} gesendet.\n\nDetails siehe unten — melde dich bei Bedarf beim Gast.",
+      fr: "Bonjour !\n\nQuelqu'un a envoyé une demande sur ta page {page}.\n\nDétails ci-dessous — contacte la personne si besoin.",
+      es: "Hola!\n\nAlguien envió una solicitud en tu página {page}.\n\nRevisa los detalles abajo y contacta si hace falta.",
+      nl: "Hallo!\n\nIemand diende een aanvraag in op je pagina {page}.\n\nBekijk de details hieronder en neem contact op indien nodig.",
+      da: "Hej!\n\nNogen har sendt en bookingforespørgsel på din side {page}.\n\nSe detaljerne nedenfor og kontakt gæsten om nødvendigt.",
+      no: "Hei!\n\nNoen sendte en bookingforespørsel på siden din {page}.\n\nSe detaljene nedenfor og ta kontakt ved behov.",
+      fi: "Hei!\n\nJoku lähetti varauspyynnön sivullasi {page}.\n\nTarkista tiedot alta ja ota tarvittaessa yhteyttä.",
+      pl: "Cześć!\n\nKtoś wysłał zgłoszenie na Twojej stronie {page}.\n\nSzczegóły poniżej — skontaktuj się w razie potrzeby.",
+      lt: "Sveiki!\n\nKažkas pateikė užklausą tavo puslapyje {page}.\n\nDetalės žemiau — prireikus susisiek su klientu.",
+      et: "Tere!\n\nKeegi esitas broneeringutaotluse sinu lehel {page}.\n\nVaata üksikasju allpool ja võta vajadusel ühendust.",
+      it: "Ciao!\n\nQualcuno ha inviato una richiesta sulla tua pagina {page}.\n\nDettagli sotto — contatta l'ospite se serve.",
+      sv: "Hej!\n\nNågon skickade en bokningsförfrågan på din sida {page}.\n\nSe detaljerna nedan och hör av dig vid behov.",
+    },
+  },
+  booking_guest: {
+    subject: {
+      lv: "Pieteikums saņemts — {page}",
+      en: "Request received — {page}",
+      ru: "Заявка получена — {page}",
+      de: "Anfrage erhalten — {page}",
+      fr: "Demande reçue — {page}",
+      es: "Solicitud recibida — {page}",
+      nl: "Aanvraag ontvangen — {page}",
+      da: "Forespørgsel modtaget — {page}",
+      no: "Forespørsel mottatt — {page}",
+      fi: "Pyyntö vastaanotettu — {page}",
+      pl: "Zgłoszenie otrzymane — {page}",
+      lt: "Užklausa gauta — {page}",
+      et: "Taotlus vastu võetud — {page}",
+      it: "Richiesta ricevuta — {page}",
+      sv: "Förfrågan mottagen — {page}",
+    },
+    body: {
+      lv: "Sveiki!\n\nTavs pieteikums uz {date} plkst. {time} ir nosūtīts {page}.\n\n{comment_line}\n\nJa vajag ko mainīt, sazinies ar lapas īpašnieku.",
+      en: "Hello!\n\nYour request for {date} at {time} was sent to {page}.\n\n{comment_line}\n\nIf you need to change anything, contact the page owner.",
+      ru: "Здравствуйте!\n\nВаша заявка на {date} в {time} отправлена на {page}.\n\n{comment_line}\n\nЧтобы изменить детали, свяжитесь с владельцем страницы.",
+      de: "Hallo!\n\nDeine Anfrage für {date} um {time} wurde an {page} gesendet.\n\n{comment_line}\n\nBei Änderungswünschen kontaktiere den Seiteninhaber.",
+      fr: "Bonjour !\n\nTa demande pour le {date} à {time} a été envoyée à {page}.\n\n{comment_line}\n\nPour modifier, contacte le propriétaire de la page.",
+      es: "Hola!\n\nTu solicitud para el {date} a las {time} se envió a {page}.\n\n{comment_line}\n\nSi necesitas cambiar algo, contacta al dueño de la página.",
+      nl: "Hallo!\n\nJe aanvraag voor {date} om {time} is verzonden naar {page}.\n\n{comment_line}\n\nNeem contact op met de pagina-eigenaar om iets te wijzigen.",
+      da: "Hej!\n\nDin forespørgsel for {date} kl. {time} er sendt til {page}.\n\n{comment_line}\n\nKontakt sideejeren hvis du skal ændre noget.",
+      no: "Hei!\n\nForespørselen din for {date} kl. {time} er sendt til {page}.\n\n{comment_line}\n\nKontakt sideeieren hvis du må endre noe.",
+      fi: "Hei!\n\nPyyntösi ajalle {date} klo {time} on lähetetty sivulle {page}.\n\n{comment_line}\n\nOta yhteyttä sivun omistajaan, jos tarvitset muutoksia.",
+      pl: "Cześć!\n\nTwoje zgłoszenie na {date} o {time} zostało wysłane do {page}.\n\n{comment_line}\n\nSkontaktuj się z właścicielem strony, jeśli coś trzeba zmienić.",
+      lt: "Sveiki!\n\nTavo užklausa {date} {time} išsiųsta puslapiui {page}.\n\n{comment_line}\n\nJei reikia pakeitimų, susisiek su puslapio savininku.",
+      et: "Tere!\n\nSinu taotlus {date} kell {time} saadeti lehele {page}.\n\n{comment_line}\n\nMuudatuste korral võta ühendust lehe omanikuga.",
+      it: "Ciao!\n\nLa tua richiesta per {date} alle {time} è stata inviata a {page}.\n\n{comment_line}\n\nPer modifiche, contatta il proprietario della pagina.",
+      sv: "Hej!\n\nDin förfrågan för {date} kl. {time} skickades till {page}.\n\n{comment_line}\n\nKontakta sidans ägare om du behöver ändra något.",
     },
   },
 };

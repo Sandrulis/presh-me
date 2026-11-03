@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { isModulePaidPlansEnabledServer, userHasActivePaidSubscription } from "@/app/lib/billing/subscription-repository";
 import { createClient } from "@/app/lib/supabase/server";
 import { isTrialPeriodExpired } from "@/app/lib/trial/is-trial-expired";
 import type { Portfolio } from "@/app/lib/types";
@@ -39,17 +40,44 @@ export function isPublicTrialExpired(
   return isTrialPeriodExpired(page, trialPeriodDays, nowMs);
 }
 
-/** Public profile URL: expired trial → marketing home (visi apmeklētāji, arī īpašnieks). */
-export async function shouldRedirectPublicTrialExpired(page: Portfolio): Promise<boolean> {
+type PublicTrialGate = Pick<Portfolio, "published" | "accountId" | "trialStartedAt">;
+
+async function shouldRedirectPublicTrialExpiredFor(
+  page: PublicTrialGate,
+): Promise<boolean> {
   if (!page.published) return false;
   const trailOn = await isModuleTrailEnabledServer();
   if (!trailOn) return false;
+  const paidPlansOn = await isModulePaidPlansEnabledServer();
+  if (paidPlansOn && page.accountId) {
+    const paid = await userHasActivePaidSubscription(page.accountId);
+    if (paid) return false;
+  }
   const trialDays = await getServerTrialPeriodDays();
-  return isTrialPeriodExpired(page, trialDays);
+  return isTrialPeriodExpired(page as Portfolio, trialDays);
+}
+
+/** Public profile URL: expired trial → marketing home unless paid subscription is active. */
+export async function shouldRedirectPublicTrialExpired(page: Portfolio): Promise<boolean> {
+  return shouldRedirectPublicTrialExpiredFor(page);
 }
 
 /** Publiskais /handle: melnraksts vai beidzies trial → sākumlapa. */
 export async function shouldRedirectPublicProfileAway(page: Portfolio): Promise<boolean> {
   if (!page.published) return true;
-  return shouldRedirectPublicTrialExpired(page);
+  return shouldRedirectPublicTrialExpiredFor(page);
+}
+
+/** Same gate as `shouldRedirectPublicProfileAway` without loading full page `content`. */
+export async function shouldRedirectPublicProfileAwayLite(input: {
+  published: boolean;
+  accountId: string;
+  trialStartedAt: string | null;
+}): Promise<boolean> {
+  if (!input.published) return true;
+  return shouldRedirectPublicTrialExpiredFor({
+    published: input.published,
+    accountId: input.accountId,
+    trialStartedAt: input.trialStartedAt,
+  });
 }

@@ -131,6 +131,78 @@ export function buildSimpleEmailHtml(options: {
 </html>`;
 }
 
+/** Notification email with optional detail rows (booking, alerts). */
+export function buildNotificationEmailHtml(options: {
+  systemName: string;
+  headerLabel?: string;
+  heading: string;
+  bodyText: string;
+  details?: { label: string; value: string }[];
+  accentColor?: string;
+}): string {
+  const systemName = escapeHtml(options.systemName);
+  const headerLabel = escapeHtml(
+    (options.headerLabel ?? options.systemName).trim() || options.systemName,
+  );
+  const heading = escapeHtml(options.heading);
+  const bodyHtml = paragraphsToHtml(options.bodyText);
+  const accent = escapeHtmlAttr(options.accentColor?.trim() || "#2f9e57");
+  const details = (options.details ?? []).filter((row) => row.value.trim());
+  const detailsHtml = details.length
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 1em 0;border:1px solid #e4e4e7;border-radius:12px;overflow:hidden;">
+        <tr>
+          <td style="height:4px;background-color:${accent};font-size:0;line-height:0;">&nbsp;</td>
+        </tr>
+        ${details
+          .map(
+            (row) => `<tr>
+          <td style="padding:12px 16px;border-top:1px solid #f4f4f5;">
+            <p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#71717a;">${escapeHtml(row.label)}</p>
+            <p style="margin:0;font-size:15px;line-height:1.45;color:#18181b;word-break:break-word;">${escapeHtml(row.value)}</p>
+          </td>
+        </tr>`,
+          )
+          .join("")}
+      </table>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="lv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>${systemName}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f5;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e4e4e7;">
+          <tr>
+            <td style="padding:28px 32px 20px;border-bottom:1px solid #f4f4f5;">
+              <p style="margin:0;font-size:13px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#71717a;">
+                ${headerLabel}
+              </p>
+              <h1 style="margin:10px 0 0;font-size:22px;line-height:1.3;font-weight:700;color:#18181b;">
+                ${heading}
+              </h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 32px 28px;font-size:15px;line-height:1.6;color:#3f3f46;">
+              ${bodyHtml || `<p style="margin:0;color:#a1a1aa;">&nbsp;</p>`}
+              ${detailsHtml}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")

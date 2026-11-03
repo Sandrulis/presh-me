@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { FeedbackToasts, useNotices } from "@/app/components/feedback-toast";
 import { useTranslations } from "@/app/components/translations-provider";
 import { loadUmamiReport } from "@/app/lib/integrations/umami/report";
-import type { UmamiMetric, UmamiRange, UmamiReport } from "@/app/lib/integrations/umami/share";
+import type { UmamiMetric, UmamiRange, UmamiReport, UmamiReportResult } from "@/app/lib/integrations/umami/share";
 
 const RANGES: UmamiRange[] = ["24h", "7d", "30d", "90d"];
 const RANGE_FALLBACK: Record<UmamiRange, string> = {
@@ -14,7 +14,11 @@ const RANGE_FALLBACK: Record<UmamiRange, string> = {
   "90d": "90 dienas",
 };
 
-export function AdminUmamiDashboard() {
+export function UmamiDashboard({
+  loadReport,
+}: {
+  loadReport: (range: UmamiRange, timezone: string) => Promise<UmamiReportResult>;
+}) {
   const { t, languageCode } = useTranslations();
   const { notices, notify, dismissNotice } = useNotices();
   const [range, setRange] = useState<UmamiRange>("7d");
@@ -25,7 +29,7 @@ export function AdminUmamiDashboard() {
   useEffect(() => {
     let live = true;
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Riga";
-    void loadUmamiReport(range, timezone).then((result) => {
+    void loadReport(range, timezone).then((result) => {
       if (!live) return;
       setPending(false);
       if (!result.ok) {
@@ -42,7 +46,7 @@ export function AdminUmamiDashboard() {
     return () => {
       live = false;
     };
-  }, [range, notify, t]);
+  }, [range, loadReport, notify, t]);
 
   function pickRange(next: UmamiRange) {
     if (next === range || pending) return;
@@ -340,4 +344,8 @@ function countryName(code: string, lang: string): string {
 
 function labelRows(rows: UmamiMetric[], label: (value: string) => string): UmamiMetric[] {
   return rows.map((row) => ({ ...row, label: label(row.label) }));
+}
+
+export function AdminUmamiDashboard() {
+  return <UmamiDashboard loadReport={loadUmamiReport} />;
 }

@@ -13,7 +13,7 @@ function isClientAppPath(pathname: string) {
   return CLIENT_APP_PATHS.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
-/** Kad module_trail un trial beidzies, klienta zona → sākumlapa. */
+/** Kad module_trail un trial beidzies, klienta zona → sākumlapa (izņemot aktīvu abonementu). */
 export function useExpiredTrialClientRedirect() {
   const router = useRouter();
   const pathname = usePathname();
@@ -21,6 +21,7 @@ export function useExpiredTrialClientRedirect() {
   const page = useSyncExternalStore(subscribeStore, readSessionPage, () => null);
   const settings = useSyncExternalStore(subscribeSiteAdmin, getSiteSettings, getSiteSettings);
   const [trailModuleEnabled, setTrailModuleEnabled] = useState(false);
+  const [paidAccess, setPaidAccess] = useState(false);
 
   useEffect(() => {
     void refreshSiteAdmin();
@@ -37,8 +38,26 @@ export function useExpiredTrialClientRedirect() {
   }, []);
 
   useEffect(() => {
+    if (!ready || !page) return;
+    let cancelled = false;
+    void fetch("/api/billing/status", { credentials: "same-origin" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        setPaidAccess(data.hasActiveAccess === true);
+      })
+      .catch(() => {
+        if (!cancelled) setPaidAccess(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, page?.id]);
+
+  useEffect(() => {
     if (!ready || !page || !trailModuleEnabled || !isClientAppPath(pathname)) return;
     if (!isTrialPeriodExpired(page, settings.trialPeriodDays)) return;
+    if (paidAccess) return;
     router.replace("/");
-  }, [ready, page, trailModuleEnabled, settings.trialPeriodDays, pathname, router]);
+  }, [ready, page, trailModuleEnabled, settings.trialPeriodDays, pathname, router, paidAccess]);
 }

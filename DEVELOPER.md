@@ -28,7 +28,7 @@ Link-in-bio / portfolio lapas. Lietotājs reģistrējas, paņem `presh.me/{handl
 - Google: pašu OAuth (`app/lib/auth/google-oauth.ts`) — `/auth/google/sign-in` → Google → `/auth/callback`; lietotājs caur admin `createUser` + magiclink `verifyOtp` (ne Supabase Google provider)
 - `public.users`: **pirmais** ieraksts → `is_admin = true`; pārējie `false`
 - `public.pages`: handle + jsonb `content`; publiski `published`; īpašnieks CRUD; admin redz visu
-- Arī: `admin_todos`, `user_feedback`, `contact_messages`, `site_languages`, `site_translations`, `site_settings` (t.sk. `maintenance`, `trial_period_days`), `auth_lockouts`, storage usage kolonnas
+- Arī: `admin_todos`, `user_feedback`, `contact_messages`, `site_languages`, `site_translations`, `site_settings` (t.sk. `maintenance`, `trial_period_days`), `auth_lockouts`, storage usage kolonnas; abonementi (`subscription_plans`, `user_subscriptions`, Stripe webhook); **`page_booking_reservations`**
 - Labā admin josla tikai `is_admin = true`; navigācijas badge: `fetchAdminNavCounts()` (`app/lib/admin-nav-counts.ts`), refresh ~45s + focus (`admin-sidebar.tsx`); Settings bez badge
 - Marketing top nav: `Header` slēpj tikai ar apstiprinātu sesiju (`sessionId` vai SSR `hideMarketingHeader`); novecojusi `presh_session` tiek notīrīta (`resolveSessionHintForRequest`)
 
@@ -76,7 +76,7 @@ Kad ir sesija:
 - Globālais `Header` **nerādās** (`app/components/header.tsx`).
 - `AppShell` (`app/components/app-shell.tsx`):
   - **Kreisā** `StudioSidebar`: burger/X virs logo; sašaurināts `w-14`, atvērts `w-60`; linku dropdown + jauns links; uzstādījumi; Atrast kļūdu? / Ieteikumi / Atsauksmes / Kontakti (virs Iziet); iziet.
-  - **Labā** `AdminSidebar` (pagaidām visiem ielogotajiem): **Todo** → sidemodālis pie labās malas (`presh.admin-todos.v1`); **Ziņojumi** → iesūtne (`presh.user-feedback.v1`); Linki / Valodas / Tulkojumi / Uzstādījumi u.c.
+  - **Labā** `AdminSidebar` (pagaidām visiem ielogotajiem): **Todo** → sidemodālis pie labās malas (`presh.admin-todos.v1`, dzēšana ar loading); **Ziņojumi** → iesūtne (`presh.user-feedback.v1`); Linki / Valodas / Tulkojumi / Uzstādījumi u.c.
   - Mobilajā (<700px): plāna top josla (bez fixed rail).
 
 ## Onboarding (`/start`)
@@ -96,7 +96,9 @@ Trīs kolonnas (xl+): Pamati | priekšskats (`DevicePreview`) | Izskats.
 - Profils: `displayName`, `tagline` (+ tipogrāfija), `bio`; vārdam opcija **burtu apmale** (`nameStrokeWidth` / `nameStrokeColor`, `app/lib/text-look.ts`).
 - Sociālie: `SocialsEditor` (`app/components/socials-editor.tsx`) — kompaktas rindas, FLIP DnD, „+ Pievienot” → kreisais picker sidemodāls; katalogs `app/lib/socials.ts` (`popular` karodziņš).
 - Pamatu izvēlnē Sociālie/Bloki ir sortable (`stackOrder`); secība atspoguļojas `PageView`.
-- Bloki: `BlocksEditor` + `block-faces` / `lib/blocks.ts` — tipi: saite, teksts, YouTube, attēls, Spotify, resumē (timeline), Instagram režģis, citāts, FAQ; DnD; sidemodāļi bez blur; draft priekšskats.
+- **Valoda** (`studio-page-language-drawer`): `content.publicLanguageCode` — fiksēta UI valoda publiskajā lapā (`PublicPageI18nShell`) un studijas priekšskatā (`PageLanguageScope`); tukšs = apmeklētāja valoda.
+- Bloki: `BlocksEditor` + `block-faces` / `lib/blocks.ts` — tipi: saite, teksts, YouTube, attēls, Spotify, resumē (timeline), Instagram režģis, citāts, FAQ, **booking** (`page-booking-ui`, lazy chunk; kalendārs, Turnstile kad ieslēgts, `GET/POST /api/booking/*`, e-pasti `booking_owner` / `booking_guest`, DB `page_booking_reservations` + `025` length CHECK); DnD; sidemodāļi bez blur; draft priekšskats.
+- Pamatos (toggle): **Contact** (`page-contact-ui`), **Share** (`page-share-ui`); ar moduļa atbalstu **Analytics** (`module_umami`, `studio-analytics-editor`, `PageUmamiTracker`).
 - Izskats → Teksts: vārds, tagline, bio tipogrāfija; **Bloku stils** drill-down pievienotajiem blokiem (`BlockStyleFields`).
 - Attēlu lauki: `ImageDropField` / `ImageField`.
 

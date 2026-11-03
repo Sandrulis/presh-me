@@ -7,6 +7,7 @@ import {
   ConfirmDialog,
   IconActionButton,
   IconTrash,
+  IconCoin,
   ToggleSwitch,
 } from "@/app/components/admin-ui";
 import { FeedbackToasts, useNotices } from "@/app/components/feedback-toast";
@@ -18,6 +19,7 @@ import {
   listFrontendModules,
   moduleLabelKey,
   setFrontendModuleEnabled,
+  setFrontendModulePaid,
   type SiteFrontendModule,
 } from "@/app/lib/site-admin/modules";
 
@@ -26,6 +28,7 @@ export function AdminModulesManager() {
   const { notices, notify, dismissNotice } = useNotices();
   const [modules, setModules] = useState<SiteFrontendModule[]>([]);
   const [googleOauthOn, setGoogleOauthOn] = useState(false);
+  const [stripeOn, setStripeOn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [newKey, setNewKey] = useState("");
@@ -47,6 +50,8 @@ export function AdminModulesManager() {
         setModules(rows);
         const google = integrations.find((item) => item.key === "google_oauth");
         setGoogleOauthOn(Boolean(google?.enabled && google.configured));
+        const stripe = integrations.find((item) => item.key === "stripe");
+        setStripeOn(Boolean(stripe?.enabled && stripe.configured));
       } catch (error) {
         notify(
           error instanceof Error ? error.message : t("admin.modules.load_failed", "Neizdevās ielādēt moduļus."),
@@ -65,6 +70,18 @@ export function AdminModulesManager() {
         "Vispirms konfigurē un ieslēdz Google OAuth (Administrācija → Integrācijas).",
       );
     }
+    if (module.moduleKey === "module_trail" && !stripeOn && !module.isEnabled) {
+      return t(
+        "admin.modules.locked_stripe",
+        "Vispirms konfigurē un ieslēdz Stripe (Administrācija → Integrācijas).",
+      );
+    }
+    if (module.moduleKey === "module_paid_plans" && !stripeOn && !module.isEnabled) {
+      return t(
+        "admin.modules.locked_stripe",
+        "Vispirms konfigurē un ieslēdz Stripe (Administrācija → Integrācijas).",
+      );
+    }
     return null;
   }
 
@@ -80,6 +97,33 @@ export function AdminModulesManager() {
       setModules((current) => current.map((item) => (item.id === module.id ? saved : item)));
       notify(
         enabled ? t("admin.modules.enabled", "Modulis ieslēgts.") : t("admin.modules.disabled", "Modulis izslēgts."),
+        "ok",
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message === "Stripe nav ieslēgts vai nav konfigurēts."
+          ? t(
+              "admin.modules.locked_stripe",
+              "Vispirms konfigurē un ieslēdz Stripe (Administrācija → Integrācijas).",
+            )
+          : error instanceof Error
+            ? error.message
+            : t("admin.modules.toggle_failed", "Neizdevās mainīt moduli.");
+      notify(message, "error");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function togglePaid(module: SiteFrontendModule) {
+    setBusyId(module.id);
+    try {
+      const saved = await setFrontendModulePaid(module.id, !module.isPaid);
+      setModules((current) => current.map((item) => (item.id === module.id ? saved : item)));
+      notify(
+        saved.isPaid
+          ? t("admin.modules.paid_on", "Modulis atzīmēts kā maksas.")
+          : t("admin.modules.paid_off", "Modulis atzīmēts kā bezmaksas."),
         "ok",
       );
     } catch (error) {
@@ -178,9 +222,22 @@ export function AdminModulesManager() {
                     <ToggleSwitch
                       checked={module.isEnabled}
                       disabled={busy || Boolean(locked)}
+                      tone="green"
                       label={t("admin.modules.enable_label", "Ieslēgt {key}", { key: module.moduleKey })}
                       onChange={(checked) => void toggle(module, checked)}
                     />
+                    <IconActionButton
+                      label={
+                        module.isPaid
+                          ? t("admin.modules.paid_toggle_off", "Maksas modulis — nospied, lai būtu bezmaksas")
+                          : t("admin.modules.paid_toggle_on", "Bezmaksas modulis — nospied, lai būtu maksas")
+                      }
+                      variant={module.isPaid ? "active" : "default"}
+                      disabled={busy}
+                      onClick={() => void togglePaid(module)}
+                    >
+                      <IconCoin />
+                    </IconActionButton>
                     <IconActionButton
                       label={t("actions.delete", "Dzēst")}
                       variant="danger"

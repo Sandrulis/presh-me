@@ -1,27 +1,67 @@
 # Sistēmas drošības uzlabojumi — presh-me
 
-**Pašreizējā atzīme:** **8.7 / 10**  
-**Iepriekšējā (pirms šīs izpildes):** 8.2 / 10  
+**Pašreizējā atzīme:** **8.8 / 10**  
+**Iepriekšējā (2026-11-03 audits):** 8.6 / 10  
 **Sākotnējā (pirms visa cikla):** 6.0 / 10  
-**Pēdējā pārbaude:** 2026-10-25 (atkārtotais audits pēc ieteikumu izpildes)
+**Audits / pārbaude:** 2026-11-03 (atkārtots pēc S1–S3 izpildes)
 
-**Atlikušais līdz 9.0:** Vault (ne tikai `INTEGRATION_SECRETS_KEY`), mature CSP bez `'unsafe-inline'` kur iespējams, ārējs pentests.  
-**Legacy:** vecie `data:image/…` jsonb ieraksti līdz lietotājs pārglabā attēlu studijā.
+Statuss: `[x]` izdarīts · `[~]` daļēji · `[ ]` vēl
 
-Šis fails ir uzskaites saraksts. Statuss: `pending` / `done` / `accepted` / `partial`.
+**Atzīmes pamatojums (8.8):** S1–S3 aizvērti; booking ar Turnstile (kad integrācija ieslēgta), DB garumu CHECK, servera handle/blockId validācija. Pamatkontroles nemainītas. **Līdz 9.0:** Vault, CSP bez `'unsafe-inline'`, ārējs pentest, S4 (distribūts rate limit).
+
+**Legacy:** vecie `data:image/…` jsonb līdz pārglabāšanai studijā.
 
 ---
 
-## Kopsavilkums
+## Atkārtotā pārbaude (2026-11-03, pēc S1–S3)
 
-Pēc 2026-10-25 otrās viļņa izpildes aizvērti DB lockouts (M3), Storage cutover jaunajiem uploadiem (H2/L4), CSP enforce (M9), log scrub (L2) un PITR dokumentācija (L3). MFA jau bija done.
+### Izpildīts
+
+| ID | Risinājums | Faili |
+|---|---|---|
+| **S1** | `requireTurnstileToken` uz `/api/booking/request`; UI widget + token POST; ja Turnstile izslēgts — nav papildu prasības | `booking/request/route.ts`, `page-booking-ui.tsx`, `turnstile.ts` |
+| **S2** | DB `CHECK`: `guest_email` ≤ 254, `comment` ≤ 2000, `block_id` ≤ 64 | `025_booking_reservations_length_checks.sql` |
+| **S3** | `isValidBookingHandle` / `isValidBookingBlockId` (handle regex, blockId ≤64 `[a-zA-Z0-9_-]`) | `booking-input-limits.ts`, request/reservations/submit/load |
+
+### Verifikācija
+
+- Migrācija **025** — applied  
+- `npm run i18n:check`, `typecheck`, `build` — OK  
+
+### Atlikušais (nav S1–S3)
+
+| ID | Piezīme |
+|---|---|
+| **S4** | In-memory rate limit vairākās instancēs — accepted |
+| **9.0** | Vault, mature CSP, pentest |
+
+---
+
+## Padziļinātā pārbaude (2026-11-03, sākotnējā)
+
+### Kas joprojām labi
+
+| Joma | Secinājums |
+|---|---|
+| DB RLS | Core tabulas + `user_subscriptions` + `page_booking_reservations` deny |
+| Admin / auth | H1–H5, M1–M10 (skatīt zemāk) |
+| Booking | Rate limit, slot UNIQUE, HTML escape, service role tikai serverī, **+ S1–S3** |
+| Billing / Umami | Sesija, Stripe paraksts, page owner check |
+
+### Sākotnējie riski S1–S3 — `[x]`
+
+---
+
+## Kopsavilkums (milestones)
 
 | Lai sasniegtu | Statuss |
 |---|---|
 | **7.0** (H1, H3, H4) | **done** |
 | **8.0** (+ H5, M1, M2) | **done** |
 | **8.5** (+ M3/M4/H2) | **done** |
-| **9.0** | Vault, CSP bez unsafe-inline, pentest |
+| **8.7** (2026-10-25) | **done** |
+| **8.8** | **S1–S3 done** |
+| **9.0** | Vault, CSP nonce, pentest |
 
 ---
 
@@ -29,84 +69,21 @@ Pēc 2026-10-25 otrās viļņa izpildes aizvērti DB lockouts (M3), Storage cuto
 
 | Kontrole | Kur | Statuss |
 |---|---|---|
-| RLS uz `users` / `pages` / feedback / site_* | `001`–`003` | done |
-| Pirmais reģistrētais = admin | `users_assign_first_admin` | done |
-| `SECURITY DEFINER` + `search_path = ''` | galvenās fn | done |
-| Google OAuth CSRF + `verified_email` | `google-oauth.ts` | done |
-| Turnstile server verify | `turnstile.ts` | done |
-| `/api/admin/users` `requireAdmin()` | route | done |
-| Paroles caur Supabase Auth | email-password | done |
-| Umami tikai pēc cookie consent | `UmamiAnalytics` | done |
-| `safeHref` bloķē ne-http(s) | `urls.ts` | done |
+| RLS | `001`–`003`, `021`, `024` | done |
+| Privilege escalate trigger | `013` | done |
+| Google OAuth + Turnstile auth | `google-oauth`, `turnstile` | done |
+| CSP / HSTS | `next.config.ts` | done |
+| Integration secrets encrypt | `enc:v1:` | done |
+| SSRF source-preview | route + limits | done |
+| Booking Turnstile | `booking/request` + UI | **done (S1)** |
+| Booking DB length CHECK | `025` | **done (S2)** |
+| Booking input limits | `booking-input-limits.ts` | **done (S3)** |
 
 ---
 
-## HIGH
+## HIGH / MIDDLE (historical)
 
-### H1. `is_admin` escalate — **done**
-
-- Trigger `users_protect_privileged_columns` (`013_security_hardening.sql`).
-
-### H2. Attēli jsonb / data URL — **done** (jaunie uploadi)
-
-- Bucket `page-assets` + RLS (`014`); `processAndUploadImage` → studija / onboarding / bloki / branding (raster).
-- Feedback: SVG noraidīts, MIME/size limits.
-- Legacy data URL līdz pārglabāšanai; SVG/ICO branding joprojām data URL (bucket neatbalsta).
-
-### H3. Security headers — **done**
-
-- `next.config.ts`: frame, nosniff, Referrer-Policy, Permissions-Policy, HSTS.
-
-### H4. Integration secrets UI — **done**
-
-- `enc:v1:` + `INTEGRATION_SECRETS_KEY`; klients redz tikai `hasSecret`.
-
-### H5. `/api/source-preview` — **done**
-
-- Sesija, rate limit, metadata denylist, redirect host check.
-
----
-
-## MIDDLE
-
-### M1. GitHub security CI — **done**
-
-### M2. Admin server gate — **done**
-
-### M3. Rate limit / lockout — **done**
-
-- In-memory throttle + DB `auth_lockouts` / `rate_limit_buckets` (`015`).
-- Login: `/api/auth/lockout` check → fail → clear (tikai autentificētai sesijai).
-
-### M4. MFA + audit — **done**
-
-### M5. Middleware protected paths — **done**
-
-### M6. Feedback/contact sanitizācija — **done**
-
-### M7. Google e-pasta sasaistīšana — **accepted**
-
-### M8. Service role virsma — **done**
-
-### M9. CSP / trešās puses — **done**
-
-- `Content-Security-Policy` enforce `next.config.ts` (self + Supabase + Turnstile + Umami + embed frames).
-- Joprojām `'unsafe-inline'` script/style Next.js dēļ — līdz 9.0 ar nonce/hash.
-
-### M10. Publiskās lapas XSS URL — **done**
-
----
-
-## LOW
-
-| ID | Statuss | Piezīme |
-|---|---|---|
-| L1 Permissions-Policy | done | H3 |
-| L2 Log scrubbing | done | `safeLogError` / `scrubLogMessage` |
-| L3 Backup / PITR docs | done | DEVELOPER.md |
-| L4 Branding SVG | done | raster → Storage; SVG/ICO data URL |
-| L5 Cookie + Umami | done | |
-| L6 revoke `is_system_admin` anon | done | `013` |
+H1–H5, M1–M10 — **done** (2026-10-25). S1–S3 — **done** (2026-11-03).
 
 ---
 
@@ -114,14 +91,19 @@ Pēc 2026-10-25 otrās viļņa izpildes aizvērti DB lockouts (M3), Storage cuto
 
 | Balles | Nozīme |
 |---|---|
-| 5–6 | RLS ir, escalate / secrets / headers vāji |
-| **7.0** | H1 + headers + secrets nav klientā |
-| **8.0** | + SSRF/rate + CI + server admin |
-| **8.5** | + encrypt + MFA/audit + Storage cutover + lockouts |
-| 9.0 | Vault, mature CSP, pentest |
-| 10 | Formāla programma + ārējs audits |
+| **8.6** | Booking bez Turnstile (2026-11-03 audits) |
+| **8.8** | **Pašreiz** — S1–S3 |
+| 9.0 | Vault, CSP nonce, pentest |
 
-**Šobrīd 8.7:** 8.5 kritēriji izpildīti; CSP enforce + lockouts + Storage UI; līdz 9.0 trūkst Vault / nonce CSP / pentest.
+---
+
+## Kā pārbaudīt
+
+1. Turnstile ieslēgts: booking bez token → `auth.turnstile.required`; ar token → OK.
+2. Turnstile izslēgts: booking bez token joprojām strādā.
+3. `comment` > 2000 vai nederīgs `blockId` → 400 / DB reject.
+4. Anon nevar tieši rakstīt `page_booking_reservations`.
+5. `npm run typecheck` / `npm run build`.
 
 ---
 
@@ -129,6 +111,8 @@ Pēc 2026-10-25 otrās viļņa izpildes aizvērti DB lockouts (M3), Storage cuto
 
 | Datums | Kas izdarīts | Piezīmes |
 |---|---|---|
-| 2026-10-25 | Sākotnējais audits | Atzīme **6.0** |
-| 2026-10-25 | H1–H5, M1–M2, M5–M6, M8, M10, L1/L6; M3/M4/H2/M9 partial; `013`, `014` | Atzīme **8.2** |
-| 2026-10-25 | M3 lockouts (`015`), H2 Storage UI cutover, M9 CSP enforce, L2/L3; MFA jau bija | Atzīme **8.7** |
+| 2026-10-25 | Sākotnējais audits | **6.0** |
+| 2026-10-25 | H1–H5, M1–M2, M5–M10; `013`, `014` | **8.2** |
+| 2026-10-25 | Lockouts, CSP, Storage UI | **8.7** |
+| 2026-11-03 | Padziļināts audits; backlog S1–S3 | **8.6** |
+| 2026-11-03 | S1–S3 + migrācija `025` | **8.8** |

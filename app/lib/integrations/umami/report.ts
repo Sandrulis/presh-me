@@ -106,16 +106,11 @@ async function currentUserIsAdmin(): Promise<boolean> {
   return profile?.is_admin === true;
 }
 
-export async function loadUmamiReport(
-  range: string,
+async function fetchUmamiReportFromShare(
+  share: NonNullable<ReturnType<typeof parseUmamiShareUrl>>,
+  range: UmamiRange,
   timezone: string,
 ): Promise<UmamiReportResult> {
-  if (!(await currentUserIsAdmin())) return { ok: false, error: "umami.error.load" };
-  if (!isRange(range)) return { ok: false, error: "umami.error.load" };
-  const shareUrl = await getUmamiShareUrl();
-  const share = shareUrl ? parseUmamiShareUrl(shareUrl) : null;
-  if (!share) return { ok: false, error: "umami.unavailable" };
-
   const window = RANGES[range];
   const endAt = Date.now();
   const startAt = endAt - window.ms;
@@ -186,4 +181,53 @@ export async function loadUmamiReport(
   } catch {
     return { ok: false, error: "umami.error.load" };
   }
+}
+
+export async function loadUmamiReport(
+  range: string,
+  timezone: string,
+): Promise<UmamiReportResult> {
+  if (!(await currentUserIsAdmin())) return { ok: false, error: "umami.error.load" };
+  if (!isRange(range)) return { ok: false, error: "umami.error.load" };
+  const shareUrl = await getUmamiShareUrl();
+  const share = shareUrl ? parseUmamiShareUrl(shareUrl) : null;
+  if (!share) return { ok: false, error: "umami.unavailable" };
+  return fetchUmamiReportFromShare(share, range, timezone);
+}
+
+export async function loadPageOwnerUmamiReport(
+  pageId: string,
+  range: string,
+  timezone: string,
+): Promise<UmamiReportResult> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "umami.error.load" };
+  if (!isRange(range)) return { ok: false, error: "umami.error.load" };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "umami.error.load" };
+
+  const { data: profile } = await supabase.from("users").select("is_admin").eq("id", user.id).maybeSingle();
+  const isAdmin = profile?.is_admin === true;
+
+  const { userCanUseFrontendModuleOrAdmin } = await import("@/app/lib/modules/user-module-access");
+  if (!(await userCanUseFrontendModuleOrAdmin(user.id, "module_umami", isAdmin))) {
+    return { ok: false, error: "umami.error.load" };
+  }
+
+  const { data: row } = await supabase
+    .from("pages")
+    .select("account_id, content")
+    .eq("id", pageId)
+    .maybeSingle();
+  if (!row || row.account_id !== user.id) return { ok: false, error: "umami.error.load" };
+
+  const content = (row.content ?? {}) as { umamiShareUrl?: string };
+  const shareRaw = (content.umamiShareUrl ?? "").trim();
+  const share = shareRaw ? parseUmamiShareUrl(shareRaw) : null;
+  if (!share) return { ok: false, error: "umami.unavailable" };
+
+  return fetchUmamiReportFromShare(share, range, timezone);
 }

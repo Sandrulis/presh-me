@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { PageMedia } from "@/app/components/page-media";
 import { fontFamilyOf } from "@/app/lib/font-catalog";
 import { instagramPostPageUrl, instagramProfileUrl, spotifyEmbedUrl, youtubeEmbedUrl } from "@/app/lib/blocks";
@@ -18,16 +19,30 @@ import type {
 import type { Theme } from "@/app/lib/themes";
 import { safeHref } from "@/app/lib/urls";
 
+const BookingBlockFace = dynamic(
+  () => import("@/app/components/page-booking-ui").then((mod) => mod.BookingBlockFace),
+  {
+    loading: () => (
+      <div
+        className="block h-[46px] w-full animate-pulse rounded-lg bg-black/10"
+        aria-hidden
+      />
+    ),
+  },
+);
+
 export function BlockFace({
   block,
   mode,
   theme,
   pageFontFamily,
+  pageHandle,
 }: {
   block: PageBlock;
   mode: "live" | "preview";
   theme: Theme;
   pageFontFamily?: string;
+  pageHandle?: string;
 }) {
   switch (block.type) {
     case "link":
@@ -48,6 +63,10 @@ export function BlockFace({
       return <QuoteFace block={block} theme={theme} pageFontFamily={pageFontFamily} />;
     case "faq":
       return <FaqFace block={block} theme={theme} />;
+    case "booking":
+      return (
+        <BookingBlockFace block={block} mode={mode} theme={theme} pageHandle={pageHandle ?? ""} />
+      );
   }
 }
 
