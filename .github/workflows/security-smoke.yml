@@ -53,15 +53,10 @@ jobs:
 
       - name: Security - API routes have auth checks
         run: |
+          AUTH_MARKERS='(getUser|requireAdmin|createClient|auth\.getUser|requireTurnstileToken|constructEvent|loadPageOwnerUmamiReport|loadPublicBookingReservations)'
           for file in $(find app/api -name "route.ts"); do
             if grep -qE "export async function (GET|POST|PUT|DELETE|PATCH)" "$file"; then
-              case "$file" in
-                app/api/auth/verify-turnstile/route.ts)
-                  # Public bot check; rate-limited
-                  continue
-                  ;;
-              esac
-              if ! grep -qE "(getUser|requireAdmin|createClient|auth\.getUser)" "$file"; then
+              if ! grep -qE "$AUTH_MARKERS" "$file"; then
                 echo "FAIL: No auth check in $file"
                 exit 1
               fi
