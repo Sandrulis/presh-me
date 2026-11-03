@@ -76,13 +76,15 @@ export function StudioBillingCancelButton({
   children,
   onClick,
   loading = false,
+  className = "",
 }: {
   children: ReactNode;
   onClick: () => void;
   loading?: boolean;
+  className?: string;
 }) {
   return (
-    <button type="button" className={`btn-danger ${billingBtn}`} disabled={loading} onClick={onClick}>
+    <button type="button" className={`btn-danger ${billingBtn} ${className}`} disabled={loading} onClick={onClick}>
       {loading ? (
         <IconSpinner className="size-[1.125rem] shrink-0 border-white/40 border-t-white" />
       ) : (
@@ -97,13 +99,15 @@ export function StudioBillingResumeButton({
   children,
   onClick,
   loading = false,
+  className = "",
 }: {
   children: ReactNode;
   onClick: () => void;
   loading?: boolean;
+  className?: string;
 }) {
   return (
-    <button type="button" className={`btn-success ${billingBtn}`} disabled={loading} onClick={onClick}>
+    <button type="button" className={`btn-success ${billingBtn} ${className}`} disabled={loading} onClick={onClick}>
       {loading ? (
         <IconSpinner className="size-[1.125rem] shrink-0 border-white/40 border-t-white" />
       ) : (

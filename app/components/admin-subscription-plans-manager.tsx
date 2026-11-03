@@ -41,6 +41,7 @@ type Draft = {
   id?: string;
   planKey: string;
   priceAmount: string;
+  priceAmountAnnual: string;
   isActive: boolean;
   names: Record<string, string>;
   moduleKeys: Set<string>;
@@ -50,6 +51,7 @@ function emptyDraft(): Draft {
   return {
     planKey: "",
     priceAmount: "0",
+    priceAmountAnnual: "0",
     isActive: true,
     names: {},
     moduleKeys: new Set(),
@@ -61,6 +63,7 @@ function draftFromPlan(plan: SubscriptionPlan): Draft {
     id: plan.id,
     planKey: plan.planKey,
     priceAmount: String(plan.priceAmount),
+    priceAmountAnnual: String(plan.priceAmountAnnual),
     isActive: plan.isActive,
     names: { ...plan.names },
     moduleKeys: new Set(plan.moduleKeys),
@@ -124,12 +127,14 @@ export function AdminSubscriptionPlansManager() {
 
   async function submitDraft() {
     const priceAmount = Number.parseFloat(draft.priceAmount.replace(",", "."));
+    const priceAmountAnnual = Number.parseFloat(draft.priceAmountAnnual.replace(",", "."));
     setBusy(true);
     try {
       const saved = await saveSubscriptionPlan({
         id: draft.id,
         planKey: draft.planKey,
         priceAmount,
+        priceAmountAnnual,
         isActive: draft.isActive,
         names: draft.names,
         moduleKeys: [...draft.moduleKeys],
@@ -203,7 +208,8 @@ export function AdminSubscriptionPlansManager() {
                   <tr>
                     <th className="px-5 py-3">{t("admin.subscription_plans.col.name", "Nosaukums")}</th>
                     <th className="px-5 py-3">{t("admin.subscription_plans.col.key", "Atslēga")}</th>
-                    <th className="px-5 py-3">{t("admin.subscription_plans.col.price", "Cena")}</th>
+                    <th className="px-5 py-3">{t("admin.subscription_plans.col.price", "Mēneša cena")}</th>
+                    <th className="px-5 py-3">{t("admin.subscription_plans.col.price_annual", "Gada cena")}</th>
                     <th className="px-5 py-3">{t("admin.subscription_plans.col.modules", "Moduļi")}</th>
                     <th className="px-5 py-3">{t("admin.subscription_plans.col.active", "Aktīvs")}</th>
                     <th className="px-5 py-3 text-right">{t("common.actions", "Darbības")}</th>
@@ -215,6 +221,9 @@ export function AdminSubscriptionPlansManager() {
                       <td className="px-5 py-4 font-semibold text-[var(--ink)]">{planTitle(plan, languages)}</td>
                       <td className="px-5 py-4 font-mono text-xs text-[var(--muted)]">{plan.planKey}</td>
                       <td className="px-5 py-4 tabular-nums">{formatPlanPrice(plan.priceAmount)}</td>
+                      <td className="px-5 py-4 tabular-nums">
+                        {plan.priceAmountAnnual > 0 ? formatPlanPrice(plan.priceAmountAnnual) : "—"}
+                      </td>
                       <td className="px-5 py-4 text-[var(--muted)]">{plan.moduleKeys.length}</td>
                       <td className="px-5 py-4">
                         <ToggleSwitch
@@ -266,7 +275,7 @@ export function AdminSubscriptionPlansManager() {
                   ))}
                   {plans.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-5 py-8 text-center text-[var(--muted)]">
+                      <td colSpan={7} className="px-5 py-8 text-center text-[var(--muted)]">
                         {t("admin.subscription_plans.empty", "Nav neviena plāna.")}
                       </td>
                     </tr>
@@ -311,7 +320,7 @@ export function AdminSubscriptionPlansManager() {
               />
             </label>
             <label className="block">
-              <span className="auth-label">{t("admin.subscription_plans.price_label", "Cena (EUR)")}</span>
+              <span className="auth-label">{t("admin.subscription_plans.price_label", "Mēneša cena (EUR)")}</span>
               <input
                 className="auth-field tabular-nums"
                 inputMode="decimal"
@@ -319,6 +328,20 @@ export function AdminSubscriptionPlansManager() {
                 disabled={busy}
                 onChange={(event) => setDraft((current) => ({ ...current, priceAmount: event.target.value }))}
                 required
+              />
+            </label>
+            <label className="block">
+              <span className="auth-label">
+                {t("admin.subscription_plans.price_annual_label", "Gada cena (EUR)")}
+              </span>
+              <input
+                className="auth-field tabular-nums"
+                inputMode="decimal"
+                value={draft.priceAmountAnnual}
+                disabled={busy}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, priceAmountAnnual: event.target.value }))
+                }
               />
             </label>
             <label className="flex items-center gap-3">
@@ -332,30 +355,6 @@ export function AdminSubscriptionPlansManager() {
                 {t("admin.subscription_plans.draft_active_hint", "Neaktīvs plāns netiek piedāvāts lietotājiem.")}
               </span>
             </label>
-
-            <div>
-              <p className="auth-label">{t("admin.subscription_plans.names_title", "Nosaukumi")}</p>
-              <div className="mt-2 space-y-3">
-                {activeLanguages.map((language) => (
-                  <label key={language.code} className="block">
-                    <span className="text-xs font-medium text-[var(--muted)]">
-                      {language.name} ({language.code})
-                    </span>
-                    <input
-                      className="auth-field mt-1"
-                      value={draft.names[language.code] ?? ""}
-                      disabled={busy}
-                      onChange={(event) =>
-                        setDraft((current) => ({
-                          ...current,
-                          names: { ...current.names, [language.code]: event.target.value },
-                        }))
-                      }
-                    />
-                  </label>
-                ))}
-              </div>
-            </div>
 
             <div>
               <p className="auth-label">{t("admin.subscription_plans.modules_title", "Maksas moduļi plānā")}</p>
@@ -400,6 +399,30 @@ export function AdminSubscriptionPlansManager() {
                   })}
                 </ul>
               )}
+            </div>
+
+            <div>
+              <p className="auth-label">{t("admin.subscription_plans.names_title", "Nosaukumi")}</p>
+              <div className="mt-2 space-y-3">
+                {activeLanguages.map((language) => (
+                  <label key={language.code} className="block">
+                    <span className="text-xs font-medium text-[var(--muted)]">
+                      {language.name} ({language.code})
+                    </span>
+                    <input
+                      className="auth-field mt-1"
+                      value={draft.names[language.code] ?? ""}
+                      disabled={busy}
+                      onChange={(event) =>
+                        setDraft((current) => ({
+                          ...current,
+                          names: { ...current.names, [language.code]: event.target.value },
+                        }))
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
         </SideDrawer>

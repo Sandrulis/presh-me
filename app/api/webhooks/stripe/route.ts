@@ -3,6 +3,8 @@ import {
   findUserIdByStripeCustomer,
   syncSubscriptionById,
 } from "@/app/lib/billing/subscription-repository";
+import { parseBillingInterval } from "@/app/lib/billing/billing-interval";
+import { notifySubscriptionPurchasedEmail } from "@/app/lib/email/send-subscription-emails";
 import { getStripeWebhookSecret } from "@/app/lib/billing/stripe-server";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 
@@ -54,6 +56,16 @@ export async function POST(request: Request) {
           typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
         if (subscriptionId) {
           await syncSubscriptionById(subscriptionId, userId || undefined);
+          const planKey = session.metadata?.planKey?.trim().toLowerCase() ?? "";
+          const billingInterval = parseBillingInterval(session.metadata?.billingInterval);
+          const resolvedUserId =
+            userId ||
+            (typeof session.customer === "string"
+              ? await findUserIdByStripeCustomer(session.customer)
+              : "");
+          if (resolvedUserId && planKey) {
+            notifySubscriptionPurchasedEmail(resolvedUserId, planKey, billingInterval);
+          }
         }
         break;
       }

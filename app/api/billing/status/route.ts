@@ -43,8 +43,11 @@ export async function GET() {
     });
   }
 
-  const { row, planKey, planName } = await loadUserSubscriptionDetails(user.id, user.languageCode);
-  const view = mapSubscriptionView(row, planKey, planName);
+  const { row, planKey, planName, pendingPlanKey, pendingPlanName } = await loadUserSubscriptionDetails(
+    user.id,
+    user.languageCode,
+  );
+  const view = mapSubscriptionView(row, planKey, planName, pendingPlanKey, pendingPlanName);
   const phase = subscriptionUiPhase(view);
   const hasActiveAccess = isSubscriptionAccessActive(row);
 

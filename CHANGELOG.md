@@ -4,6 +4,15 @@
 
 - (none)
 
+## v0.1.18
+
+**Abonementi, konta dzēšana un e-pasti**
+
+- Gada cena adminā; landing/studijā Mēneša/Gada slēdzis; plāna maiņa (upgrade ar proration, downgrade perioda beigās); checkout bloķēts, ja jau ir aktīvs abonements
+- Konta dzēšana: apstiprinājums, grace periods, cron purge; e-pasta veidnes adminā; settings „Dzēst kontu” pilnā platumā
+- E-pasti pēc abonementa pirkuma un plāna maiņas; admin dizaini migrācijā `029`; dzēšanas veidņu priekšskatījums bez booking komentāra bloka
+- Migrācijas `026`–`029`; studijas plāna izvēle ar apstiprinājumu un toast kļūdām
+
 ## v0.1.17
 
 **Ātrdarbība un booking drošība**

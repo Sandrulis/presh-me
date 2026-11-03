@@ -5,11 +5,12 @@ import { DemoMarquee } from "@/app/components/demo-marquee";
 import { Header } from "@/app/components/header";
 import { JsonLd } from "@/app/components/json-ld";
 import { LandingFaq } from "@/app/components/landing-faq";
+import { LandingPricingSection } from "@/app/components/landing-pricing-section";
 import { SiteFooter } from "@/app/components/site-footer";
 import type { LanguageCode } from "@/app/lib/i18n/language";
 import type { TranslateFn } from "@/app/lib/i18n/server";
 import { LANDING_FAQ_ITEMS } from "@/app/lib/landing-faq-items";
-import { PRICING } from "@/app/lib/pricing";
+import type { LandingPricingData } from "@/app/lib/pricing/load-landing-pricing";
 import { localePath } from "@/app/lib/seo/locale-path";
 import { absoluteUrl, getPublicSiteUrl } from "@/app/lib/site-url";
 
@@ -17,9 +18,15 @@ type MarketingHomeProps = {
   t: TranslateFn;
   languageCode: LanguageCode;
   translationIncomplete?: boolean;
+  pricing: LandingPricingData;
 };
 
-export function MarketingHome({ t, languageCode, translationIncomplete = false }: MarketingHomeProps) {
+export function MarketingHome({
+  t,
+  languageCode,
+  translationIncomplete = false,
+  pricing,
+}: MarketingHomeProps) {
   const site = getPublicSiteUrl();
   const steps = [
     {
@@ -264,56 +271,7 @@ export function MarketingHome({ t, languageCode, translationIncomplete = false }
           </div>
         </section>
 
-        <section id="pricing" className="border-b border-[var(--line)] bg-white">
-          <div className="mx-auto max-w-3xl px-5 py-14">
-            <h2 className="font-display text-3xl font-bold tracking-[-0.03em]">
-              {t("landing.pricing.title", "Pricing")}
-            </h2>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--muted)]">
-              {t(
-                "landing.pricing.subtitle",
-                "Start free in open beta. A Pro plan is planned — price below is a placeholder, not a live checkout.",
-              )}
-            </p>
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <article className="rounded-2xl border border-[var(--ink)] bg-[var(--paper)] p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">
-                  {t("landing.pricing.free.badge", "Free beta")}
-                </p>
-                <p className="mt-3 font-display text-4xl font-bold tracking-[-0.03em]">
-                  {PRICING.free.priceLabel}
-                </p>
-                <p className="mt-2 text-sm text-[var(--muted)]">
-                  {t(
-                    "landing.pricing.free.body",
-                    "Claim a link, build your page, publish. No ads in your bio.",
-                  )}
-                </p>
-                <Link href="/register" className="btn-ink mt-5 inline-flex">
-                  {t("landing.pricing.cta", "Start for free")}
-                </Link>
-              </article>
-              <article className="rounded-2xl border border-[var(--line)] bg-white p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
-                  {t("landing.pricing.pro.badge", "Pro — planned")}
-                </p>
-                <p className="mt-3 font-display text-4xl font-bold tracking-[-0.03em]">
-                  {PRICING.pro.priceLabel}
-                  <span className="text-base font-sans font-normal text-[var(--muted)]">
-                    {" "}
-                    / {t("landing.pricing.pro.period", "month")}
-                  </span>
-                </p>
-                <p className="mt-2 text-sm text-[var(--muted)]">
-                  {t(
-                    "landing.pricing.pro.body",
-                    "Custom domains, deeper analytics and team options — coming with a trial. Not available to buy yet.",
-                  )}
-                </p>
-              </article>
-            </div>
-          </div>
-        </section>
+        <LandingPricingSection pricing={pricing} />
 
         <div id="faq">
           <LandingFaq />

@@ -100,6 +100,12 @@ export function StudioSubscriptionPanel({ status, onChoosePlan, onChanged }: Pro
       )}
 
       {feedback ? <p className="mt-2 text-xs text-red-600">{feedback}</p> : null}
+
+      {phase === "active" || phase === "canceling" ? (
+        <StudioBillingPlanButton className="!mt-3" onClick={onChoosePlan}>
+          {t("studio.subscription.paid_plans_link", "Maksas plāni")}
+        </StudioBillingPlanButton>
+      ) : null}
     </div>
   );
 }

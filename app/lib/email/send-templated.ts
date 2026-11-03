@@ -151,7 +151,10 @@ export async function sendTemplatedEmail(input: {
 }
 
 export async function sendNotificationEmail(input: {
-  kind: Extract<EmailTemplateKind, "booking_owner" | "booking_guest">;
+  kind: Extract<
+    EmailTemplateKind,
+    "booking_owner" | "booking_guest" | "account_deletion_completed" | "account_deletion_cancelled"
+  >;
   to: string;
   languageCode?: string | null;
   params: EmailTemplateParams;

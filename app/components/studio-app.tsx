@@ -16,6 +16,7 @@ import { StudioAnalyticsEditor } from "@/app/components/studio-analytics-editor"
 import { StudioContactEditor } from "@/app/components/studio-contact-editor";
 import { StudioShareEditor } from "@/app/components/studio-share-editor";
 import { StudioPageLanguageDrawer } from "@/app/components/studio-page-language-drawer";
+import { StudioPageSettingsDrawer } from "@/app/components/studio-page-settings-drawer";
 import { SocialsEditor } from "@/app/components/socials-editor";
 import { useTranslations } from "@/app/components/translations-provider";
 import { pagePublicLanguageLabel } from "@/app/lib/i18n/resolve-page-public-language";
@@ -23,6 +24,8 @@ import { LINK_UNAVAILABLE, linkFieldError, normalizeHandle } from "@/app/lib/han
 import { claimInstagramAvatar, getAccount, getPageForAccount, getSessionId, isHandleTaken, isStoreReady, savePage, subscribeStore } from "@/app/lib/store";
 import { resolveEntryPathForPortfolio } from "@/app/lib/onboarding/primary-page";
 import { isFrontendModuleEnabled } from "@/app/lib/site-admin/modules";
+import { useSubscriptionPlanLabels } from "@/app/lib/billing/use-subscription-plan-labels";
+import { isModuleProLocked } from "@/app/lib/modules/is-module-pro-locked";
 import { useFrontendModuleAccess } from "@/app/lib/modules/use-frontend-module-access";
 import { parseUmamiShareUrl } from "@/app/lib/integrations/umami/share";
 import { resolveStackOrder, type PageBlock, type Portfolio, type StackSection } from "@/app/lib/types";
@@ -51,7 +54,7 @@ function readStudioAccount() {
 }
 
 export function StudioApp() {
-  const { t, languages } = useTranslations();
+  const { t, languages, languageCode } = useTranslations();
   const router = useRouter();
   const ready = useSyncExternalStore(subscribeStore, isStoreReady, () => false);
   const sessionId = useSyncExternalStore(subscribeStore, getSessionId, () => null);
@@ -63,11 +66,20 @@ export function StudioApp() {
   const [copied, setCopied] = useState(false);
   const [blockDraft, setBlockDraft] = useState<PageBlock | null>(null);
   const [languageDrawerOpen, setLanguageDrawerOpen] = useState(false);
+  const [pageSettingsOpen, setPageSettingsOpen] = useState(false);
   const [trailModuleEnabled, setTrailModuleEnabled] = useState(false);
   const [paidPlansModuleEnabled, setPaidPlansModuleEnabled] = useState(false);
   const { notices, notify, dismissNotice } = useNotices();
   const { access: umamiAccess } = useFrontendModuleAccess("module_umami");
-  const showUmamiBasics = umamiAccess.moduleEnabled && umamiAccess.canUse;
+  const { badgeLabelForModule } = useSubscriptionPlanLabels(languageCode);
+  const umamiProLocked = isModuleProLocked(umamiAccess);
+  const showUmamiBasics = umamiAccess.moduleEnabled;
+  const umamiPlanBadge = umamiProLocked
+    ? badgeLabelForModule("module_umami", t("studio.subscription.plan_unknown", "Plāns"))
+    : undefined;
+  const umamiPlanBadgeLabel = umamiPlanBadge
+    ? t("studio.basics.plan_badge", "Pieejams ar plānu {plan}", { plan: umamiPlanBadge })
+    : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -241,6 +253,12 @@ export function StudioApp() {
                       icon: <IconLanguage />,
                     },
                     {
+                      id: "page-settings",
+                      title: t("studio.info.settings", "Settings"),
+                      hint: t("studio.info.settings.hint", "Links un lapas dzēšana."),
+                      icon: <IconSettings />,
+                    },
+                    {
                       id: "contact",
                       title: t("studio.info.contact", "Contact"),
                       hint: t("studio.info.contact.hint", "Kontakta poga un VCF fails."),
@@ -271,6 +289,8 @@ export function StudioApp() {
                               ? t("studio.info.analytics.stats_hint", "Skatīt lapas Umami statistiku.")
                               : t("studio.info.analytics.hint", "Umami Website ID un Share saite."),
                             icon: <IconAnalytics />,
+                            planBadge: umamiPlanBadge,
+                            planBadgeLabel: umamiPlanBadgeLabel,
                           },
                         ]
                       : []),
@@ -295,6 +315,10 @@ export function StudioApp() {
                   onOpen={(id) => {
                     if (id === "language") {
                       setLanguageDrawerOpen(true);
+                      return;
+                    }
+                    if (id === "page-settings") {
+                      setPageSettingsOpen(true);
                       return;
                     }
                     setInfoView(id as InfoId);
@@ -345,6 +369,14 @@ export function StudioApp() {
           page={page}
           onClose={() => setLanguageDrawerOpen(false)}
           update={update}
+        />
+        <StudioPageSettingsDrawer
+          open={pageSettingsOpen}
+          page={page}
+          onClose={() => setPageSettingsOpen(false)}
+          update={update}
+          onSavedLink={() => notify(t("studio.link_saved", "Links saglabāts."), "ok")}
+          onError={(message) => notify(message, "error")}
         />
       </div>
     </AppShell>
@@ -513,6 +545,15 @@ function IconLanguage() {
     <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
       <circle cx="12" cy="12" r="9" />
       <path d="M3 12h18M12 3c2.5 2.8 4 6 4 9s-1.5 6.2-4 9M12 3c-2.5 2.8-4 6-4 9s1.5 6.2 4 9" />
+    </svg>
+  );
+}
+
+function IconSettings() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="2.5" />
+      <path d="M12 3v2M12 19v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M3 12h2M19 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
     </svg>
   );
 }

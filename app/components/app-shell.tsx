@@ -14,6 +14,7 @@ import {
   subscribeStore,
 } from "@/app/lib/store";
 import { useExpiredTrialClientRedirect } from "@/app/lib/trial/use-expired-trial-client-redirect";
+import { useScheduledDeletionClientRedirect } from "@/app/lib/account/use-scheduled-deletion-redirect";
 
 function useIsMobileShell() {
   const [mobile, setMobile] = useState(false);
@@ -39,9 +40,33 @@ export function AppShell({ children }: { children: ReactNode }) {
   const isMobile = useIsMobileShell();
   const [menuOpen, setMenuOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [deletionScheduled, setDeletionScheduled] = useState(false);
   const anyOpen = menuOpen || adminOpen;
 
   useExpiredTrialClientRedirect();
+
+  useEffect(() => {
+    if (!sessionId) {
+      setDeletionScheduled(false);
+      return;
+    }
+    let cancelled = false;
+    void fetch("/api/account/deletion/status", { credentials: "same-origin" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data && typeof data.scheduled === "boolean") {
+          setDeletionScheduled(data.scheduled === true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setDeletionScheduled(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, pathname]);
+
+  useScheduledDeletionClientRedirect(deletionScheduled);
 
   useEffect(() => {
     if (!anyOpen) return;

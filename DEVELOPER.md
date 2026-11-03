@@ -28,7 +28,7 @@ Link-in-bio / portfolio lapas. Lietotājs reģistrējas, paņem `presh.me/{handl
 - Google: pašu OAuth (`app/lib/auth/google-oauth.ts`) — `/auth/google/sign-in` → Google → `/auth/callback`; lietotājs caur admin `createUser` + magiclink `verifyOtp` (ne Supabase Google provider)
 - `public.users`: **pirmais** ieraksts → `is_admin = true`; pārējie `false`
 - `public.pages`: handle + jsonb `content`; publiski `published`; īpašnieks CRUD; admin redz visu
-- Arī: `admin_todos`, `user_feedback`, `contact_messages`, `site_languages`, `site_translations`, `site_settings` (t.sk. `maintenance`, `trial_period_days`), `auth_lockouts`, storage usage kolonnas; abonementi (`subscription_plans`, `user_subscriptions`, Stripe webhook); **`page_booking_reservations`**
+- Arī: `admin_todos`, `user_feedback`, `contact_messages`, `site_languages`, `site_translations`, `site_settings` (t.sk. `maintenance`, `trial_period_days`), `auth_lockouts`, storage usage kolonnas; abonementi (`subscription_plans`, `user_subscriptions`, Stripe webhook, gada cena, pending downgrade); **`page_booking_reservations`**; konta dzēšanas plānošana (`users` deletion kolonnas, cron purge)
 - Labā admin josla tikai `is_admin = true`; navigācijas badge: `fetchAdminNavCounts()` (`app/lib/admin-nav-counts.ts`), refresh ~45s + focus (`admin-sidebar.tsx`); Settings bez badge
 - Marketing top nav: `Header` slēpj tikai ar apstiprinātu sesiju (`sessionId` vai SSR `hideMarketingHeader`); novecojusi `presh_session` tiek notīrīta (`resolveSessionHintForRequest`)
 
@@ -53,7 +53,7 @@ Admin josla: tikai `isSessionAdmin()` (`users.is_admin`).
 | `/auth/google/sign-in`, `/auth/callback` | Pašu Google OAuth |
 | `/start` | Onboarding (6 soļi) pēc reģistrācijas vai „Jauns links” |
 | `/studio` | Redaktors (Pamati / Skats / Izskats) |
-| `/settings` | Konta uzstādījumi |
+| `/settings` | Konta uzstādījumi (t.sk. konta dzēšana, abonements) |
 | `/bug`, `/suggestions`, `/feedback`, `/contact` | Atbalsta formas (arī dialogi no kreisās joslas); bug/suggestion — neobligāti attēli |
 | `/admin/*` | Admin josla: Todo → Lietotāji → Linki → Ziņojumi → Integrācijas → Moduļi → Valodas → Tulkojumi → Uzstādījumi; `isAdmin` gate; Valodas/Tulkojumi: `+ Pievienot` + side drawer |
 | `/` (viesim) | Claim + soļi + features/pricing/FAQ; JSON-LD; header: logo + valoda + login |
@@ -98,7 +98,7 @@ Trīs kolonnas (xl+): Pamati | priekšskats (`DevicePreview`) | Izskats.
 - Pamatu izvēlnē Sociālie/Bloki ir sortable (`stackOrder`); secība atspoguļojas `PageView`.
 - **Valoda** (`studio-page-language-drawer`): `content.publicLanguageCode` — fiksēta UI valoda publiskajā lapā (`PublicPageI18nShell`) un studijas priekšskatā (`PageLanguageScope`); tukšs = apmeklētāja valoda.
 - Bloki: `BlocksEditor` + `block-faces` / `lib/blocks.ts` — tipi: saite, teksts, YouTube, attēls, Spotify, resumē (timeline), Instagram režģis, citāts, FAQ, **booking** (`page-booking-ui`, lazy chunk; kalendārs, Turnstile kad ieslēgts, `GET/POST /api/booking/*`, e-pasti `booking_owner` / `booking_guest`, DB `page_booking_reservations` + `025` length CHECK); DnD; sidemodāļi bez blur; draft priekšskats.
-- Pamatos (toggle): **Contact** (`page-contact-ui`), **Share** (`page-share-ui`); ar moduļa atbalstu **Analytics** (`module_umami`, `studio-analytics-editor`, `PageUmamiTracker`).
+- Pamatos (toggle): **Contact** (`page-contact-ui`), **Share** (`page-share-ui`); ar moduļa atbalstu **Analytics** (`module_umami`, `studio-analytics-editor`, `PageUmamiTracker`); **Abonements** (`module_paid`, Stripe checkout / change-plan, `studio-plan-picker-drawer`).
 - Izskats → Teksts: vārds, tagline, bio tipogrāfija; **Bloku stils** drill-down pievienotajiem blokiem (`BlockStyleFields`).
 - Attēlu lauki: `ImageDropField` / `ImageField`.
 

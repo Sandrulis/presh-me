@@ -6,6 +6,7 @@ export type SubscriptionPlan = {
   id: string;
   planKey: string;
   priceAmount: number;
+  priceAmountAnnual: number;
   sortOrder: number;
   isActive: boolean;
   names: Record<string, string>;
@@ -16,6 +17,7 @@ type PlanRow = {
   id: string;
   plan_key: string;
   price_amount: number | string;
+  price_amount_annual: number | string;
   sort_order: number;
   is_active: boolean;
 };
@@ -30,7 +32,7 @@ export async function listSubscriptionPlans(): Promise<SubscriptionPlan[]> {
   const [plansRes, i18nRes, modulesRes] = await Promise.all([
     supabase
       .from("subscription_plans")
-      .select("id, plan_key, price_amount, sort_order, is_active")
+      .select("id, plan_key, price_amount, price_amount_annual, sort_order, is_active")
       .order("sort_order", { ascending: true })
       .order("plan_key", { ascending: true }),
     supabase.from("subscription_plan_i18n").select("plan_id, language_code, name"),
@@ -63,6 +65,7 @@ export async function listSubscriptionPlans(): Promise<SubscriptionPlan[]> {
     id: row.id,
     planKey: row.plan_key,
     priceAmount: parseAmount(row.price_amount),
+    priceAmountAnnual: parseAmount(row.price_amount_annual),
     sortOrder: row.sort_order,
     isActive: row.is_active,
     names: namesByPlan.get(row.id) ?? {},
@@ -74,6 +77,7 @@ export async function saveSubscriptionPlan(input: {
   id?: string;
   planKey: string;
   priceAmount: number;
+  priceAmountAnnual: number;
   isActive: boolean;
   names: Record<string, string>;
   moduleKeys: string[];
@@ -84,6 +88,9 @@ export async function saveSubscriptionPlan(input: {
   if (!Number.isFinite(input.priceAmount) || input.priceAmount < 0) {
     throw new Error("Cena jābūt nenegatīvam skaitlim.");
   }
+  if (!Number.isFinite(input.priceAmountAnnual) || input.priceAmountAnnual < 0) {
+    throw new Error("Gada cena jābūt nenegatīvam skaitlim.");
+  }
 
   let planId = input.id;
 
@@ -93,6 +100,7 @@ export async function saveSubscriptionPlan(input: {
       .update({
         plan_key: planKey,
         price_amount: input.priceAmount,
+        price_amount_annual: input.priceAmountAnnual,
         is_active: input.isActive,
       })
       .eq("id", planId);
@@ -110,6 +118,7 @@ export async function saveSubscriptionPlan(input: {
       .insert({
         plan_key: planKey,
         price_amount: input.priceAmount,
+        price_amount_annual: input.priceAmountAnnual,
         is_active: input.isActive,
         sort_order: sortOrder,
       })

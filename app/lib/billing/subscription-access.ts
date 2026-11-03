@@ -1,8 +1,13 @@
 import type Stripe from "stripe";
+import type { BillingInterval } from "@/app/lib/billing/billing-interval";
+import { parseBillingInterval } from "@/app/lib/billing/billing-interval";
 
 export type UserSubscriptionRow = {
   user_id: string;
   plan_id: string | null;
+  pending_plan_id: string | null;
+  pending_plan_effective_at: string | null;
+  billing_interval: string;
   stripe_customer_id: string;
   stripe_subscription_id: string | null;
   status: string;
@@ -13,6 +18,10 @@ export type UserSubscriptionRow = {
 export type UserSubscriptionView = {
   planKey: string | null;
   planName: string | null;
+  pendingPlanKey: string | null;
+  pendingPlanName: string | null;
+  pendingEffectiveAt: string | null;
+  billingInterval: BillingInterval | null;
   status: string;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
@@ -51,12 +60,19 @@ export function mapSubscriptionView(
   row: UserSubscriptionRow | null,
   planKey: string | null,
   planName: string | null,
+  pendingPlanKey: string | null = null,
+  pendingPlanName: string | null = null,
 ): UserSubscriptionView | null {
   if (!row) return null;
   if (!row.stripe_subscription_id && row.status === "none") return null;
+  const billingInterval = parseBillingInterval(row.billing_interval);
   return {
     planKey,
     planName,
+    pendingPlanKey,
+    pendingPlanName,
+    pendingEffectiveAt: row.pending_plan_effective_at,
+    billingInterval,
     status: row.status,
     currentPeriodEnd: row.current_period_end,
     cancelAtPeriodEnd: row.cancel_at_period_end,

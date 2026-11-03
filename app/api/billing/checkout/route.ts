@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  let body: { planKey?: string };
+  let body: { planKey?: string; billingInterval?: string };
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -18,6 +18,7 @@ export async function POST(request: Request) {
 
   const planKey = body.planKey?.trim().toLowerCase();
   if (!planKey) return NextResponse.json({ error: "Missing planKey" }, { status: 400 });
+  const billingInterval = body.billingInterval === "year" ? "year" : "month";
 
   const { data: profile } = await supabase
     .from("users")
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
       email: user.email ?? "",
       planKey,
       languageCode,
+      billingInterval,
     });
     return NextResponse.json({ url });
   } catch (error) {
@@ -43,6 +45,9 @@ export async function POST(request: Request) {
     }
     if (code === "plan_not_found" || code === "plan_price_invalid") {
       return NextResponse.json({ error: code }, { status: 400 });
+    }
+    if (code === "active_subscription") {
+      return NextResponse.json({ error: "active_subscription" }, { status: 409 });
     }
     return NextResponse.json({ error: "checkout_failed" }, { status: 500 });
   }

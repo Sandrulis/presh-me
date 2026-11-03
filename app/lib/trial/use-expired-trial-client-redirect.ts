@@ -7,10 +7,11 @@ import { isFrontendModuleEnabled } from "@/app/lib/site-admin/modules";
 import { getSiteSettings, refreshSiteAdmin, subscribeSiteAdmin } from "@/app/lib/site-admin/store";
 import { isStoreReady, readSessionPage, subscribeStore } from "@/app/lib/store";
 
-const CLIENT_APP_PATHS = ["/studio", "/start", "/settings"] as const;
+/** Konta `/settings` paliek pieejams arī pēc trial (e-pasts, MFA, preferences). */
+const TRIAL_LOCKOUT_PATHS = ["/studio", "/start"] as const;
 
-function isClientAppPath(pathname: string) {
-  return CLIENT_APP_PATHS.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+function isTrialLockoutPath(pathname: string) {
+  return TRIAL_LOCKOUT_PATHS.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
 /** Kad module_trail un trial beidzies, klienta zona → sākumlapa (izņemot aktīvu abonementu). */
@@ -22,6 +23,7 @@ export function useExpiredTrialClientRedirect() {
   const settings = useSyncExternalStore(subscribeSiteAdmin, getSiteSettings, getSiteSettings);
   const [trailModuleEnabled, setTrailModuleEnabled] = useState(false);
   const [paidAccess, setPaidAccess] = useState(false);
+  const [billingResolved, setBillingResolved] = useState(false);
 
   useEffect(() => {
     void refreshSiteAdmin();
@@ -38,16 +40,25 @@ export function useExpiredTrialClientRedirect() {
   }, []);
 
   useEffect(() => {
-    if (!ready || !page) return;
+    if (!ready || !page) {
+      setBillingResolved(false);
+      setPaidAccess(false);
+      return;
+    }
     let cancelled = false;
+    setBillingResolved(false);
+    setPaidAccess(false);
     void fetch("/api/billing/status", { credentials: "same-origin" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (cancelled || !data) return;
-        setPaidAccess(data.hasActiveAccess === true);
+        if (cancelled) return;
+        setPaidAccess(data?.hasActiveAccess === true);
       })
       .catch(() => {
         if (!cancelled) setPaidAccess(false);
+      })
+      .finally(() => {
+        if (!cancelled) setBillingResolved(true);
       });
     return () => {
       cancelled = true;
@@ -55,9 +66,19 @@ export function useExpiredTrialClientRedirect() {
   }, [ready, page?.id]);
 
   useEffect(() => {
-    if (!ready || !page || !trailModuleEnabled || !isClientAppPath(pathname)) return;
+    if (!ready || !page || !trailModuleEnabled || !isTrialLockoutPath(pathname)) return;
     if (!isTrialPeriodExpired(page, settings.trialPeriodDays)) return;
+    if (!billingResolved) return;
     if (paidAccess) return;
     router.replace("/");
-  }, [ready, page, trailModuleEnabled, settings.trialPeriodDays, pathname, router, paidAccess]);
+  }, [
+    ready,
+    page,
+    trailModuleEnabled,
+    settings.trialPeriodDays,
+    pathname,
+    router,
+    paidAccess,
+    billingResolved,
+  ]);
 }

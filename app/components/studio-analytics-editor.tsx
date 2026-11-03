@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { UmamiDashboard } from "@/app/components/admin-umami-dashboard";
 import { FieldFrame } from "@/app/components/field-frame";
 import { StudioGroup } from "@/app/components/studio-nav";
+import { StudioPlanPickerDrawer } from "@/app/components/studio-plan-picker-drawer";
 import { useTranslations } from "@/app/components/translations-provider";
 import { sanitizeUmamiWebsiteId } from "@/app/lib/integrations/umami/sanitize";
 import { parseUmamiShareUrl } from "@/app/lib/integrations/umami/share";
@@ -23,6 +23,7 @@ type Props = {
 
 export function StudioAnalyticsEditor({ page, update, onError, onSaved, paidLocked }: Props) {
   const { t } = useTranslations();
+  const [planPickerOpen, setPlanPickerOpen] = useState(false);
   const shareValid = Boolean(parseUmamiShareUrl(page.umamiShareUrl ?? ""));
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shareDraftRef = useRef(page.umamiShareUrl ?? "");
@@ -95,17 +96,24 @@ export function StudioAnalyticsEditor({ page, update, onError, onSaved, paidLock
 
   if (paidLocked) {
     return (
-      <StudioGroup>
-        <p className="text-sm leading-relaxed text-[var(--muted)]">
-          {t(
-            "studio.analytics.paid_required",
-            "Analytics ir pieejams ar aktīvu abonementu, kas ietver šo moduli.",
-          )}
-        </p>
-        <Link href="/settings" className="btn-line mt-3 inline-flex w-full justify-center">
-          {t("studio.analytics.view_plans", "Skatīt plānus")}
-        </Link>
-      </StudioGroup>
+      <>
+        <StudioGroup>
+          <p className="text-sm leading-relaxed text-[var(--muted)]">
+            {t(
+              "studio.analytics.paid_required",
+              "Analytics ir pieejams ar aktīvu abonementu, kas ietver šo moduli.",
+            )}
+          </p>
+          <button
+            type="button"
+            className="btn-line mt-3 inline-flex w-full justify-center"
+            onClick={() => setPlanPickerOpen(true)}
+          >
+            {t("studio.analytics.view_plans", "Skatīt plānus")}
+          </button>
+        </StudioGroup>
+        <StudioPlanPickerDrawer open={planPickerOpen} onClose={() => setPlanPickerOpen(false)} />
+      </>
     );
   }
 

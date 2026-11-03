@@ -8,9 +8,13 @@ import { FeedbackToasts, useNotices } from "@/app/components/feedback-toast";
 import { Logo } from "@/app/components/logo";
 import { SiteContactDialog } from "@/app/components/site-contact-dialog";
 import { SiteFeedbackDialog } from "@/app/components/site-feedback-dialog";
+import { StudioPlanPickerDrawer } from "@/app/components/studio-plan-picker-drawer";
 import { StudioStorageMeter } from "@/app/components/studio-storage-meter";
 import { useTranslations } from "@/app/components/translations-provider";
 import type { FeedbackKind } from "@/app/lib/feedback/types";
+import { useSubscriptionPlanLabels } from "@/app/lib/billing/use-subscription-plan-labels";
+import { isModuleProLocked } from "@/app/lib/modules/is-module-pro-locked";
+import { useFrontendModuleAccess } from "@/app/lib/modules/use-frontend-module-access";
 import { isFrontendModuleEnabled } from "@/app/lib/site-admin/modules";
 import {
   createPageForAccount,
@@ -34,7 +38,7 @@ type StudioSidebarProps = {
 export function StudioSidebar({ open, mobile = false, onOpenChange }: StudioSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { t } = useTranslations();
+  const { t, languageCode } = useTranslations();
   const sessionId = useSyncExternalStore(subscribeStore, getSessionId, () => null);
   const pages = useSyncExternalStore(subscribeStore, readSessionPages, () => EMPTY_PAGES);
   const activePage = useSyncExternalStore(subscribeStore, readSessionPage, () => null);
@@ -42,7 +46,17 @@ export function StudioSidebar({ open, mobile = false, onOpenChange }: StudioSide
   const activeId = useSyncExternalStore(subscribeStore, getActivePageId, () => null);
   const compact = !open;
   const [linksOpen, setLinksOpen] = useState(false);
+  const [planPickerOpen, setPlanPickerOpen] = useState(false);
   const [multisitesOn, setMultisitesOn] = useState(false);
+  const { access: multisitesAccess } = useFrontendModuleAccess("module_multisites");
+  const { badgeLabelForModule } = useSubscriptionPlanLabels(languageCode);
+  const multisitesProLocked = isModuleProLocked(multisitesAccess);
+  const multisitesPlanBadge = multisitesProLocked
+    ? badgeLabelForModule("module_multisites", t("studio.subscription.plan_unknown", "Plāns"))
+    : null;
+  const multisitesPlanBadgeLabel = multisitesPlanBadge
+    ? t("studio.basics.plan_badge", "Pieejams ar plānu {plan}", { plan: multisitesPlanBadge })
+    : null;
   const [feedbackKind, setFeedbackKind] = useState<FeedbackKind | null>(null);
   const [contactOpen, setContactOpen] = useState(false);
   const { notices, notify, dismissNotice } = useNotices();
@@ -109,6 +123,11 @@ export function StudioSidebar({ open, mobile = false, onOpenChange }: StudioSide
 
   function createLink() {
     if (!sessionId || !multisitesOn) return;
+    if (multisitesProLocked) {
+      setLinksOpen(false);
+      setPlanPickerOpen(true);
+      return;
+    }
     void createPageForAccount(sessionId);
     setLinksOpen(false);
     router.push("/start");
@@ -171,7 +190,7 @@ export function StudioSidebar({ open, mobile = false, onOpenChange }: StudioSide
               chevron={multisitesOn ? linksOpen : undefined}
             />
             {multisitesOn && linksOpen && !compact ? (
-              <div className="absolute z-50 mt-1 left-0 right-0 min-w-[12rem] overflow-hidden rounded-xl border border-[var(--line)] bg-white py-1 shadow-lg">
+              <div className="absolute z-50 mt-1 left-0 right-0 min-w-[12rem] overflow-visible rounded-xl border border-[var(--line)] bg-white py-1 shadow-lg">
                 {pages.map((page) => {
                   const selected = (activeId ?? current?.id) === page.id;
                   return (
@@ -194,8 +213,16 @@ export function StudioSidebar({ open, mobile = false, onOpenChange }: StudioSide
                 <button
                   type="button"
                   onClick={createLink}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-[var(--paper)]"
+                  className="relative flex w-full items-center gap-2 overflow-visible px-3 py-2 text-left text-sm hover:bg-[var(--paper)]"
                 >
+                  {multisitesPlanBadge ? (
+                    <span
+                      className="pointer-events-none absolute -right-1 -top-1 z-[2] rounded-md bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white shadow-[0_1px_2px_rgba(14,17,22,0.12)]"
+                      title={multisitesPlanBadgeLabel ?? multisitesPlanBadge}
+                    >
+                      {multisitesPlanBadge}
+                    </span>
+                  ) : null}
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[var(--paper)] text-[var(--muted)]">
                     <IconPlus />
                   </span>
@@ -276,6 +303,7 @@ export function StudioSidebar({ open, mobile = false, onOpenChange }: StudioSide
       {contactOpen ? (
         <SiteContactDialog account={account} notify={notify} onClose={() => setContactOpen(false)} />
       ) : null}
+      <StudioPlanPickerDrawer open={planPickerOpen} onClose={() => setPlanPickerOpen(false)} />
       <FeedbackToasts notices={notices} onDismiss={dismissNotice} />
     </aside>
   );

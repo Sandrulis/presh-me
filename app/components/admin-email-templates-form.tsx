@@ -8,7 +8,10 @@ import { buildEmailHtml, buildNotificationEmailHtml } from "@/app/lib/email/buil
 import { saveEmailTemplateDrafts } from "@/app/lib/email/templates-server";
 import {
   fallbackFooter,
+  isAccountDeletionNotificationKind,
+  isBookingEmailKind,
   isSimpleEmailKind,
+  isSubscriptionEmailKind,
   type EmailTemplateDraft,
   type EmailTemplateKind,
 } from "@/app/lib/email/templates";
@@ -32,6 +35,30 @@ const TEMPLATE_LABELS: Record<EmailTemplateKind, { key: string; fallback: string
     key: "admin.email_templates.kind.booking_guest",
     fallback: "Booking — pieteicējam",
   },
+  account_deletion_confirm: {
+    key: "admin.email_templates.kind.account_deletion_confirm",
+    fallback: "Konta dzēšanas apstiprinājums",
+  },
+  account_deletion_completed: {
+    key: "admin.email_templates.kind.account_deletion_completed",
+    fallback: "Konts dzēsts pēc termiņa",
+  },
+  account_deletion_cancelled: {
+    key: "admin.email_templates.kind.account_deletion_cancelled",
+    fallback: "Konta dzēšana atcelta",
+  },
+  subscription_purchased: {
+    key: "admin.email_templates.kind.subscription_purchased",
+    fallback: "Abonements — jauns pirkums",
+  },
+  subscription_plan_upgraded: {
+    key: "admin.email_templates.kind.subscription_plan_upgraded",
+    fallback: "Abonements — plāna paaugstināšana",
+  },
+  subscription_plan_downgraded: {
+    key: "admin.email_templates.kind.subscription_plan_downgraded",
+    fallback: "Abonements — plāna pazemināšana",
+  },
 };
 
 const PREVIEW_PARAMS = {
@@ -44,6 +71,12 @@ const PREVIEW_PARAMS = {
   email: "klients@example.com",
   comment: "Vēlos īsu konsultāciju.",
   comment_line: "Tavs komentārs: Vēlos īsu konsultāciju.",
+  plan: "Pro",
+  previous_plan: "Basic",
+  price: "€ 9.99",
+  period: "mēnesī",
+  effective_date: "05.12.2026.",
+  days: "30",
 };
 
 function cloneTemplates(templates: EmailTemplateDraft[]) {
@@ -83,19 +116,22 @@ export function AdminEmailTemplatesForm({
     const body = interpolate(current.bodies[lang] || "", PREVIEW_PARAMS);
     const heading = subject.replace(/\s*[—–-]\s*.*$/, "").trim() || subject;
     if (isSimpleEmailKind(current.kind)) {
+      const details = isBookingEmailKind(current.kind)
+        ? [
+            { label: lang === "lv" ? "Datums" : "Date", value: PREVIEW_PARAMS.date },
+            { label: lang === "lv" ? "Laiks" : "Time", value: PREVIEW_PARAMS.time },
+            ...(current.kind === "booking_owner"
+              ? [{ label: lang === "lv" ? "E-pasts" : "Email", value: PREVIEW_PARAMS.email }]
+              : []),
+            { label: lang === "lv" ? "Komentārs" : "Comment", value: PREVIEW_PARAMS.comment },
+          ]
+        : [];
       return buildNotificationEmailHtml({
         systemName: PREVIEW_PARAMS.system,
         heading,
         bodyText: body,
         accentColor: "#2f9e57",
-        details: [
-          { label: lang === "lv" ? "Datums" : "Date", value: PREVIEW_PARAMS.date },
-          { label: lang === "lv" ? "Laiks" : "Time", value: PREVIEW_PARAMS.time },
-          ...(current.kind === "booking_owner"
-            ? [{ label: lang === "lv" ? "E-pasts" : "Email", value: PREVIEW_PARAMS.email }]
-            : []),
-          { label: lang === "lv" ? "Komentārs" : "Comment", value: PREVIEW_PARAMS.comment },
-        ],
+        details,
       });
     }
     const button = interpolate(current.buttons[lang] || "", PREVIEW_PARAMS);
@@ -194,11 +230,19 @@ export function AdminEmailTemplatesForm({
               value={current?.bodies[lang] ?? ""}
               onChange={(event) => patch("bodies", event.target.value)}
             />
-            {current && isSimpleEmailKind(current.kind) ? (
+            {current && isBookingEmailKind(current.kind) ? (
               <p className="mt-1 text-xs text-[var(--muted)]">
                 {t(
                   "admin.email_templates.placeholders_booking",
                   "Placeholders: {page}, {date}, {time}, {email}, {comment}, {comment_line}, {system}",
+                )}
+              </p>
+            ) : null}
+            {current && isAccountDeletionNotificationKind(current.kind) ? (
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                {t(
+                  "admin.email_templates.placeholders_account_deletion",
+                  "Placeholders: {name}, {days} (tikai „Konts dzēsts”), {system}",
                 )}
               </p>
             ) : null}
@@ -211,10 +255,25 @@ export function AdminEmailTemplatesForm({
                 value={current?.buttons[lang] ?? ""}
                 onChange={(event) => patch("buttons", event.target.value)}
               />
+              {isSubscriptionEmailKind(current.kind) ? (
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  {t(
+                    "admin.email_templates.placeholders_subscription",
+                    "Placeholders: {name}, {plan}, {previous_plan}, {price}, {period}, {effective_date}, {link}, {system}",
+                  )}
+                </p>
+              ) : null}
             </label>
           ) : (
             <p className="text-sm text-[var(--muted)]">
-              {t("admin.email_templates.no_button", "Šim dizainam nav CTA pogas — tikai teksts un detaļu bloks.")}
+              {t(
+                isAccountDeletionNotificationKind(current?.kind ?? "signup")
+                  ? "admin.email_templates.no_button_text_only"
+                  : "admin.email_templates.no_button",
+                isAccountDeletionNotificationKind(current?.kind ?? "signup")
+                  ? "Šim dizainam nav CTA pogas — tikai teksts."
+                  : "Šim dizainam nav CTA pogas — tikai teksts un detaļu bloks.",
+              )}
             </p>
           )}
           <div className="flex justify-end pt-2">

@@ -199,14 +199,19 @@ export function isHandleTaken(handle: string, ignorePageId?: string) {
   return Boolean(match);
 }
 
-export async function checkHandleAvailable(handle: string) {
+export async function checkHandleAvailable(handle: string, ignorePageId?: string) {
   const normalized = normalizeHandle(handle);
   if (RESERVED_HANDLES.has(normalized)) return false;
-  if (isHandleTaken(normalized)) return false;
+  if (isHandleTaken(normalized, ignorePageId)) return false;
   const supabase = createClient();
   const { data, error } = await supabase.rpc("is_handle_available", { p_handle: normalized });
-  if (error) return !isHandleTaken(normalized);
-  return Boolean(data);
+  if (error) return !isHandleTaken(normalized, ignorePageId);
+  if (data === true) return true;
+  if (ignorePageId) {
+    const { data: row } = await supabase.from("pages").select("id").eq("handle", normalized).maybeSingle();
+    if (row?.id === ignorePageId) return true;
+  }
+  return false;
 }
 
 /** Vecāks Instagram imports lika profila bildi galerijā. Tā pieder avataram. */
@@ -398,6 +403,7 @@ export async function hydrateSession() {
 
   void refreshSessionStorageUsage();
   void reportPresence();
+  void fetch("/api/account/deletion/reactivate", { method: "POST", credentials: "same-origin" });
 }
 
 /** Record last seen + IP/country for the signed-in user (server throttles writes). */

@@ -7,6 +7,7 @@ import { FeedbackToasts, useNotices } from "@/app/components/feedback-toast";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
 import { LoadingScreen } from "@/app/components/loading-screen";
 import { MfaSettingsCard } from "@/app/components/mfa-settings-card";
+import { SettingsDangerZone } from "@/app/components/settings-danger-zone";
 import { useTranslations } from "@/app/components/translations-provider";
 import { requestEmailChangeAction } from "@/app/lib/auth/register-action";
 import {
@@ -420,6 +421,8 @@ export function SettingsApp({ mfaReason = null }: { mfaReason?: string | null })
               </button>
             </div>
           </form>
+
+          <SettingsDangerZone notify={notify} />
         </div>
       </main>
     </AppShell>

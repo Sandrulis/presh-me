@@ -11,6 +11,9 @@ export type StudioMenuItem = {
   title: string;
   hint?: string;
   icon: ReactNode;
+  /** Plāna nosaukums (badge), ja funkcija prasa augstāku plānu. */
+  planBadge?: string;
+  planBadgeLabel?: string;
   /** Var vilkt, lai mainītu prioritāti starp citām sortable kartītēm. */
   sortable?: boolean;
   /** Slēdzis Pamatu sarakstā (neatver detaļu skatu). */
@@ -108,7 +111,7 @@ export function StudioMenu({
                 }
                 clearDrag();
               }}
-              className={`relative flex items-stretch gap-1 rounded-[10px] transition-[opacity,border-color,box-shadow,border-width] duration-150 ${
+              className={`relative flex items-stretch gap-1 overflow-visible rounded-[10px] transition-[opacity,border-color,box-shadow,border-width] duration-150 ${
                 dragging
                   ? "border-2 border-dashed border-[var(--accent)] opacity-[0.35]"
                   : "border border-transparent opacity-100"
@@ -134,7 +137,15 @@ export function StudioMenu({
                   <DragHandle />
                 </button>
               ) : null}
-              <div className="choice flex min-w-0 flex-1 items-center gap-2.5 !px-[0.6rem] !py-[0.54rem] !shadow-none">
+              <div className="choice relative flex min-w-0 flex-1 items-center gap-2.5 overflow-visible !px-[0.6rem] !py-[0.54rem] !shadow-none">
+                {item.planBadge ? (
+                  <span
+                    className="pointer-events-none absolute -right-1.5 -top-1.5 z-[2] rounded-md bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white shadow-[0_1px_2px_rgba(14,17,22,0.12)]"
+                    title={item.planBadgeLabel ?? item.planBadge}
+                  >
+                    {item.planBadge}
+                  </span>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => onOpen(item.id)}
