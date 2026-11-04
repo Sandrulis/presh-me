@@ -766,6 +766,7 @@
   "landing.pricing.free.body": "Prendi un link, crea la pagina, pubblica. Niente ads nel tuo bio.",
   "landing.pricing.period.beta": "beta",
   "landing.pricing.period.year": "anno",
+  "landing.pricing.annual_total": "({amount})",
   "landing.pricing.pro.badge": "Pro",
   "landing.pricing.pro.body": "Analytics più ricche, più profili e opzioni team.",
   "landing.pricing.pro.period": "mese",

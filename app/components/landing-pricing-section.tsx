@@ -29,17 +29,30 @@ function planHasPaidPricing(plan: LandingPricingPlan): boolean {
   return plan.priceAmountMonthly > 0 || plan.priceAmountAnnual > 0;
 }
 
-function resolvePlanPriceDisplay(plan: LandingPricingPlan, interval: BillingInterval) {
+function formatPlanPriceCompact(amount: number) {
+  return formatPlanPrice(amount).replace("€ ", "€");
+}
+
+type PlanPriceDisplay = {
+  priceLabel: string;
+  periodKey: LandingPricingPlan["periodKey"];
+  /** When billing annually: total year amount in smaller type (parentheses). */
+  annualTotalLabel?: string;
+};
+
+function resolvePlanPriceDisplay(plan: LandingPricingPlan, interval: BillingInterval): PlanPriceDisplay {
   if (interval === "year" && plan.priceAmountAnnual > 0) {
+    const monthlyEquivalent = plan.priceAmountAnnual / 12;
     return {
-      priceLabel: formatPlanPrice(plan.priceAmountAnnual).replace("€ ", "€"),
-      periodKey: "landing.pricing.period.year" as const,
+      priceLabel: formatPlanPriceCompact(monthlyEquivalent),
+      periodKey: "landing.pricing.pro.period",
+      annualTotalLabel: formatPlanPriceCompact(plan.priceAmountAnnual),
     };
   }
   if (plan.priceAmountMonthly > 0) {
     return {
-      priceLabel: formatPlanPrice(plan.priceAmountMonthly).replace("€ ", "€"),
-      periodKey: "landing.pricing.pro.period" as const,
+      priceLabel: formatPlanPriceCompact(plan.priceAmountMonthly),
+      periodKey: "landing.pricing.pro.period",
     };
   }
   return {
@@ -131,15 +144,21 @@ export function LandingPricingSection({ pricing }: { pricing: LandingPricingData
                 >
                   {pricingText(plan.badgeKey, plan.name)}
                 </p>
-                <p className="mt-3 font-display text-4xl font-bold tracking-[-0.03em]">
-                  {display.priceLabel}
+                <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="font-display text-4xl font-bold tracking-[-0.03em]">
+                    {display.priceLabel}
+                  </span>
                   {period ? (
-                    <span className="text-base font-sans font-normal text-[var(--muted)]">
-                      {" "}
-                      / {period}
+                    <span className="text-base font-sans font-normal text-[var(--muted)]">/ {period}</span>
+                  ) : null}
+                  {display.annualTotalLabel ? (
+                    <span className="text-sm font-sans font-normal text-[var(--muted)]">
+                      {pricingText("landing.pricing.annual_total", "({amount})", {
+                        amount: display.annualTotalLabel,
+                      })}
                     </span>
                   ) : null}
-                </p>
+                </div>
                 <p className="mt-2 flex-1 text-sm leading-relaxed text-[var(--muted)]">
                   {pricingText(plan.bodyKey, plan.name)}
                 </p>

@@ -766,6 +766,7 @@ export const es: Record<string, string> = {
   "landing.pricing.free.body": "Reclama un enlace, arma tu página, publica. Sin anuncios en tu bio.",
   "landing.pricing.period.beta": "beta",
   "landing.pricing.period.year": "año",
+  "landing.pricing.annual_total": "({amount})",
   "landing.pricing.pro.badge": "Pro",
   "landing.pricing.pro.body": "Analítica más profunda, varios perfiles y opciones de equipo.",
   "landing.pricing.pro.period": "mes",

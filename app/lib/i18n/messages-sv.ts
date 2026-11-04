@@ -766,6 +766,7 @@ export const sv: Record<string, string> = {
   "landing.pricing.free.body": "Ta en länk, bygg sidan, publicera. Inga annonser i din bio.",
   "landing.pricing.period.beta": "beta",
   "landing.pricing.period.year": "år",
+  "landing.pricing.annual_total": "({amount})",
   "landing.pricing.pro.badge": "Pro",
   "landing.pricing.pro.body": "Djupare analys, flera profiler och teamval.",
   "landing.pricing.pro.period": "månad",

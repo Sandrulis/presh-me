@@ -766,6 +766,7 @@
   "landing.pricing.free.body": "Claim een link, bouw je pagina, publiceer. Geen ads in je bio.",
   "landing.pricing.period.beta": "bèta",
   "landing.pricing.period.year": "jaar",
+  "landing.pricing.annual_total": "({amount})",
   "landing.pricing.pro.badge": "Pro",
   "landing.pricing.pro.body": "Diepere analytics, meerdere profielen en teamopties.",
   "landing.pricing.pro.period": "maand",

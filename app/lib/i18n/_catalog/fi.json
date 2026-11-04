@@ -766,6 +766,7 @@
   "landing.pricing.free.body": "Varaa linkki, rakenna sivu, julkaise. Ei mainoksia biossasi.",
   "landing.pricing.period.beta": "beta",
   "landing.pricing.period.year": "vuosi",
+  "landing.pricing.annual_total": "({amount})",
   "landing.pricing.pro.badge": "Pro",
   "landing.pricing.pro.body": "Syvempi analytiikka, useita profiileja ja tiimivaihtoehdot.",
   "landing.pricing.pro.period": "kk",

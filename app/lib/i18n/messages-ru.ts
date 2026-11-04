@@ -766,6 +766,7 @@ export const ru: Record<string, string> = {
   "landing.pricing.free.body": "Заберите ссылку, соберите страницу, опубликуйте. Без рекламы в вашем био.",
   "landing.pricing.period.beta": "бета",
   "landing.pricing.period.year": "в год",
+  "landing.pricing.annual_total": "({amount})",
   "landing.pricing.pro.badge": "Pro",
   "landing.pricing.pro.body": "Более глубокая аналитика, несколько профилей и командные опции.",
   "landing.pricing.pro.period": "в месяц",

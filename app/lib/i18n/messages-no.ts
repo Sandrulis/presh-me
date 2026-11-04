@@ -766,6 +766,7 @@ export const no: Record<string, string> = {
   "landing.pricing.free.body": "Ta en lenke, bygg siden, publiser. Ingen annonser i bioen din.",
   "landing.pricing.period.beta": "beta",
   "landing.pricing.period.year": "år",
+  "landing.pricing.annual_total": "({amount})",
   "landing.pricing.pro.badge": "Pro",
   "landing.pricing.pro.body": "Dypere analyse, flere profiler og teamvalg.",
   "landing.pricing.pro.period": "måned",

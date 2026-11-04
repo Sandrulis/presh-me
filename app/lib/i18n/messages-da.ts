@@ -766,6 +766,7 @@ export const da: Record<string, string> = {
   "landing.pricing.free.body": "Tag et link, byg din side, publicér. Ingen annoncer i din bio.",
   "landing.pricing.period.beta": "beta",
   "landing.pricing.period.year": "år",
+  "landing.pricing.annual_total": "({amount})",
   "landing.pricing.pro.badge": "Pro",
   "landing.pricing.pro.body": "Dybere analytics, flere profiler og teammuligheder.",
   "landing.pricing.pro.period": "måned",

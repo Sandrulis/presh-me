@@ -1,6 +1,6 @@
 # Presh
 
-**Current version:** `0.1.20`
+**Current version:** `0.1.21`
 
 Viena lapa visam, ko dari. Lietotājs reģistrējas (e-pasts vai Google), paņem savu `presh.me/vards` linku un studijā saliek portfolio: profilu, tagline, saites un tēmu. Ielogotam `/` ved uz studiju vai onboarding; ir kreisā studijas josla un labā admin josla.
 

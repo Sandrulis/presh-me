@@ -766,6 +766,7 @@
   "landing.pricing.free.body": "Užimkite nuorodą, sukurkite puslapį, publikuokite. Be reklamų jūsų bio.",
   "landing.pricing.period.beta": "beta",
   "landing.pricing.period.year": "metai",
+  "landing.pricing.annual_total": "({amount})",
   "landing.pricing.pro.badge": "Pro",
   "landing.pricing.pro.body": "Gilesnė analitika, keli profiliai ir komandos parinktys.",
   "landing.pricing.pro.period": "mėn.",

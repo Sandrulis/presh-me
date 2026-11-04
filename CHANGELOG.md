@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.1.21
+
+- Landing **Gada** cenu kartītēs: liels mēneša ekvivalents, iekavās mazāks gada kopsumma
+
 ## v0.1.20
 
 **Landing pricing un Stripe trial**
