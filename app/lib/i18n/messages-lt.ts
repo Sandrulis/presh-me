@@ -1343,4 +1343,6 @@ export const lt: Record<string, string> = {
   "admin.email_templates.placeholders_subscription": "Žymės: {name}, {plan}, {previous_plan}, {price}, {period}, {effective_date}, {link}, {system}",
   "admin.email_templates.no_button_text_only": "Nėra CTA mygtuko — tik tekstas.",
   "admin.email_templates.placeholders_account_deletion": "Žymės: {name}, {days} (tik „paskyra ištrinta“), {system}",
+  "studio.subscription.error_no_subscription": "Prenumerata nerasta. Atnaujinkite puslapį arba susisiekite su pagalba.",
+  "studio.subscription.error_stripe_unavailable": "Mokėjimai laikinai nepasiekiami.",
 };

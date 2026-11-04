@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useSyncExternalStore } from "react";
+import { FeedbackToasts, useNotices } from "@/app/components/feedback-toast";
 import {
   StudioBillingCancelButton,
   StudioBillingPlanButton,
@@ -8,6 +9,10 @@ import {
 } from "@/app/components/studio-billing-plan-button";
 import { useTranslations } from "@/app/components/translations-provider";
 import type { BillingStatusPayload } from "@/app/lib/billing/use-billing-status";
+import {
+  billingActionErrorMessageKey,
+  runBillingAction,
+} from "@/app/lib/billing/run-billing-action";
 import { mergeDisplayPreferences, previewDisplayDate, siteDisplayFromSettings, EMPTY_USER_DISPLAY_PREFERENCES } from "@/app/lib/display-preferences";
 import { getSiteSettings, subscribeSiteAdmin } from "@/app/lib/site-admin/store";
 
@@ -32,24 +37,32 @@ export function StudioSubscriptionPanel({ status, onChoosePlan, onChanged }: Pro
     [settings],
   );
   const [busy, setBusy] = useState<"cancel" | "resume" | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const { notices, notify, dismissNotice } = useNotices();
 
   const sub = status.subscription;
   const phase = status.phase;
   const planLabel = sub?.planName?.trim() || sub?.planKey || t("studio.subscription.plan_unknown", "Plāns");
 
   async function postAction(path: "/api/billing/cancel" | "/api/billing/resume") {
-    setFeedback(null);
     setBusy(path === "/api/billing/cancel" ? "cancel" : "resume");
-    try {
-      const res = await fetch(path, { method: "POST", credentials: "same-origin" });
-      if (!res.ok) throw new Error("failed");
+    const result = await runBillingAction(path);
+    if (result.ok) {
       onChanged();
-    } catch {
-      setFeedback(t("studio.subscription.action_failed", "Darbība neizdevās. Mēģini vēlreiz."));
-    } finally {
-      setBusy(null);
+    } else {
+      const key = billingActionErrorMessageKey(result.code);
+      notify(
+        t(
+          key,
+          key === "studio.subscription.error_no_subscription"
+            ? "Abonements nav atrasts. Atjauno lapu vai sazinies ar atbalstu."
+            : key === "studio.subscription.error_stripe_unavailable"
+              ? "Maksājumu sistēma īslaicīgi nav pieejama."
+              : "Darbība neizdevās. Mēģini vēlreiz.",
+        ),
+        "error",
+      );
     }
+    setBusy(null);
   }
 
   const periodLabel = formatPeriodEnd(sub?.currentPeriodEnd ?? null, display);
@@ -99,13 +112,13 @@ export function StudioSubscriptionPanel({ status, onChoosePlan, onChanged }: Pro
         </>
       )}
 
-      {feedback ? <p className="mt-2 text-xs text-red-600">{feedback}</p> : null}
-
       {phase === "active" || phase === "canceling" ? (
         <StudioBillingPlanButton className="!mt-3" onClick={onChoosePlan}>
           {t("studio.subscription.paid_plans_link", "Maksas plāni")}
         </StudioBillingPlanButton>
       ) : null}
+
+      <FeedbackToasts notices={notices} onDismiss={dismissNotice} />
     </div>
   );
 }

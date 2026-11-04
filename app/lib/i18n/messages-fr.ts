@@ -1343,4 +1343,6 @@ export const fr: Record<string, string> = {
   "admin.email_templates.placeholders_subscription": "Variables : {name}, {plan}, {previous_plan}, {price}, {period}, {effective_date}, {link}, {system}",
   "admin.email_templates.no_button_text_only": "Pas de bouton CTA — texte uniquement.",
   "admin.email_templates.placeholders_account_deletion": "Variables : {name}, {days} (e-mail « compte supprimé » uniquement), {system}",
+  "studio.subscription.error_no_subscription": "Abonnement introuvable. Actualisez la page ou contactez le support.",
+  "studio.subscription.error_stripe_unavailable": "Les paiements sont temporairement indisponibles.",
 };

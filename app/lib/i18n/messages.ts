@@ -974,6 +974,9 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "studio.subscription.activate": "Aktivizēt abonementu",
     "studio.subscription.paid_plans_link": "Maksas plāni",
     "studio.subscription.action_failed": "Darbība neizdevās. Mēģini vēlreiz.",
+    "studio.subscription.error_no_subscription":
+      "Abonements nav atrasts. Atjauno lapu vai sazinies ar atbalstu.",
+    "studio.subscription.error_stripe_unavailable": "Maksājumu sistēma īslaicīgi nav pieejama.",
     "studio.subscription.plan_change_hint":
       "Augstāks plāns stājas spēkā uzreiz (proporcionāla piemaksa). Zemāks — perioda beigās.",
     "studio.subscription.use_plan_change":
@@ -2334,6 +2337,9 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "studio.subscription.activate": "Activate subscription",
     "studio.subscription.paid_plans_link": "Paid plans",
     "studio.subscription.action_failed": "Action failed. Try again.",
+    "studio.subscription.error_no_subscription":
+      "Subscription not found. Refresh the page or contact support.",
+    "studio.subscription.error_stripe_unavailable": "Payments are temporarily unavailable.",
     "studio.subscription.plan_change_hint":
       "A higher plan starts immediately (prorated charge). A lower plan starts at period end.",
     "studio.subscription.use_plan_change":

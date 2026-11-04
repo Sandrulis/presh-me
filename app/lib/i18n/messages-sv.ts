@@ -1343,4 +1343,6 @@ export const sv: Record<string, string> = {
   "admin.email_templates.placeholders_subscription": "Platshållare: {name}, {plan}, {previous_plan}, {price}, {period}, {effective_date}, {link}, {system}",
   "admin.email_templates.no_button_text_only": "Ingen CTA-knapp — endast text.",
   "admin.email_templates.placeholders_account_deletion": "Platshållare: {name}, {days} (endast „konto raderat“), {system}",
+  "studio.subscription.error_no_subscription": "Prenumerationen hittades inte. Uppdatera sidan eller kontakta support.",
+  "studio.subscription.error_stripe_unavailable": "Betalningar är tillfälligt otillgängliga.",
 };

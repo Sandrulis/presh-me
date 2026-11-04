@@ -1343,4 +1343,6 @@ export const pl: Record<string, string> = {
   "admin.email_templates.placeholders_subscription": "Placeholdery: {name}, {plan}, {previous_plan}, {price}, {period}, {effective_date}, {link}, {system}",
   "admin.email_templates.no_button_text_only": "Bez przycisku CTA — tylko tekst.",
   "admin.email_templates.placeholders_account_deletion": "Placeholdery: {name}, {days} (tylko „konto usunięte“), {system}",
+  "studio.subscription.error_no_subscription": "Nie znaleziono subskrypcji. Odśwież stronę lub skontaktuj się z pomocą.",
+  "studio.subscription.error_stripe_unavailable": "Płatności są tymczasowo niedostępne.",
 };

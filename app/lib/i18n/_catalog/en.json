@@ -963,6 +963,8 @@
   "studio.subscription.activate": "Activate subscription",
   "studio.subscription.paid_plans_link": "Paid plans",
   "studio.subscription.action_failed": "Action failed. Try again.",
+  "studio.subscription.error_no_subscription": "Subscription not found. Refresh the page or contact support.",
+  "studio.subscription.error_stripe_unavailable": "Payments are temporarily unavailable.",
   "studio.subscription.plan_change_hint": "A higher plan starts immediately (prorated charge). A lower plan starts at period end.",
   "studio.subscription.use_plan_change": "You already have an active subscription. Pick another plan and confirm the change.",
   "studio.subscription.change_plan_failed": "Could not change plan.",

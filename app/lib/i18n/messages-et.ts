@@ -1343,4 +1343,6 @@ export const et: Record<string, string> = {
   "admin.email_templates.placeholders_subscription": "Kohatäited: {name}, {plan}, {previous_plan}, {price}, {period}, {effective_date}, {link}, {system}",
   "admin.email_templates.no_button_text_only": "CTA nuppu pole — ainult tekst.",
   "admin.email_templates.placeholders_account_deletion": "Kohatäited: {name}, {days} (ainult „konto kustutatud“), {system}",
+  "studio.subscription.error_no_subscription": "Tellimust ei leitud. Värskenda lehte või võta ühendust toega.",
+  "studio.subscription.error_stripe_unavailable": "Maksed pole ajutiselt saadaval.",
 };

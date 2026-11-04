@@ -1342,5 +1342,7 @@
   "admin.email_templates.kind.subscription_plan_downgraded": "Подписка — понижение тарифа",
   "admin.email_templates.placeholders_subscription": "Плейсхолдеры: {name}, {plan}, {previous_plan}, {price}, {period}, {effective_date}, {link}, {system}",
   "admin.email_templates.no_button_text_only": "В этом шаблоне нет кнопки — только текст.",
-  "admin.email_templates.placeholders_account_deletion": "Плейсхолдеры: {name}, {days} (только «аккаунт удалён»), {system}"
+  "admin.email_templates.placeholders_account_deletion": "Плейсхолдеры: {name}, {days} (только «аккаунт удалён»), {system}",
+  "studio.subscription.error_no_subscription": "Подписка не найдена. Обновите страницу или свяжитесь с поддержкой.",
+  "studio.subscription.error_stripe_unavailable": "Платежи временно недоступны."
 }

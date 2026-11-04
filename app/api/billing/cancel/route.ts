@@ -13,6 +13,7 @@ export async function POST() {
     await cancelSubscriptionAtPeriodEnd(user.id);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    console.error("[billing/cancel]", error);
     const code = error instanceof Error ? error.message : "cancel_failed";
     if (code === "no_subscription") return NextResponse.json({ error: code }, { status: 400 });
     if (code === "stripe_unavailable") return NextResponse.json({ error: code }, { status: 503 });

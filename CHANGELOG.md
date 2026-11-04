@@ -4,6 +4,13 @@
 
 - (none)
 
+## v0.1.25
+
+**Abonementa atteikšana un kļūdu toast**
+
+- Stripe atteikšana ar `subscription schedule` (pending downgrade): vispirms schedule release, tad `cancel_at_period_end`
+- Studijas abonementa kļūdas toast, nevis teksts zem pogas; skaidrāki API kļūdu teksti
+
 ## v0.1.24
 
 **Publiskais zīmols pēc admin save**

@@ -634,17 +634,40 @@ export async function changeSubscriptionPlan(input: {
   return { change: "downgrade", effectiveAt: effectiveIso };
 }
 
+function subscriptionScheduleId(subscription: Stripe.Subscription): string | null {
+  return typeof subscription.schedule === "string"
+    ? subscription.schedule
+    : subscription.schedule?.id ?? null;
+}
+
+/** Stripe rejects cancel_at_period_end when a subscription schedule is attached (e.g. pending downgrade). */
+async function subscriptionAfterReleasingSchedule(stripe: Stripe, subscriptionId: string) {
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const scheduleId = subscriptionScheduleId(subscription);
+  if (!scheduleId) return subscription;
+  await stripe.subscriptionSchedules.release(scheduleId);
+  return stripe.subscriptions.retrieve(subscriptionId);
+}
+
 export async function cancelSubscriptionAtPeriodEnd(userId: string) {
   const stripe = await getStripeClient();
   if (!stripe) throw new Error("stripe_unavailable");
   const row = await loadUserSubscriptionRow(userId);
   const subId = row?.stripe_subscription_id?.trim();
   if (!subId) throw new Error("no_subscription");
-  const updated = await stripe.subscriptions.update(subId, { cancel_at_period_end: true });
+  const subscription = await subscriptionAfterReleasingSchedule(stripe, subId);
+  const updated = await stripe.subscriptions.update(subId, {
+    cancel_at_period_end: true,
+    metadata: {
+      ...subscription.metadata,
+      pendingPlanKey: "",
+      pendingEffectiveAt: "",
+    },
+  });
   await upsertUserSubscriptionFromStripe(userId, updated, {
     planId: row?.plan_id ?? null,
-    pendingPlanId: row?.pending_plan_id ?? null,
-    pendingPlanEffectiveAt: row?.pending_plan_effective_at ?? null,
+    pendingPlanId: null,
+    pendingPlanEffectiveAt: null,
     billingInterval: parseBillingInterval(row?.billing_interval),
   });
 }

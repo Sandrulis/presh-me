@@ -1343,4 +1343,6 @@ export const da: Record<string, string> = {
   "admin.email_templates.placeholders_subscription": "Pladsholdere: {name}, {plan}, {previous_plan}, {price}, {period}, {effective_date}, {link}, {system}",
   "admin.email_templates.no_button_text_only": "Ingen CTA-knap — kun tekst.",
   "admin.email_templates.placeholders_account_deletion": "Pladsholdere: {name}, {days} (kun „konto slettet“), {system}",
+  "studio.subscription.error_no_subscription": "Abonnement ikke fundet. Opdater siden eller kontakt support.",
+  "studio.subscription.error_stripe_unavailable": "Betalinger er midlertidigt utilgængelige.",
 };

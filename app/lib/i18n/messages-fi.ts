@@ -1343,4 +1343,6 @@ export const fi: Record<string, string> = {
   "admin.email_templates.placeholders_subscription": "Paikkamerkit: {name}, {plan}, {previous_plan}, {price}, {period}, {effective_date}, {link}, {system}",
   "admin.email_templates.no_button_text_only": "Ei CTA-painiketta — vain teksti.",
   "admin.email_templates.placeholders_account_deletion": "Paikkamerkit: {name}, {days} (vain „tili poistettu“), {system}",
+  "studio.subscription.error_no_subscription": "Tilausta ei löytynyt. Päivitä sivu tai ota yhteyttä tukeen.",
+  "studio.subscription.error_stripe_unavailable": "Maksut eivät ole tilapäisesti käytettävissä.",
 };

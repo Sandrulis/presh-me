@@ -1343,4 +1343,6 @@ export const nl: Record<string, string> = {
   "admin.email_templates.placeholders_subscription": "Placeholders: {name}, {plan}, {previous_plan}, {price}, {period}, {effective_date}, {link}, {system}",
   "admin.email_templates.no_button_text_only": "Geen CTA-knop — alleen tekst.",
   "admin.email_templates.placeholders_account_deletion": "Placeholders: {name}, {days} (alleen „account verwijderd“), {system}",
+  "studio.subscription.error_no_subscription": "Abonnement niet gevonden. Vernieuw de pagina of neem contact op met support.",
+  "studio.subscription.error_stripe_unavailable": "Betalingen zijn tijdelijk niet beschikbaar.",
 };

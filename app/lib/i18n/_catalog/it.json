@@ -1342,5 +1342,7 @@
   "admin.email_templates.kind.subscription_plan_downgraded": "Abbonamento — downgrade piano",
   "admin.email_templates.placeholders_subscription": "Segnaposto: {name}, {plan}, {previous_plan}, {price}, {period}, {effective_date}, {link}, {system}",
   "admin.email_templates.no_button_text_only": "Nessun pulsante CTA — solo testo.",
-  "admin.email_templates.placeholders_account_deletion": "Segnaposto: {name}, {days} (solo « account eliminato »), {system}"
+  "admin.email_templates.placeholders_account_deletion": "Segnaposto: {name}, {days} (solo « account eliminato »), {system}",
+  "studio.subscription.error_no_subscription": "Abbonamento non trovato. Aggiorna la pagina o contatta l'assistenza.",
+  "studio.subscription.error_stripe_unavailable": "I pagamenti sono temporaneamente non disponibili."
 }

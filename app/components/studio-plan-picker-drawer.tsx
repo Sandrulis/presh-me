@@ -14,6 +14,10 @@ import type { BillingInterval } from "@/app/lib/billing/billing-interval";
 import { comparePlanChange, type PlanTier } from "@/app/lib/billing/plan-change";
 import { takeLandingCheckoutPlan } from "@/app/lib/billing/pending-landing-plan";
 import { formatPlanPrice } from "@/app/lib/billing/format-plan-price";
+import {
+  billingActionErrorMessageKey,
+  runBillingAction,
+} from "@/app/lib/billing/run-billing-action";
 import { useBillingStatus } from "@/app/lib/billing/use-billing-status";
 import {
   EMPTY_USER_DISPLAY_PREFERENCES,
@@ -250,15 +254,24 @@ export function StudioPlanPickerDrawer({ open, onClose, onStartedCheckout }: Pro
 
   async function postAction(path: "/api/billing/cancel" | "/api/billing/resume") {
     setBusyAction(path === "/api/billing/cancel" ? "cancel" : "resume");
-    try {
-      const res = await fetch(path, { method: "POST", credentials: "same-origin" });
-      if (!res.ok) throw new Error("failed");
+    const result = await runBillingAction(path);
+    if (result.ok) {
       await reloadStatus();
-    } catch {
-      toast(t("studio.subscription.action_failed", "Darbība neizdevās. Mēģini vēlreiz."), "error");
-    } finally {
-      setBusyAction(null);
+    } else {
+      const key = billingActionErrorMessageKey(result.code);
+      toast(
+        t(
+          key,
+          key === "studio.subscription.error_no_subscription"
+            ? "Abonements nav atrasts. Atjauno lapu vai sazinies ar atbalstu."
+            : key === "studio.subscription.error_stripe_unavailable"
+              ? "Maksājumu sistēma īslaicīgi nav pieejama."
+              : "Darbība neizdevās. Mēģini vēlreiz.",
+        ),
+        "error",
+      );
     }
+    setBusyAction(null);
   }
 
   const actionBusy = busyAction !== null;
