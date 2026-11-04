@@ -98,7 +98,24 @@ Trīs kolonnas (xl+): Pamati | priekšskats (`DevicePreview`) | Izskats.
 - Pamatu izvēlnē Sociālie/Bloki ir sortable (`stackOrder`); secība atspoguļojas `PageView`.
 - **Valoda** (`studio-page-language-drawer`): `content.publicLanguageCode` — fiksēta UI valoda publiskajā lapā (`PublicPageI18nShell`) un studijas priekšskatā (`PageLanguageScope`); tukšs = apmeklētāja valoda.
 - Bloki: `BlocksEditor` + `block-faces` / `lib/blocks.ts` — tipi: saite, teksts, YouTube, attēls, Spotify, resumē (timeline), Instagram režģis, citāts, FAQ, **booking** (`page-booking-ui`, lazy chunk; kalendārs, Turnstile kad ieslēgts, `GET/POST /api/booking/*`, **`GET /api/booking/calendar`** ICS abonements + **`GET /api/booking/calendar-link`** (auth), e-pasti `booking_owner` / `booking_guest`, DB `page_booking_reservations` + `025` length CHECK); DnD; sidemodāļi bez blur; draft priekšskats.
-- **Booking ICS abonements:** nosaukums feedā = lapas `display_name` / `content.displayName` (fallback handle) — `NAME`, `X-WR-CALNAME`, `X-APPLE-CALENDAR-NAME` ICS failā. Google/Apple rāda `webcal://…` tikai kamēr neizdodas nolasīt feed; pēc veiksmīgas ielādes parādās šis nosaukums. **Produkcijā** Google/Apple serveriem jāvar sasniegt `GET /api/booking/calendar?…` bez HTML (Vercel *Attack Challenge* / bot aizsardzība bloķē — Firewall → Skip rule ceļam `/api/booking/calendar` vai līdzīgi).
+- **Booking ICS abonements:** nosaukums feedā = lapas `display_name` / `content.displayName` (fallback handle) — `NAME`, `X-WR-CALNAME`, `X-APPLE-CALENDAR-NAME` ICS failā.
+
+### Booking kalendārs — ICS feed (Vercel)
+
+Abonēšanas saites: `https://presh.me/api/booking/calendar?handle&blockId&token` (`getCalendarFeedOrigin()` + `build-booking-calendar-urls`). Implementācija: `load-booking-calendar-feed.ts`, `build-booking-ics.ts`.
+
+Apple / Google **nevar** iziet cauri Vercel Security Checkpoint (HTML + 429). Pārbaude:
+
+```bash
+node scripts/calendar-feed-smoke.mjs "https://presh.me/api/booking/calendar?handle=…&blockId=…&token=…"
+```
+
+**Hobby:** Firewall → Bot Management → **Attack Mode → Disable** (viss domēns bez challenge).
+
+**Pro (ieteicams biznesam):** WAF **Bypass / Skip challenge** ceļam `/api/booking/calendar` — Attack Mode var palikt ieslēgts citur.
+
+Pārbaudi arī **Deployment Protection** — production bez Vercel login visiem. Pēc labojuma: no jauna pievienot Apple/Google abonementu.
+
 - Pamatos (toggle): **Contact** (`page-contact-ui`), **Share** (`page-share-ui`); ar moduļa atbalstu **Analytics** (`module_umami`, `studio-analytics-editor`, `PageUmamiTracker`); **Abonements** (`module_paid`, Stripe checkout / change-plan, `studio-plan-picker-drawer`).
 - Izskats → Teksts: vārds, tagline, bio tipogrāfija; **Bloku stils** drill-down pievienotajiem blokiem (`BlockStyleFields`).
 - Attēlu lauki: `ImageDropField` / `ImageField`.

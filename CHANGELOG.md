@@ -4,6 +4,13 @@
 
 - (none)
 
+## v0.2.4
+
+**Booking kalendāra feed — Vercel un pārbaude**
+
+- `scripts/calendar-feed-smoke.mjs` — pārbauda, ka ICS nav Vercel checkpoint HTML
+- `DEVELOPER.md`: Hobby (Attack Mode off) un Pro (WAF bypass `/api/booking/calendar`); `.env.example` — `BOOKING_CALENDAR_SECRET`
+
 ## v0.2.3
 
 **CI un booking kalendāra nosaukums**
