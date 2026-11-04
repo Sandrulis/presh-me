@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSiteBranding } from "@/app/components/site-branding-provider";
-import { BRAND_MARK_P_PATH } from "@/app/lib/site-admin/branding";
+import { BRAND_LOGO_PATH, BRAND_MARK_P_PATH, brandAssetUrl } from "@/app/lib/site-admin/branding";
 
 /** Square ink mark with “P” — same as studio sidebar. */
 export function BrandMarkIcon({ className = "h-9 w-9" }: { className?: string }) {
@@ -36,16 +36,20 @@ export function Logo({
   onClick?: () => void;
   ariaLabel?: string;
 }) {
-  const { systemName, hasCustomLogo, logoSrc } = useSiteBranding();
-  const [logoFailed, setLogoFailed] = useState(false);
-  const showCustomLogo = hasCustomLogo && logoSrc && !logoFailed;
+  const { systemName, hasCustomLogo, logoSrc, assetVersion } = useSiteBranding();
+  const [remoteFailed, setRemoteFailed] = useState(false);
+  const [proxyFailed, setProxyFailed] = useState(false);
 
   useEffect(() => {
-    setLogoFailed(false);
-  }, [logoSrc]);
+    setRemoteFailed(false);
+    setProxyFailed(false);
+  }, [logoSrc, assetVersion]);
 
   const label = systemName.trim() || "Presh";
   const linkAria = ariaLabel ?? label;
+  const proxySrc = brandAssetUrl(BRAND_LOGO_PATH, assetVersion);
+  const useRemote = Boolean(hasCustomLogo && logoSrc && !remoteFailed);
+  const useProxy = Boolean(hasCustomLogo && remoteFailed && !proxyFailed);
 
   return (
     <Link
@@ -54,12 +58,19 @@ export function Logo({
       onClick={onClick}
       className={`inline-flex min-w-0 items-center gap-2 no-underline ${className}`}
     >
-      {showCustomLogo ? (
+      {useRemote ? (
         <img
-          src={logoSrc}
+          src={logoSrc!}
           alt=""
           className="h-9 w-auto max-w-[140px] shrink-0 object-contain object-left"
-          onError={() => setLogoFailed(true)}
+          onError={() => setRemoteFailed(true)}
+        />
+      ) : useProxy ? (
+        <img
+          src={proxySrc}
+          alt=""
+          className="h-9 w-auto max-w-[140px] shrink-0 object-contain object-left"
+          onError={() => setProxyFailed(true)}
         />
       ) : (
         <BrandMarkIcon />

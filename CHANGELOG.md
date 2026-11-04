@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.1.24
+
+**Publiskais zīmols pēc admin save**
+
+- Layout branding bez stale `unstable_cache` — logo un sistēmas nosaukums Headerā pēc saglabāšanas
+- Klienta store vairs nepārraksta servera branding ar noklusējumu „Presh”
+- Speed/security auditu atkārtota verifikācija (2026-11-04)
+
 ## v0.1.23
 
 **Vercel Hobby — mazāk CPU un origin transfer**

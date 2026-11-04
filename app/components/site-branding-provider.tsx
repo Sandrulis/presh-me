@@ -1,12 +1,15 @@
 "use client";
 
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import {
   buildSiteBrandingContext,
   type SiteBrandingContextValue,
 } from "@/app/lib/site-admin/site-branding-context";
-import { getSiteSettings, subscribeSiteAdmin } from "@/app/lib/site-admin/store";
-import { useSyncExternalStore } from "react";
+import {
+  getSiteSettings,
+  isSiteSettingsHydratedFromDb,
+  subscribeSiteAdmin,
+} from "@/app/lib/site-admin/store";
 
 const SiteBrandingContext = createContext<SiteBrandingContextValue>({
   systemName: "Presh",
@@ -23,16 +26,23 @@ export function SiteBrandingProvider({
   branding: SiteBrandingContextValue;
 }) {
   const settings = useSyncExternalStore(subscribeSiteAdmin, getSiteSettings, getSiteSettings);
+  const hydrated = useSyncExternalStore(
+    subscribeSiteAdmin,
+    isSiteSettingsHydratedFromDb,
+    () => false,
+  );
 
   const branding = useMemo(() => {
-    if (!settings.updatedAt) return initialBranding;
+    // Public pages keep server branding until admin/studio hydrates from DB.
+    // Never let empty client defaults (systemName "Presh", logo null) win.
+    if (!hydrated) return initialBranding;
     return buildSiteBrandingContext({
       systemName: settings.systemName,
       logoUrl: settings.logoUrl,
       faviconUrl: settings.faviconUrl,
       updatedAt: settings.updatedAt,
     });
-  }, [initialBranding, settings]);
+  }, [hydrated, initialBranding, settings]);
 
   return <SiteBrandingContext.Provider value={branding}>{children}</SiteBrandingContext.Provider>;
 }

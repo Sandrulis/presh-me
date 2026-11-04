@@ -19,6 +19,9 @@ import type {
 
 const listeners = new Set<() => void>();
 
+/** True only after a successful site_settings row was loaded into the client store. */
+let settingsHydratedFromDb = false;
+
 let cache: SiteAdminStore = {
   languages: [],
   translations: [],
@@ -50,27 +53,6 @@ export function subscribeSiteAdmin(onChange: () => void) {
   listeners.add(onChange);
   return () => {
     listeners.delete(onChange);
-  };
-}
-
-function defaultSettings(): SiteSettings {
-  return {
-    systemName: "Presh",
-    legalEmail: "hello@presh.me",
-    legalEntityName: "",
-    legalEntityRegNo: "",
-    legalEntityAddress: "",
-    timezone: "Europe/Riga",
-    dateFormat: "d.m.Y",
-    dateSeparator: ".",
-    timeFormat: "24",
-    weekStartDay: "monday",
-    logoUrl: null,
-    faviconUrl: null,
-    notificationFaviconUrl: null,
-    maintenanceMode: false,
-    trialPeriodDays: 14,
-    updatedAt: new Date().toISOString(),
   };
 }
 
@@ -141,6 +123,14 @@ export function getSiteSettings(): SiteSettings {
   return cache.settings;
 }
 
+export function isSiteSettingsHydratedFromDb(): boolean {
+  return settingsHydratedFromDb;
+}
+
+export function subscribeSiteSettingsHydrated(onChange: () => void) {
+  return subscribeSiteAdmin(onChange);
+}
+
 async function refreshSiteAdminAndRevalidateI18nCache() {
   await refreshSiteAdmin();
   void revalidateSiteTranslationsCache();
@@ -169,9 +159,14 @@ export async function refreshSiteAdmin() {
   }));
 
   const settingsRow = settingsRes.data;
-  const settings: SiteSettings = settingsRow
-    ? {
-        systemName: settingsRow.system_name as string,
+  if (settingsRow) {
+    settingsHydratedFromDb = true;
+    const nextLanguages = languages.length ? languages : defaultLanguages();
+    cache = {
+      languages: nextLanguages,
+      translations: mergeTranslations(nextLanguages, dbTranslations),
+      settings: {
+        systemName: (settingsRow.system_name as string)?.trim() || "Presh",
         legalEmail: settingsRow.legal_email as string,
         legalEntityName: settingsRow.legal_entity_name as string,
         legalEntityRegNo: settingsRow.legal_entity_reg_no as string,
@@ -187,15 +182,18 @@ export async function refreshSiteAdmin() {
         maintenanceMode: settingsRow.maintenance_mode === true,
         trialPeriodDays: Number(settingsRow.trial_period_days ?? 14),
         updatedAt: settingsRow.updated_at as string,
-      }
-    : defaultSettings();
-
-  const nextLanguages = languages.length ? languages : defaultLanguages();
-  cache = {
-    languages: nextLanguages,
-    translations: mergeTranslations(nextLanguages, dbTranslations),
-    settings,
-  };
+      },
+    };
+  } else {
+    // Do not stamp defaultSettings() with a fresh updatedAt — that would override
+    // server layout branding (custom logo / system name) on public pages.
+    const nextLanguages = languages.length ? languages : cache.languages.length ? cache.languages : defaultLanguages();
+    cache = {
+      languages: nextLanguages,
+      translations: mergeTranslations(nextLanguages, dbTranslations),
+      settings: cache.settings,
+    };
+  }
   languagesKey = "";
   translationsKey = "";
   emit();

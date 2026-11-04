@@ -1,3 +1,5 @@
+import { createAdminClient } from "@/app/lib/supabase/admin";
+import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
 import { createClient } from "@/app/lib/supabase/server";
 import { normalizeBrandImageUrl } from "@/app/lib/site-admin/branding";
 
@@ -9,9 +11,20 @@ export type ServerSiteBranding = {
   updatedAt: string;
 };
 
+const EMPTY_BRANDING: ServerSiteBranding = {
+  systemName: "Presh",
+  logoUrl: null,
+  faviconUrl: null,
+  notificationFaviconUrl: null,
+  updatedAt: new Date(0).toISOString(),
+};
+
 export async function getServerSiteBranding(): Promise<ServerSiteBranding> {
   try {
-    const supabase = await createClient();
+    // Prefer service role so layout branding does not depend on cookie/session.
+    const supabase = isSupabaseAdminConfigured()
+      ? createAdminClient()
+      : await createClient();
     const { data } = await supabase
       .from("site_settings")
       .select("system_name, logo_url, favicon_url, notification_favicon_url, updated_at")
@@ -26,13 +39,7 @@ export async function getServerSiteBranding(): Promise<ServerSiteBranding> {
         (typeof data?.updated_at === "string" && data.updated_at) || new Date(0).toISOString(),
     };
   } catch {
-    return {
-      systemName: "Presh",
-      logoUrl: null,
-      faviconUrl: null,
-      notificationFaviconUrl: null,
-      updatedAt: new Date(0).toISOString(),
-    };
+    return { ...EMPTY_BRANDING };
   }
 }
 

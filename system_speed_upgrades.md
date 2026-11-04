@@ -3,13 +3,53 @@
 **Pašreizējā atzīme:** **8.8 / 10**  
 **Iepriekšējā (2026-11-03 audits):** 8.6 / 10  
 **Sākotnējā (pirms visa cikla):** 6.5 / 10  
-**Audits / pārbaude:** 2026-11-03 (atkārtots pēc N1–N4 izpildes)
+**Audits / pārbaude:** 2026-11-04 (atkārtota koda verifikācija)
 
 Statuss: `[x]` izdarīts · `[~]` daļēji · `[ ]` vēl
 
-**Atzīmes pamatojums (8.8):** N1–N4 izpildīti; middleware maintenance vairs ne sit Supabase katrā anonīmā pieprasījumā; layout maintenance ar `unstable_cache`; booking reservations bez pilna jsonb; booking UI atsevišķā chunk. **Atlikušais līdz 9.0:** production Web Vitals, admin virtuāls scroll, legacy `data:image`, booking POST joprojām lasa pilnu lapu (pieņemami).
+**Atzīmes pamatojums (8.8):** N1–N4 joprojām kodā; middleware maintenance kešs; layout maintenance 15s; booking reservations šaurais select; booking UI `next/dynamic`. **Atlikušais līdz 9.0:** production Web Vitals, admin virtuāls scroll, legacy `data:image`, booking POST pilna lapa (pieņemami).
 
 **Legacy:** esošie `data:image/…` lietotāju lapās, kamēr nav pārglabāti.
+
+---
+
+## Atkārtotā pārbaude (2026-11-04)
+
+### Metode
+
+- Koda revīzija pret N1–N4, M1, H1, H3–H4 apgalvojumiem.
+- `npm run typecheck` — OK.
+- Migrācija `025` DB — applied (skat. security auditu).
+
+### N1–N4 — apstiprināts `[x]`
+
+| ID | Statuss | Pierādījums |
+|---|---|---|
+| **N1** | OK | `maintenance-mode-cache.ts` 15s + `fetch` tags; `withMaintenanceKick` tikai ar `presh_session` / auth cookie |
+| **N2** | OK | `layout.tsx` → `getCachedMaintenanceMode()` (`revalidate: 15`) |
+| **N3** | OK | `load-booking-reservations.ts` select: `id, account_id, published, content->trialStartedAt, content->blocks` |
+| **N4** | OK | `block-faces.tsx` → `dynamic(() => import(page-booking-ui))` |
+
+### Citas pārbaudītās pozīcijas
+
+| ID | Statuss | Piezīme |
+|---|---|---|
+| **H1** admin lists | OK | `fetchAdminLists` — bez pilna `content` (tikai onboarding + trialStartedAt) |
+| **H3** middleware auth | OK | `getUser()` tikai `/`, auth, protected prefixes |
+| **H4** studio/start lazy | OK | `next/dynamic` abās lapās |
+| **M1** layout kešs | `[~]` | **Maintenance + Umami** joprojām `unstable_cache`. **Branding** kopš 2026-11-04: `React cache()` (request dedupe), **bez** cross-request keša — apzināti, lai logo/nosaukums pēc admin save nebūtu stale (neliels TTFB; 1 rinda) |
+
+### Jauni / atvērti (nav regresija N1–N4)
+
+| Piezīme | Prioritāte |
+|---|---|
+| Branding: katrs request lasa `site_settings` (1 rinda) — trade-off pret stale Header | low |
+| N5/N6, virtuāls admin scroll, Web Vitals — kā iepriekš | pending |
+| Middleware `getUser` uz `/` visiem (redirect ja ielogojies) — apzināts | — |
+
+### Atzīme
+
+**Paliek 8.8** — N1–N4 nav regresējuši; branding keša maiņa ir pareizs UX/korekums, ne ātrdarbības solis uz leju.
 
 ---
 
@@ -56,7 +96,7 @@ Statuss: `[x]` izdarīts · `[~]` daļēji · `[ ]` vēl
 | Middleware auth | Supabase `getUser()` tikai `/`, auth un aizsargāti ceļi |
 | Code splitting | `/studio`, `/start`, **booking bloks** — `next/dynamic` |
 | i18n server | `loadMessages()` lazy; `getServerTranslations` ar `cache()` |
-| Layout kešs | branding, Umami 60s; **maintenance 15s** |
+| Layout kešs | Umami 60s; **maintenance 15s**; branding = per-request (`cache()`), sk. 2026-11-04 |
 | Publiskā lapa | `loadPageByHandle` — `cache()` |
 | Booking API | Šaurāks reservations select; rate limit; indekss DB |
 
@@ -108,7 +148,7 @@ Skatīt tabulu „Izpildīts” augšā. N5/N6 paliek zema prioritāte.
 
 | ID | Statuss | Piezīme |
 |---|---|---|
-| M1 layout kešs | `[x]` | branding + Umami + maintenance |
+| M1 layout kešs | `[~]` | Umami + maintenance kešoti; branding svaigs katram request (2026-11-04) |
 | M2–M8 | `[x]` | (bez izmaiņām) |
 | N2 layout maintenance | `[x]` | `getCachedMaintenanceMode()` |
 | N3 booking reservations | `[x]` | jsonb tikai `blocks` + trialStartedAt |
@@ -163,3 +203,4 @@ L1–L5; N5/N6 — lapas valoda un booking GET round-trip.
 | 2026-10-25 | H2 cutover, M2, M4–M6, M8 | Atzīme **8.7** |
 | 2026-11-03 | Padziļināts audits | Atzīme **8.6**; backlog N1–N4 |
 | 2026-11-03 | N1–N4 implementēts + build | Atzīme **8.8** |
+| 2026-11-04 | Atkārtota koda verifikācija; branding bez cross-request keša | Atzīme **8.8** (M1 `[~]`) |

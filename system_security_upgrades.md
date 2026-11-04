@@ -3,13 +3,51 @@
 **Pašreizējā atzīme:** **8.8 / 10**  
 **Iepriekšējā (2026-11-03 audits):** 8.6 / 10  
 **Sākotnējā (pirms visa cikla):** 6.0 / 10  
-**Audits / pārbaude:** 2026-11-03 (atkārtots pēc S1–S3 izpildes)
+**Audits / pārbaude:** 2026-11-04 (atkārtota koda + DB verifikācija)
 
 Statuss: `[x]` izdarīts · `[~]` daļēji · `[ ]` vēl
 
-**Atzīmes pamatojums (8.8):** S1–S3 aizvērti; booking ar Turnstile (kad integrācija ieslēgta), DB garumu CHECK, servera handle/blockId validācija. Pamatkontroles nemainītas. **Līdz 9.0:** Vault, CSP bez `'unsafe-inline'`, ārējs pentest, S4 (distribūts rate limit).
+**Atzīmes pamatojums (8.8):** S1–S3 joprojām spēkā; booking Turnstile (kad ieslēgts), DB CHECK, handle/blockId validācija; RLS deny uz `page_booking_reservations`. **Līdz 9.0:** Vault, CSP bez `'unsafe-inline'`, ārējs pentest, S4 (distribūts rate limit).
 
 **Legacy:** vecie `data:image/…` jsonb līdz pārglabāšanai studijā.
+
+---
+
+## Atkārtotā pārbaude (2026-11-04)
+
+### Metode
+
+- Koda revīzija: booking request/reservations/submit, Turnstile, input limits, CSP, RLS migrācijas.
+- DB: `schema_migrations` — `025_booking_reservations_length_checks.sql` **applied**.
+- `npm run typecheck` — OK.
+
+### S1–S3 — apstiprināts `[x]`
+
+| ID | Statuss | Pierādījums |
+|---|---|---|
+| **S1** | OK | `booking/request/route.ts` → `requireTurnstileToken`; UI token POST; izslēgts Turnstile → `ok: true` bez token |
+| **S2** | OK | Migrācija `025` applied; CHECK `guest_email`≤254, `comment`≤2000, `block_id`≤64 |
+| **S3** | OK | `booking-input-limits.ts`; lietots request / reservations / submit / load |
+
+### Pamatkontroles — apstiprināts
+
+| Kontrole | Statuss | Piezīme |
+|---|---|---|
+| RLS booking tabula | OK | `024` revoke + deny anon/authenticated |
+| Rate limit booking POST | OK | 8 / 60s + Turnstile |
+| CSP / HSTS | OK | `next.config.ts`; joprojām `'unsafe-inline'` (ceļš uz 9.0) |
+| Maintenance revalidate | OK | `updateTag("maintenance-mode")` (ne SWR `max`) — labāk nekā iepriekš |
+
+### Atvērtie (kā iepriekš)
+
+| ID | Piezīme |
+|---|---|
+| **S4** | In-memory rate limit multi-instance — accepted |
+| **9.0** | Vault, CSP nonce, pentest |
+
+### Atzīme
+
+**Paliek 8.8** — S1–S3 bez regresijas; jaunu HIGH nav atrasts šajā pārbaudē.
 
 ---
 
@@ -116,3 +154,4 @@ H1–H5, M1–M10 — **done** (2026-10-25). S1–S3 — **done** (2026-11-03).
 | 2026-10-25 | Lockouts, CSP, Storage UI | **8.7** |
 | 2026-11-03 | Padziļināts audits; backlog S1–S3 | **8.6** |
 | 2026-11-03 | S1–S3 + migrācija `025` | **8.8** |
+| 2026-11-04 | Atkārtota koda + DB verifikācija | **8.8** (S1–S3 OK) |
