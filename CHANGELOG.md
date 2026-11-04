@@ -4,6 +4,13 @@
 
 - (none)
 
+## v0.2.3
+
+**CI un booking kalendāra nosaukums**
+
+- GitHub: ceturtā pārbaude `typecheck` (i18n, tsc, lint) pirms `smoke` — commit statusā redzamas visas 4
+- ICS kalendāra nosaukums = lapas displayName; studijā rāda „Kalendārā parādīsies kā …”; Google `render?cid=webcal`
+
 ## v0.2.2
 
 **Booking — kalendāra abonements un studijas UI**

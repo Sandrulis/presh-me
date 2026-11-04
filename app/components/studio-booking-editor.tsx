@@ -169,6 +169,7 @@ function BookingCalendarSubscribe({
     icsUrl: string;
     googleUrl: string;
     appleUrl: string;
+    calendarName: string;
   } | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -186,9 +187,24 @@ function BookingCalendarSubscribe({
           icsUrl?: string;
           googleUrl?: string;
           appleUrl?: string;
+          calendarName?: string;
         };
-        if (cancelled || !data.ok || !data.icsUrl || !data.googleUrl || !data.appleUrl) return;
-        setUrls({ icsUrl: data.icsUrl, googleUrl: data.googleUrl, appleUrl: data.appleUrl });
+        if (
+          cancelled ||
+          !data.ok ||
+          !data.icsUrl ||
+          !data.googleUrl ||
+          !data.appleUrl ||
+          !data.calendarName
+        ) {
+          return;
+        }
+        setUrls({
+          icsUrl: data.icsUrl,
+          googleUrl: data.googleUrl,
+          appleUrl: data.appleUrl,
+          calendarName: data.calendarName,
+        });
       } catch {
         /* ignore */
       }
@@ -218,6 +234,13 @@ function BookingCalendarSubscribe({
             "Visas rezervācijas ar e-pastu, laiku un komentāru tavā Google vai Apple kalendārā. Atjauninās automātiski.",
           )}
         </p>
+        {urls?.calendarName ? (
+          <p className="mt-2 text-xs text-[var(--ink)]">
+            {t("studio.booking.calendar_list_name", "Kalendārā parādīsies kā: {name}", {
+              name: urls.calendarName,
+            })}
+          </p>
+        ) : null}
         {urls ? (
           <div className="mt-3 flex flex-col gap-2">
             <a

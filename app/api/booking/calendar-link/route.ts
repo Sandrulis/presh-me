@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
   const { data: row, error } = await supabase
     .from("pages")
-    .select("id, handle, account_id, blocks:content->blocks")
+    .select("id, handle, account_id, display_name, content, blocks:content->blocks")
     .eq("id", pageId)
     .maybeSingle();
   if (error || !row || row.account_id !== user.id) {
@@ -43,6 +43,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: "errors.booking_invalid" }, { status: 400 });
   }
 
-  const urls = buildBookingCalendarUrls({ pageId, handle, blockId });
+  const content = row.content as { displayName?: string } | null;
+  const calendarName =
+    String(row.display_name ?? "").trim() ||
+    String(content?.displayName ?? "").trim() ||
+    handle;
+
+  const urls = buildBookingCalendarUrls({ pageId, handle, blockId, calendarName });
   return NextResponse.json({ ok: true, ...urls });
 }

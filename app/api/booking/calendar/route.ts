@@ -35,6 +35,7 @@ export async function GET(request: Request) {
       "Content-Type": "text/calendar; charset=utf-8",
       "Content-Disposition": `inline; filename="${safeFilename}.ics"`,
       "Cache-Control": "private, max-age=300",
+      "X-Presh-Calendar-Name": result.calendarName,
     },
   });
 }

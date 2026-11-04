@@ -12,7 +12,8 @@ export function buildBookingCalendarUrls(input: {
   pageId: string;
   handle: string;
   blockId: string;
-}): BookingCalendarUrls {
+  calendarName: string;
+}): BookingCalendarUrls & { calendarName: string } {
   const token = signBookingCalendarToken(input.pageId, input.blockId);
   const params = new URLSearchParams({
     handle: input.handle,
@@ -21,9 +22,11 @@ export function buildBookingCalendarUrls(input: {
   });
   const icsUrl = `${getCalendarFeedOrigin()}/api/booking/calendar?${params.toString()}`;
   const webcalUrl = icsUrl.replace(/^https?:/, "webcal:");
-  // Google add-by-URL expects webcal:// in cid, not https:// (otherwise feed stays empty).
-  const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcalUrl)}`;
+  // Google reads X-WR-CALNAME from the fetched ICS — cid must be webcal:// (not https://).
+  const googleCid = encodeURIComponent(webcalUrl);
+  const googleUrl = `https://www.google.com/calendar/render?cid=${googleCid}`;
   return {
+    calendarName: input.calendarName.trim() || input.handle,
     icsUrl,
     webcalUrl,
     googleUrl,

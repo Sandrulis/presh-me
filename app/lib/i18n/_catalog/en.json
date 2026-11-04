@@ -1044,6 +1044,7 @@
   "studio.booking.calendar_copy": "Copy subscription link",
   "studio.booking.calendar_copied": "Link copied",
   "studio.booking.calendar_need_handle": "Publish your page with a handle so the calendar feed works.",
+  "studio.booking.calendar_list_name": "In your calendar app it will appear as: {name}",
   "page.booking.open": "Book",
   "page.booking.drawer_title": "Booking",
   "page.booking.drawer_hint": "Pick a day and time.",

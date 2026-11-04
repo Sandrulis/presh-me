@@ -1,5 +1,5 @@
 # One workflow, sequential jobs — private repos get 1 concurrent runner on GitHub Free;
-# three separate workflows used to queue 2 of 3 checks for a long time.
+# four named jobs (gitleaks → npm-audit → typecheck → smoke) so commit status lists all four.
 name: Security checks
 
 on:
@@ -52,8 +52,8 @@ jobs:
       - name: Run npm audit (high+)
         run: npm audit --audit-level=high
 
-  smoke:
-    name: smoke
+  typecheck:
+    name: typecheck
     needs: npm-audit
     runs-on: ubuntu-latest
     steps:
@@ -77,6 +77,23 @@ jobs:
 
       - name: Lint check
         run: npm run lint
+
+  smoke:
+    name: smoke
+    needs: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22.13.0"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build (production)
         run: npm run build

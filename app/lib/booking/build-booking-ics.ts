@@ -93,6 +93,7 @@ export function buildBookingIcsCalendar(input: {
     foldLine(`NAME:${icsEscape(calName)}`),
     foldLine(`X-WR-CALNAME:${icsEscape(calName)}`),
     foldLine(`X-APPLE-CALENDAR-NAME:${icsEscape(calName)}`),
+    foldLine(`X-WR-CALDESC:${icsEscape(calName)}`),
     "REFRESH-INTERVAL;VALUE=DURATION:PT15M",
     "X-PUBLISHED-TTL:PT15M",
     "BEGIN:VTIMEZONE",
