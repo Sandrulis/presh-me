@@ -1348,4 +1348,11 @@ export const et: Record<string, string> = {
   "studio.color_picker.eyedropper": "Värvipipett",
   "studio.color_picker.from_image": "Võta pildilt",
   "studio.color_picker.from_image_hint": "Klõpsa pildil soovitud värvil.",
+  "studio.booking.calendar_sync": "Kalendri tellimus",
+  "studio.booking.calendar_sync_hint": "Kõik broneeringud e-kirja, aja ja kommentaariga Google või Apple kalendris. Uueneb automaatselt.",
+  "studio.booking.calendar_google": "Lisa Google Calendar",
+  "studio.booking.calendar_apple": "Lisa Apple Calendar",
+  "studio.booking.calendar_copy": "Kopeeri tellimuse link",
+  "studio.booking.calendar_copied": "Link kopeeritud",
+  "studio.booking.calendar_need_handle": "Avalda leht handle'iga, et kalender töötaks.",
 };

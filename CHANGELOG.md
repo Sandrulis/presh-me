@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.2.2
+
+**Booking — kalendāra abonements un studijas UI**
+
+- ICS feed `/api/booking/calendar` ar token; studijā Google / Apple / kopēt saiti (pareizs `webcal` Google `cid`, feed vienmēr no `presh.me`)
+- Kalendāra nosaukums = lapas `displayName`; rezervāciju indikators (sarkans punkts) dienās ar aizņemtiem laikiem
+- Booking bloka iestatījumi studijā (darba laiki, kalendāra sync pogas ar ikonām)
+
 ## v0.2.1
 
 **Lapas fona krāsa — pipete un izvēle no attēla**

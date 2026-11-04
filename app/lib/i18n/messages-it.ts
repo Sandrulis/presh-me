@@ -1348,4 +1348,11 @@ export const it: Record<string, string> = {
   "studio.color_picker.eyedropper": "Contagocce",
   "studio.color_picker.from_image": "Prendi dall'immagine",
   "studio.color_picker.from_image_hint": "Clicca il colore desiderato nell'immagine.",
+  "studio.booking.calendar_sync": "Abbonamento calendario",
+  "studio.booking.calendar_sync_hint": "Tutte le prenotazioni con e-mail, orario e commento in Google o Apple Calendar. Si aggiorna automaticamente.",
+  "studio.booking.calendar_google": "Aggiungi a Google Calendar",
+  "studio.booking.calendar_apple": "Aggiungi ad Apple Calendar",
+  "studio.booking.calendar_copy": "Copia link abbonamento",
+  "studio.booking.calendar_copied": "Link copiato",
+  "studio.booking.calendar_need_handle": "Pubblica la pagina con un handle perché il calendario funzioni.",
 };

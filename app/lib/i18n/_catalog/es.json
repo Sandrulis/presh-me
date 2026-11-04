@@ -1347,5 +1347,12 @@
   "studio.subscription.error_stripe_unavailable": "Los pagos no están disponibles temporalmente.",
   "studio.color_picker.eyedropper": "Cuentagotas",
   "studio.color_picker.from_image": "Tomar de la imagen",
-  "studio.color_picker.from_image_hint": "Haz clic en el color deseado en la imagen."
+  "studio.color_picker.from_image_hint": "Haz clic en el color deseado en la imagen.",
+  "studio.booking.calendar_sync": "Suscripción al calendario",
+  "studio.booking.calendar_sync_hint": "Todas las reservas con e-mail, hora y comentario en Google o Apple Calendar. Se actualiza solo.",
+  "studio.booking.calendar_google": "Añadir a Google Calendar",
+  "studio.booking.calendar_apple": "Añadir a Apple Calendar",
+  "studio.booking.calendar_copy": "Copiar enlace de suscripción",
+  "studio.booking.calendar_copied": "Enlace copiado",
+  "studio.booking.calendar_need_handle": "Publica la página con un handle para que funcione el calendario."
 }

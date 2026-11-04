@@ -1348,4 +1348,11 @@ export const fi: Record<string, string> = {
   "studio.color_picker.eyedropper": "Värinpoimija",
   "studio.color_picker.from_image": "Ota kuvasta",
   "studio.color_picker.from_image_hint": "Napsauta haluamaasi väriä kuvassa.",
+  "studio.booking.calendar_sync": "Kalenteritilaus",
+  "studio.booking.calendar_sync_hint": "Kaikki varaukset sähköpostilla, ajalla ja kommentilla Google- tai Apple-kalenterissa. Päivittyy automaattisesti.",
+  "studio.booking.calendar_google": "Lisää Google Calendar",
+  "studio.booking.calendar_apple": "Lisää Apple Calendar",
+  "studio.booking.calendar_copy": "Kopioi tilauslinkki",
+  "studio.booking.calendar_copied": "Linkki kopioitu",
+  "studio.booking.calendar_need_handle": "Julkaise sivu handlella, jotta kalenteri toimii.",
 };

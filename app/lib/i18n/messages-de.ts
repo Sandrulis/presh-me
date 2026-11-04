@@ -1348,4 +1348,11 @@ export const de: Record<string, string> = {
   "studio.color_picker.eyedropper": "Pipette",
   "studio.color_picker.from_image": "Aus Bild wählen",
   "studio.color_picker.from_image_hint": "Klicke die gewünschte Farbe im Bild an.",
+  "studio.booking.calendar_sync": "Kalender-Abo",
+  "studio.booking.calendar_sync_hint": "Alle Buchungen mit E-Mail, Zeit und Kommentar in Google oder Apple Calendar. Aktualisiert sich automatisch.",
+  "studio.booking.calendar_google": "Zu Google Calendar hinzufügen",
+  "studio.booking.calendar_apple": "Zu Apple Calendar hinzufügen",
+  "studio.booking.calendar_copy": "Abo-Link kopieren",
+  "studio.booking.calendar_copied": "Link kopiert",
+  "studio.booking.calendar_need_handle": "Veröffentliche die Seite mit Handle, damit der Kalender funktioniert.",
 };

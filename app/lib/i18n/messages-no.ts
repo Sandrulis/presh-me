@@ -1348,4 +1348,11 @@ export const no: Record<string, string> = {
   "studio.color_picker.eyedropper": "Pipette",
   "studio.color_picker.from_image": "Hent fra bilde",
   "studio.color_picker.from_image_hint": "Klikk på ønsket farge i bildet.",
+  "studio.booking.calendar_sync": "Kalenderabonnement",
+  "studio.booking.calendar_sync_hint": "Alle bookinger med e-post, tid og kommentar i Google eller Apple Calendar. Oppdateres automatisk.",
+  "studio.booking.calendar_google": "Legg til i Google Calendar",
+  "studio.booking.calendar_apple": "Legg til i Apple Calendar",
+  "studio.booking.calendar_copy": "Kopier abonnementslenke",
+  "studio.booking.calendar_copied": "Lenke kopiert",
+  "studio.booking.calendar_need_handle": "Publiser siden med handle slik at kalenderen fungerer.",
 };

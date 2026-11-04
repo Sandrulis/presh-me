@@ -1347,5 +1347,12 @@
   "studio.subscription.error_stripe_unavailable": "Betalningar är tillfälligt otillgängliga.",
   "studio.color_picker.eyedropper": "Pipett",
   "studio.color_picker.from_image": "Välj från bild",
-  "studio.color_picker.from_image_hint": "Klicka på önskad färg i bilden."
+  "studio.color_picker.from_image_hint": "Klicka på önskad färg i bilden.",
+  "studio.booking.calendar_sync": "Kalenderprenumeration",
+  "studio.booking.calendar_sync_hint": "Alla bokningar med e-post, tid och kommentar i Google eller Apple Calendar. Uppdateras automatiskt.",
+  "studio.booking.calendar_google": "Lägg till i Google Calendar",
+  "studio.booking.calendar_apple": "Lägg till i Apple Calendar",
+  "studio.booking.calendar_copy": "Kopiera prenumerationslänk",
+  "studio.booking.calendar_copied": "Länk kopierad",
+  "studio.booking.calendar_need_handle": "Publicera sidan med handle så att kalendern fungerar."
 }

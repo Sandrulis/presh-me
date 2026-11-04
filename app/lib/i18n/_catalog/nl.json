@@ -1347,5 +1347,12 @@
   "studio.subscription.error_stripe_unavailable": "Betalingen zijn tijdelijk niet beschikbaar.",
   "studio.color_picker.eyedropper": "Pipet",
   "studio.color_picker.from_image": "Uit afbeelding",
-  "studio.color_picker.from_image_hint": "Klik op de gewenste kleur in de afbeelding."
+  "studio.color_picker.from_image_hint": "Klik op de gewenste kleur in de afbeelding.",
+  "studio.booking.calendar_sync": "Kalenderabonnement",
+  "studio.booking.calendar_sync_hint": "Alle boekingen met e-mail, tijd en opmerking in Google of Apple Calendar. Werkt automatisch bij.",
+  "studio.booking.calendar_google": "Toevoegen aan Google Calendar",
+  "studio.booking.calendar_apple": "Toevoegen aan Apple Calendar",
+  "studio.booking.calendar_copy": "Abonnementslink kopiëren",
+  "studio.booking.calendar_copied": "Link gekopieerd",
+  "studio.booking.calendar_need_handle": "Publiceer je pagina met een handle zodat de kalender werkt."
 }

@@ -12,7 +12,7 @@ import {
   resolveBookingSettingsFromBlock,
   todayIsoDateLocal,
 } from "@/app/lib/booking/schedule";
-import { bookingSlotKey } from "@/app/lib/booking/reservation-slot-key";
+import { bookingSlotKey, parseBookingSlotKey } from "@/app/lib/booking/reservation-slot-key";
 import type { BookingBlock } from "@/app/lib/types";
 import type { Theme } from "@/app/lib/themes";
 
@@ -112,6 +112,15 @@ function PageBookingDrawer({
   const [reservationsLoading, setReservationsLoading] = useState(false);
 
   const slotsReady = mode !== "live" || !pageHandle.trim() || !reservationsLoading;
+
+  const datesWithReservations = useMemo(() => {
+    const dates = new Set<string>();
+    for (const key of reservedSlots) {
+      const parsed = parseBookingSlotKey(key);
+      if (parsed) dates.add(parsed.date);
+    }
+    return dates;
+  }, [reservedSlots]);
 
   useEffect(() => {
     if (!open) {
@@ -302,13 +311,15 @@ function PageBookingDrawer({
               const enabled = bookable.has(iso);
               const isSelected = selectedDate === iso;
               const isToday = iso === todayIsoDateLocal();
+              const hasReservations = datesWithReservations.has(iso);
+              const dayNumber = parseIsoDate(iso)?.getDate();
               return (
                 <button
                   key={iso}
                   type="button"
                   disabled={!enabled}
                   onClick={() => pickDate(iso)}
-                  className={`aspect-square rounded-lg text-sm ${
+                  className={`flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg text-sm ${
                     isSelected
                       ? "bg-[var(--ink)] font-semibold text-white"
                       : enabled
@@ -316,7 +327,13 @@ function PageBookingDrawer({
                         : "text-[var(--muted)] opacity-40"
                   } ${isToday && !isSelected ? "ring-1 ring-[var(--ink)]/30" : ""}`}
                 >
-                  {parseIsoDate(iso)?.getDate()}
+                  <span>{dayNumber}</span>
+                  {hasReservations ? (
+                    <span
+                      className={`size-1.5 shrink-0 rounded-full ${isSelected ? "bg-red-400" : "bg-red-600"}`}
+                      aria-hidden
+                    />
+                  ) : null}
                 </button>
               );
             })}

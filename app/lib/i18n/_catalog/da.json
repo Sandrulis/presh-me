@@ -1347,5 +1347,12 @@
   "studio.subscription.error_stripe_unavailable": "Betalinger er midlertidigt utilgængelige.",
   "studio.color_picker.eyedropper": "Pipette",
   "studio.color_picker.from_image": "Tag fra billede",
-  "studio.color_picker.from_image_hint": "Klik på den ønskede farve i billedet."
+  "studio.color_picker.from_image_hint": "Klik på den ønskede farve i billedet.",
+  "studio.booking.calendar_sync": "Kalenderabonnement",
+  "studio.booking.calendar_sync_hint": "Alle bookinger med e-mail, tid og kommentar i Google eller Apple Calendar. Opdateres automatisk.",
+  "studio.booking.calendar_google": "Tilføj til Google Calendar",
+  "studio.booking.calendar_apple": "Tilføj til Apple Calendar",
+  "studio.booking.calendar_copy": "Kopiér abonnementslink",
+  "studio.booking.calendar_copied": "Link kopieret",
+  "studio.booking.calendar_need_handle": "Publicér siden med et handle, så kalenderen virker."
 }

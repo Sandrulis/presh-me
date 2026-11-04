@@ -51,6 +51,20 @@ export function getPublicSiteUrl(): string {
   return "http://localhost:3130";
 }
 
+/** ICS/webcal URLs must be reachable by Google/Apple servers — not localhost. */
+export function getCalendarFeedOrigin(): string {
+  const site = getPublicSiteUrl();
+  try {
+    const url = new URL(site);
+    if (isLocalOrPreviewHost(url.hostname)) {
+      return PRODUCTION_ORIGIN;
+    }
+    return stripTrailingSlash(url.origin);
+  } catch {
+    return PRODUCTION_ORIGIN;
+  }
+}
+
 export function absoluteUrl(path = "/"): string {
   const base = getPublicSiteUrl();
   if (!path || path === "/") return `${base}/`;

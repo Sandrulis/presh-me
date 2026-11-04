@@ -1348,4 +1348,11 @@ export const lt: Record<string, string> = {
   "studio.color_picker.eyedropper": "Pipetė",
   "studio.color_picker.from_image": "Imti iš paveikslėlio",
   "studio.color_picker.from_image_hint": "Spustelėkite norimą spalvą paveikslėlyje.",
+  "studio.booking.calendar_sync": "Kalendoriaus prenumerata",
+  "studio.booking.calendar_sync_hint": "Visos rezervacijos su el. paštu, laiku ir komentaru Google ar Apple kalendoriuje. Atnaujinama automatiškai.",
+  "studio.booking.calendar_google": "Pridėti į Google Calendar",
+  "studio.booking.calendar_apple": "Pridėti į Apple Calendar",
+  "studio.booking.calendar_copy": "Kopijuoti prenumeratos nuorodą",
+  "studio.booking.calendar_copied": "Nuoroda nukopijuota",
+  "studio.booking.calendar_need_handle": "Publikuok puslapį su handle, kad kalendorius veiktų.",
 };

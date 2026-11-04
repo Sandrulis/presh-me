@@ -221,6 +221,7 @@ export function BlocksEditor({
 
       {creating ? (
         <BlockEditDrawer
+          page={page}
           block={creating}
           mode="create"
           onClose={() => setCreating(null)}
@@ -231,6 +232,7 @@ export function BlocksEditor({
 
       {editing && !creating ? (
         <BlockEditDrawer
+          page={page}
           block={editing}
           mode="edit"
           onClose={() => setEditId(null)}
@@ -286,12 +288,14 @@ function BlockTypePicker({
 }
 
 function BlockEditDrawer({
+  page,
   block,
   mode,
   onClose,
   onChange,
   onSave,
 }: {
+  page: Portfolio;
   block: PageBlock;
   mode: "create" | "edit";
   onClose: () => void;
@@ -333,12 +337,20 @@ function BlockEditDrawer({
         )
       }
     >
-      <BlockFields block={block} onChange={onChange} />
+      <BlockFields page={page} block={block} onChange={onChange} />
     </SideDrawer>
   );
 }
 
-function BlockFields({ block, onChange }: { block: PageBlock; onChange: (next: PageBlock) => void }) {
+function BlockFields({
+  page,
+  block,
+  onChange,
+}: {
+  page: Portfolio;
+  block: PageBlock;
+  onChange: (next: PageBlock) => void;
+}) {
   const { t } = useTranslations();
   const optionalPh = t("common.optional", "Nav obligāts");
   switch (block.type) {
@@ -471,7 +483,14 @@ function BlockFields({ block, onChange }: { block: PageBlock; onChange: (next: P
         </>
       );
     case "booking":
-      return <BookingBlockFields block={block} onChange={onChange} />;
+      return (
+        <BookingBlockFields
+          block={block}
+          onChange={onChange}
+          pageId={page.id}
+          pageHandle={page.handle}
+        />
+      );
   }
 }
 

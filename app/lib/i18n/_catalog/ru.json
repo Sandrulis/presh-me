@@ -1347,5 +1347,12 @@
   "studio.subscription.error_stripe_unavailable": "Платежи временно недоступны.",
   "studio.color_picker.eyedropper": "Пипетка",
   "studio.color_picker.from_image": "Взять с изображения",
-  "studio.color_picker.from_image_hint": "Щёлкните нужный цвет на изображении."
+  "studio.color_picker.from_image_hint": "Щёлкните нужный цвет на изображении.",
+  "studio.booking.calendar_sync": "Подписка на календарь",
+  "studio.booking.calendar_sync_hint": "Все бронирования с e-mail, временем и комментарием в Google или Apple Calendar. Обновляется автоматически.",
+  "studio.booking.calendar_google": "Добавить в Google Calendar",
+  "studio.booking.calendar_apple": "Добавить в Apple Calendar",
+  "studio.booking.calendar_copy": "Копировать ссылку подписки",
+  "studio.booking.calendar_copied": "Ссылка скопирована",
+  "studio.booking.calendar_need_handle": "Опубликуйте страницу с handle, чтобы календарь работал."
 }
