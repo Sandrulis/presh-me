@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.2.0
+
+**CI — security checks bez ilgas rindas**
+
+- Viens GitHub workflow `Security checks`: gitleaks → npm-audit → smoke (`needs` secībā)
+- Privātam repozitorijam Free plānā vairs trīs paralēli workflow runi nekonkurē par vienu runneri
+- Smoke solī pievienots `npm run i18n:check`
+
 ## v0.1.25
 
 **Abonementa atteikšana un kļūdu toast**
