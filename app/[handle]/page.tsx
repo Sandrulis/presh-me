@@ -19,6 +19,9 @@ import {
 import { siteOgImageUrl } from "@/app/lib/site-url";
 import { shouldRedirectPublicProfileAway } from "@/app/lib/trial/public-trial-access";
 
+/** ISR: public profiles — reduces origin SSR churn on repeat views (Hobby / CDN). */
+export const revalidate = 60;
+
 type HandlePageProps = {
   params: Promise<{ handle: string }>;
 };

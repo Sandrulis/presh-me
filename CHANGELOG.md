@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.1.23
+
+**Vercel Hobby — mazāk CPU un origin transfer**
+
+- Kešots `site_translations` overlay un valodu saraksts (`unstable_cache` + revalidate pēc admin izmaiņām)
+- `refreshSiteAdmin` tikai admin/studio/settings/start, ne visai lapai
+- Publiskie `/[handle]` profili ar ISR `revalidate = 60`
+
 ## v0.1.22
 
 **Admin zīmols (logo / favicon)**

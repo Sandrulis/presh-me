@@ -3,6 +3,7 @@ import { AuthProvider } from "@/app/components/auth-provider";
 import { CookieConsentProvider } from "@/app/components/cookie-consent-provider";
 import { NotificationFavicon } from "@/app/components/notification-favicon";
 import { SiteAlertsBridge } from "@/app/components/site-alerts-bridge";
+import { SiteAdminStoreHydrator } from "@/app/components/site-admin-store-hydrator";
 import { SiteBrandingProvider } from "@/app/components/site-branding-provider";
 import { buildSiteBrandingContext } from "@/app/lib/site-admin/site-branding-context";
 import { TranslationsProvider } from "@/app/components/translations-provider";
@@ -81,6 +82,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang={i18n.languageCode} className={`${fontVariables} ${fontClassName}`}>
       <body>
         <SiteBrandingProvider branding={brandingContext}>
+          <SiteAdminStoreHydrator />
           <TranslationsProvider
             languageCode={i18n.languageCode}
             overlay={i18n.overlay}

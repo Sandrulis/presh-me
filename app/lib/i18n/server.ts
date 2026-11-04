@@ -1,10 +1,13 @@
 import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import { createClient } from "@/app/lib/supabase/server";
-import { isSupabaseAdminConfigured, isSupabaseConfigured } from "@/app/lib/supabase/env";
-import { createAdminClient } from "@/app/lib/supabase/admin";
+import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { interpolate } from "@/app/lib/i18n/interpolate";
 import { loadMessages } from "@/app/lib/i18n/load-messages";
+import {
+  getCachedActiveUiLanguagesFromDb,
+  getCachedTranslationOverlayForLanguage,
+} from "@/app/lib/i18n/site-translations-cache";
 import {
   DEFAULT_LANGUAGE,
   hasExplicitLanguageChoice,
@@ -12,9 +15,7 @@ import {
   LANGUAGE_CHOSEN_COOKIE,
   LANGUAGE_COOKIE,
   matchAcceptLanguage,
-  NATIVE_LANGUAGE_NAMES,
   resolveLanguageCode,
-  sortSwitcherLanguages,
   type LanguageCode,
   type UiLanguageOption,
 } from "@/app/lib/i18n/language";
@@ -33,50 +34,10 @@ export type ServerTranslations = {
   t: TranslateFn;
 };
 
-async function fetchActiveLanguages(): Promise<UiLanguageOption[]> {
-  if (!isSupabaseAdminConfigured()) {
-    return Object.entries(NATIVE_LANGUAGE_NAMES).map(([code, name], index) => ({
-      code: code as LanguageCode,
-      name,
-      isDefault: index === 0,
-    }));
-  }
-  try {
-    const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("site_languages")
-      .select("code, name, is_active, is_default, sort_order")
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true });
-    if (error || !data?.length) {
-      return [
-        { code: "lv", name: NATIVE_LANGUAGE_NAMES.lv, isDefault: true },
-        { code: "en", name: NATIVE_LANGUAGE_NAMES.en },
-      ];
-    }
-    return data.flatMap((row) =>
-      isLanguageCode(row.code)
-        ? [
-            {
-              code: row.code,
-              name: row.name || NATIVE_LANGUAGE_NAMES[row.code],
-              isDefault: !!row.is_default,
-            },
-          ]
-        : [],
-    );
-  } catch {
-    return [
-      { code: "lv", name: NATIVE_LANGUAGE_NAMES.lv, isDefault: true },
-      { code: "en", name: NATIVE_LANGUAGE_NAMES.en },
-    ];
-  }
-}
-
 export const getActiveUiLanguages = cache(async function getActiveUiLanguages(): Promise<
   UiLanguageOption[]
 > {
-  return sortSwitcherLanguages(await fetchActiveLanguages());
+  return getCachedActiveUiLanguagesFromDb();
 });
 
 export const getRequestLanguageCode = cache(async function getRequestLanguageCode(): Promise<LanguageCode> {
@@ -140,23 +101,7 @@ export const getServerTranslations = cache(async function getServerTranslations(
   const languageCode = forcedLanguage ?? (await getRequestLanguageCode());
   const languages = await getActiveUiLanguages();
   const table = await loadMessages(languageCode);
-
-  const overlay: Record<string, string> = {};
-  if (isSupabaseAdminConfigured()) {
-    try {
-      const admin = createAdminClient();
-      const { data } = await admin.from("site_translations").select("translation_key, values");
-      if (data) {
-        for (const row of data) {
-          const values = row.values as Record<string, string> | null;
-          const value = values?.[languageCode]?.trim();
-          if (value) overlay[row.translation_key] = value;
-        }
-      }
-    } catch {
-      /* ignore overlay */
-    }
-  }
+  const overlay = await getCachedTranslationOverlayForLanguage(languageCode);
 
   return {
     languageCode,

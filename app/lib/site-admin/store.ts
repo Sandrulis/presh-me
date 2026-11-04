@@ -9,6 +9,7 @@ import {
 } from "@/app/lib/i18n/bundled-catalog";
 import { normalizeBrandImageUrl } from "@/app/lib/site-admin/branding";
 import { saveSiteSettingsServer } from "@/app/lib/site-admin/site-settings-server";
+import { revalidateSiteTranslationsCache } from "@/app/lib/i18n/revalidate-translations-cache";
 import type {
   SiteAdminStore,
   SiteLanguage,
@@ -140,6 +141,11 @@ export function getSiteSettings(): SiteSettings {
   return cache.settings;
 }
 
+async function refreshSiteAdminAndRevalidateI18nCache() {
+  await refreshSiteAdmin();
+  void revalidateSiteTranslationsCache();
+}
+
 export async function refreshSiteAdmin() {
   await preloadBundledCatalogs();
   const supabase = createClient();
@@ -219,14 +225,14 @@ export async function createSiteLanguage(input: {
     is_default: Boolean(input.isDefault),
     sort_order: sortOrder,
   });
-  await refreshSiteAdmin();
+  await refreshSiteAdminAndRevalidateI18nCache();
   return listSiteLanguages();
 }
 
 export async function updateSiteLanguageName(code: string, name: string): Promise<SiteLanguage[]> {
   const supabase = createClient();
   await supabase.from("site_languages").update({ name: name.trim() || code }).eq("code", code);
-  await refreshSiteAdmin();
+  await refreshSiteAdminAndRevalidateI18nCache();
   return listSiteLanguages();
 }
 
@@ -235,7 +241,7 @@ export async function setSiteLanguageActive(code: string, isActive: boolean): Pr
   if (!target || (!isActive && target.isDefault)) return listSiteLanguages();
   const supabase = createClient();
   await supabase.from("site_languages").update({ is_active: isActive }).eq("code", code);
-  await refreshSiteAdmin();
+  await refreshSiteAdminAndRevalidateI18nCache();
   return listSiteLanguages();
 }
 
@@ -243,7 +249,7 @@ export async function setDefaultSiteLanguage(code: string): Promise<SiteLanguage
   const supabase = createClient();
   await supabase.from("site_languages").update({ is_default: false }).neq("code", code);
   await supabase.from("site_languages").update({ is_default: true, is_active: true }).eq("code", code);
-  await refreshSiteAdmin();
+  await refreshSiteAdminAndRevalidateI18nCache();
   return listSiteLanguages();
 }
 
@@ -259,7 +265,7 @@ export async function deleteSiteLanguage(code: string): Promise<SiteLanguage[]> 
     delete values[code];
     await supabase.from("site_translations").upsert({ translation_key: item.key, values });
   }
-  await refreshSiteAdmin();
+  await refreshSiteAdminAndRevalidateI18nCache();
   return listSiteLanguages();
 }
 
@@ -271,14 +277,14 @@ export async function upsertSiteTranslation(input: {
   if (!key) return listSiteTranslations();
   const supabase = createClient();
   await supabase.from("site_translations").upsert({ translation_key: key, values: input.values });
-  await refreshSiteAdmin();
+  await refreshSiteAdminAndRevalidateI18nCache();
   return listSiteTranslations();
 }
 
 export async function deleteSiteTranslation(key: string): Promise<SiteTranslation[]> {
   const supabase = createClient();
   await supabase.from("site_translations").delete().eq("translation_key", key);
-  await refreshSiteAdmin();
+  await refreshSiteAdminAndRevalidateI18nCache();
   return listSiteTranslations();
 }
 
@@ -296,7 +302,7 @@ export async function resetLandingOverlaysToCatalog(): Promise<{ removed: number
   const supabase = createClient();
   const { error } = await supabase.from("site_translations").delete().in("translation_key", keys);
   if (error) throw error;
-  await refreshSiteAdmin();
+  await refreshSiteAdminAndRevalidateI18nCache();
   return { removed: keys.length };
 }
 

@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
+import { revalidateSiteTranslationsCache } from "@/app/lib/i18n/revalidate-translations-cache";
 import {
   isLanguageCode,
   LANGUAGE_CHOSEN_COOKIE,
@@ -43,5 +43,5 @@ export async function setLanguageAction(languageCode: string) {
     }
   }
 
-  revalidatePath("/", "layout");
+  await revalidateSiteTranslationsCache();
 }

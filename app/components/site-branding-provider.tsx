@@ -1,11 +1,11 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 import {
   buildSiteBrandingContext,
   type SiteBrandingContextValue,
 } from "@/app/lib/site-admin/site-branding-context";
-import { getSiteSettings, refreshSiteAdmin, subscribeSiteAdmin } from "@/app/lib/site-admin/store";
+import { getSiteSettings, subscribeSiteAdmin } from "@/app/lib/site-admin/store";
 import { useSyncExternalStore } from "react";
 
 const SiteBrandingContext = createContext<SiteBrandingContextValue>({
@@ -23,10 +23,6 @@ export function SiteBrandingProvider({
   branding: SiteBrandingContextValue;
 }) {
   const settings = useSyncExternalStore(subscribeSiteAdmin, getSiteSettings, getSiteSettings);
-
-  useEffect(() => {
-    void refreshSiteAdmin();
-  }, []);
 
   const branding = useMemo(() => {
     if (!settings.updatedAt) return initialBranding;
