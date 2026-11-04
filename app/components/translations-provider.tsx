@@ -17,6 +17,8 @@ type TranslateFn = (
 type TranslationsContextValue = {
   languageCode: LanguageCode;
   languages: UiLanguageOption[];
+  /** Bundled catalog (not DB overlay). */
+  table: Record<string, string>;
   t: TranslateFn;
 };
 
@@ -39,6 +41,7 @@ export function TranslationsProvider({
     return {
       languageCode,
       languages,
+      table,
       t(key, fallback, params) {
         const fromOverlay = overlay[key]?.trim();
         return interpolate(fromOverlay || table[key] || fallback, params);

@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.1.20
+
+**Landing pricing un Stripe trial**
+
+- Basic/Pro bez beta/planned; abām kartītēm trial CTA un pilna platuma pogas vienā līmenī
+- Gada slēdzis tikai ja visiem plāniem ir gada cena; Stripe checkout ar trial dienām no admin iestatījuma
+- Reģistrācija ar `?plan=` → checkout studijā; migrācija `030` atjaunina pricing tulkojumus DB
+
 ## v0.1.19
 
 - Security smoke atpazīst cron maršrutu `authorizeCron` (`CRON_SECRET`)

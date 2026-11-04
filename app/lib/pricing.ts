@@ -1,15 +1,14 @@
-/** Public pricing — keep claims honest. Pro price is a placeholder until billing ships. */
+/** Public pricing copy — live checkout follows DB plan prices when billing module is on. */
 export const PRICING = {
   free: {
-    id: "free-beta",
+    id: "basic",
     priceLabel: "€0",
-    period: "beta",
+    period: "month",
   },
   pro: {
     id: "pro",
-    /** Placeholder until Stripe plans are live — do not present as a live checkout price. */
     priceLabel: "€9",
     period: "month",
-    comingSoon: true,
+    comingSoon: false,
   },
 } as const;

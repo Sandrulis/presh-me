@@ -13,6 +13,7 @@ import {
   type PlanTier,
 } from "@/app/lib/billing/plan-change";
 import { parseBillingInterval, type BillingInterval } from "@/app/lib/billing/billing-interval";
+import { loadSubscriptionTrialPeriodDaysAdmin } from "@/app/lib/billing/trial-period";
 import {
   notifySubscriptionPlanDowngradedEmail,
   notifySubscriptionPlanUpgradedEmail,
@@ -358,6 +359,29 @@ export async function findUserIdByStripeCustomer(customerId: string) {
   return (data?.user_id as string) ?? "";
 }
 
+async function checkoutSubscriptionTrialDays(userId: string): Promise<number | undefined> {
+  const existing = await loadUserSubscriptionRow(userId);
+  if (existing?.stripe_subscription_id?.trim()) {
+    return undefined;
+  }
+  return loadSubscriptionTrialPeriodDaysAdmin();
+}
+
+export async function extendSubscriptionWithTrialBonus(subscriptionId: string) {
+  const stripe = await getStripeClient();
+  if (!stripe) return;
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  if (subscription.status !== "active" || subscription.trial_end != null) {
+    return;
+  }
+  const days = await loadSubscriptionTrialPeriodDaysAdmin();
+  const bonusTrialEnd = subscription.current_period_end + days * 86400;
+  await stripe.subscriptions.update(subscriptionId, {
+    trial_end: bonusTrialEnd,
+    proration_behavior: "none",
+  });
+}
+
 export async function createCheckoutSession(input: {
   userId: string;
   email: string;
@@ -411,6 +435,7 @@ export async function createCheckoutSession(input: {
 
   const planName = (await loadPlanName(plan.id, input.languageCode)) ?? plan.plan_key;
   const site = getPublicSiteUrl();
+  const trialDays = await checkoutSubscriptionTrialDays(input.userId);
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
@@ -435,6 +460,7 @@ export async function createCheckoutSession(input: {
         planKey: plan.plan_key,
         billingInterval: interval,
       },
+      ...(trialDays ? { trial_period_days: trialDays } : {}),
     },
     metadata: {
       userId: input.userId,

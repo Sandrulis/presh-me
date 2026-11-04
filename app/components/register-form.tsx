@@ -12,6 +12,7 @@ import { useTranslations } from "@/app/components/translations-provider";
 import { registerAccountAction } from "@/app/lib/auth/register-action";
 import { useAuthTurnstile } from "@/app/lib/auth/use-auth-turnstile";
 import { normalizeHandle } from "@/app/lib/handles";
+import { stashLandingCheckoutPlan } from "@/app/lib/billing/pending-landing-plan";
 import { registerAccount } from "@/app/lib/store";
 
 /** Avoid double toast from React Strict Mode / Suspense remount with the same ?error=. */
@@ -32,6 +33,11 @@ export function RegisterForm() {
   const turnstile = useAuthTurnstile();
 
   const authError = params.get("error");
+  useEffect(() => {
+    const plan = params.get("plan")?.trim().toLowerCase() ?? "";
+    if (plan) stashLandingCheckoutPlan(plan);
+  }, [params]);
+
   useEffect(() => {
     if (!authError) {
       registerAuthErrorShown = null;

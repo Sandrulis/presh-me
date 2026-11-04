@@ -7,6 +7,7 @@ import { useTranslations } from "@/app/components/translations-provider";
 import type { BillingInterval } from "@/app/lib/billing/billing-interval";
 import { formatPlanPrice } from "@/app/lib/billing/format-plan-price";
 import type { LandingPricingData, LandingPricingPlan } from "@/app/lib/pricing/load-landing-pricing";
+import { interpolate } from "@/app/lib/i18n/interpolate";
 
 function PlanMark({ included, label }: { included: boolean; label: string }) {
   return (
@@ -24,21 +25,21 @@ function PlanMark({ included, label }: { included: boolean; label: string }) {
   );
 }
 
+function planHasPaidPricing(plan: LandingPricingPlan): boolean {
+  return plan.priceAmountMonthly > 0 || plan.priceAmountAnnual > 0;
+}
+
 function resolvePlanPriceDisplay(plan: LandingPricingPlan, interval: BillingInterval) {
-  if (plan.isFreeTier) {
+  if (interval === "year" && plan.priceAmountAnnual > 0) {
     return {
-      priceLabel: plan.priceLabel,
-      periodKey: plan.periodKey,
+      priceLabel: formatPlanPrice(plan.priceAmountAnnual).replace("€ ", "€"),
+      periodKey: "landing.pricing.period.year" as const,
     };
   }
-  const amount = interval === "year" ? plan.priceAmountAnnual : plan.priceAmountMonthly;
-  if (amount > 0) {
+  if (plan.priceAmountMonthly > 0) {
     return {
-      priceLabel: formatPlanPrice(amount).replace("€ ", "€"),
-      periodKey:
-        interval === "year"
-          ? ("landing.pricing.period.year" as const)
-          : ("landing.pricing.pro.period" as const),
+      priceLabel: formatPlanPrice(plan.priceAmountMonthly).replace("€ ", "€"),
+      periodKey: "landing.pricing.pro.period" as const,
     };
   }
   return {
@@ -52,39 +53,45 @@ function periodLabel(
   periodKey: LandingPricingPlan["periodKey"],
 ) {
   if (!periodKey) return null;
-  if (periodKey === "landing.pricing.period.beta") {
-    return t("landing.pricing.period.beta", "beta");
-  }
   if (periodKey === "landing.pricing.period.year") {
-    return t("landing.pricing.period.year", "gads");
+    return t("landing.pricing.period.year", "gadā");
   }
-  return t("landing.pricing.pro.period", "month");
+  return t("landing.pricing.pro.period", "mēnesī");
+}
+
+function registerHref(planKey: string): string {
+  const params = new URLSearchParams({ plan: planKey });
+  return `/register?${params.toString()}`;
 }
 
 export function LandingPricingSection({ pricing }: { pricing: LandingPricingData }) {
-  const { t } = useTranslations();
-  const { plans, features, paidCheckoutLive } = pricing;
-  const showIntervalToggle = useMemo(
-    () =>
-      paidCheckoutLive &&
-      plans.some(
-        (plan) =>
-          !plan.isFreeTier && (plan.priceAmountMonthly > 0 || plan.priceAmountAnnual > 0),
-      ),
-    [paidCheckoutLive, plans],
-  );
+  const { t, table } = useTranslations();
+  const { plans, features, paidCheckoutLive, trialPeriodDays } = pricing;
+
+  function pricingText(key: string, fallback: string, params?: Record<string, string | number>) {
+    return interpolate(table[key] || fallback, params);
+  }
+
+  const showIntervalToggle = useMemo(() => {
+    if (!paidCheckoutLive || plans.length === 0) return false;
+    return plans.every((plan) => plan.priceAmountAnnual > 0);
+  }, [paidCheckoutLive, plans]);
   const [interval, setInterval] = useState<BillingInterval>("month");
+  const ctaLabel = pricingText("landing.pricing.cta", "Try for free {days} days", {
+    days: String(trialPeriodDays),
+  });
 
   return (
     <section id="pricing" className="border-b border-[var(--line)] bg-white">
       <div className="mx-auto max-w-5xl px-5 py-14">
         <h2 className="font-display text-3xl font-bold tracking-[-0.03em]">
-          {t("landing.pricing.title", "Pricing")}
+          {t("landing.pricing.title", "Cenas")}
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
-          {t(
+          {pricingText(
             "landing.pricing.subtitle",
-            "Start free in open beta. A Pro plan is planned — price below is a placeholder, not a live checkout.",
+            "Saliec lapu un publicē. Maksas plāni ar {days} dienu izmēģinājumu — pirmā maksa tikai pēc tā.",
+            { days: String(trialPeriodDays) },
           )}
         </p>
 
@@ -100,17 +107,19 @@ export function LandingPricingSection({ pricing }: { pricing: LandingPricingData
           </div>
         ) : null}
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 sm:items-stretch">
           {plans.map((plan) => {
             const display = resolvePlanPriceDisplay(plan, interval);
             const period = periodLabel(t, display.periodKey);
+            const showTrialCta =
+              plan.showCta && (!planHasPaidPricing(plan) || paidCheckoutLive);
             return (
               <article
                 key={plan.planKey}
                 className={
                   plan.highlighted
-                    ? "rounded-2xl border border-[var(--ink)] bg-[var(--paper)] p-5"
-                    : "rounded-2xl border border-[var(--line)] bg-white p-5"
+                    ? "flex h-full flex-col rounded-2xl border border-[var(--ink)] bg-[var(--paper)] p-5"
+                    : "flex h-full flex-col rounded-2xl border border-[var(--line)] bg-white p-5"
                 }
               >
                 <p
@@ -120,7 +129,7 @@ export function LandingPricingSection({ pricing }: { pricing: LandingPricingData
                       : "text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]"
                   }
                 >
-                  {t(plan.badgeKey, plan.name)}
+                  {pricingText(plan.badgeKey, plan.name)}
                 </p>
                 <p className="mt-3 font-display text-4xl font-bold tracking-[-0.03em]">
                   {display.priceLabel}
@@ -131,16 +140,25 @@ export function LandingPricingSection({ pricing }: { pricing: LandingPricingData
                     </span>
                   ) : null}
                 </p>
-                <p className="mt-2 text-sm text-[var(--muted)]">{t(plan.bodyKey, plan.name)}</p>
-                {plan.showCta ? (
-                  <Link href="/register" className="btn-ink mt-5 inline-flex">
-                    {t("landing.pricing.cta", "Start for free")}
-                  </Link>
-                ) : plan.comingSoon ? (
-                  <p className="mt-5 text-sm font-medium text-[var(--muted)]">
-                    {t("landing.pricing.pro.soon", "Not available to buy yet.")}
-                  </p>
-                ) : null}
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-[var(--muted)]">
+                  {pricingText(plan.bodyKey, plan.name)}
+                </p>
+                <div className="mt-5 shrink-0">
+                  {showTrialCta ? (
+                    <Link
+                      href={registerHref(plan.planKey)}
+                      className="btn-ink flex w-full justify-center"
+                    >
+                      {ctaLabel}
+                    </Link>
+                  ) : plan.comingSoon ? (
+                    <p className="text-center text-sm font-medium text-[var(--muted)]">
+                      {t("landing.pricing.pro.soon", "Vēl nav pieejams pirkumam.")}
+                    </p>
+                  ) : (
+                    <span className="block min-h-10" aria-hidden="true" />
+                  )}
+                </div>
               </article>
             );
           })}

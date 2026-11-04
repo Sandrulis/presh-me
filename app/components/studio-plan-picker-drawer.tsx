@@ -12,6 +12,7 @@ import { SideDrawer } from "@/app/components/side-drawer";
 import { useTranslations } from "@/app/components/translations-provider";
 import type { BillingInterval } from "@/app/lib/billing/billing-interval";
 import { comparePlanChange, type PlanTier } from "@/app/lib/billing/plan-change";
+import { takeLandingCheckoutPlan } from "@/app/lib/billing/pending-landing-plan";
 import { formatPlanPrice } from "@/app/lib/billing/format-plan-price";
 import { useBillingStatus } from "@/app/lib/billing/use-billing-status";
 import {
@@ -78,7 +79,7 @@ export function StudioPlanPickerDrawer({ open, onClose, onStartedCheckout }: Pro
   }
 
   const showIntervalToggle = useMemo(
-    () => plans.some((plan) => plan.priceAmountAnnual > 0),
+    () => plans.length > 0 && plans.every((plan) => plan.priceAmountAnnual > 0),
     [plans],
   );
 
@@ -141,6 +142,13 @@ export function StudioPlanPickerDrawer({ open, onClose, onStartedCheckout }: Pro
       }
     })();
   }, [open, reloadStatus, t]);
+
+  useEffect(() => {
+    if (!open || loading || plans.length === 0 || hasActiveSubscription) return;
+    const pending = takeLandingCheckoutPlan();
+    if (!pending || !plans.some((plan) => plan.planKey === pending)) return;
+    void startCheckout(pending);
+  }, [open, loading, plans, hasActiveSubscription]);
 
   async function startCheckout(planKey: string) {
     const plan = plans.find((item) => item.planKey === planKey);

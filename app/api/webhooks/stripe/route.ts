@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import {
+  extendSubscriptionWithTrialBonus,
   findUserIdByStripeCustomer,
   syncSubscriptionById,
 } from "@/app/lib/billing/subscription-repository";
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
           typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
         if (subscriptionId) {
           await syncSubscriptionById(subscriptionId, userId || undefined);
+          await extendSubscriptionWithTrialBonus(subscriptionId);
           const planKey = session.metadata?.planKey?.trim().toLowerCase() ?? "";
           const billingInterval = parseBillingInterval(session.metadata?.billingInterval);
           const resolvedUserId =

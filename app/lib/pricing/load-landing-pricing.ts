@@ -1,4 +1,5 @@
 import { formatPlanPrice } from "@/app/lib/billing/format-plan-price";
+import { loadSubscriptionTrialPeriodDaysAdmin } from "@/app/lib/billing/trial-period";
 import { isModulePaidPlansEnabledServer } from "@/app/lib/billing/subscription-repository";
 import { PRICING } from "@/app/lib/pricing";
 import { createAdminClient } from "@/app/lib/supabase/admin";
@@ -30,6 +31,7 @@ export type LandingPricingData = {
   plans: LandingPricingPlan[];
   features: LandingPricingFeature[];
   paidCheckoutLive: boolean;
+  trialPeriodDays: number;
 };
 
 type CompareRowDef =
@@ -158,7 +160,7 @@ async function loadFrontendModuleMetaByKey(): Promise<Map<string, FrontendModule
   return metaByModuleKey;
 }
 
-function fallbackPlans(): LandingPricingPlan[] {
+function fallbackPlans(paidCheckoutLive: boolean): LandingPricingPlan[] {
   return [
     {
       planKey: "basic",
@@ -166,7 +168,7 @@ function fallbackPlans(): LandingPricingPlan[] {
       priceAmountMonthly: 0,
       priceAmountAnnual: 0,
       priceLabel: PRICING.free.priceLabel,
-      periodKey: "landing.pricing.period.beta",
+      periodKey: null,
       badgeKey: "landing.pricing.free.badge",
       bodyKey: "landing.pricing.free.body",
       highlighted: true,
@@ -185,8 +187,8 @@ function fallbackPlans(): LandingPricingPlan[] {
       badgeKey: "landing.pricing.pro.badge",
       bodyKey: "landing.pricing.pro.body",
       highlighted: false,
-      showCta: false,
-      comingSoon: PRICING.pro.comingSoon,
+      showCta: paidCheckoutLive,
+      comingSoon: !paidCheckoutLive,
       isFreeTier: false,
       moduleKeys: new Set(DEFAULT_PLAN_MODULES.pro),
     },
@@ -203,11 +205,12 @@ function resolvePlanName(names: Record<string, string>, languageCode: string, pl
 }
 
 export async function loadLandingPricing(languageCode: string): Promise<LandingPricingData> {
-  const [paidCheckoutLive, metaByModuleKey] = await Promise.all([
+  const [paidCheckoutLive, metaByModuleKey, trialPeriodDays] = await Promise.all([
     isModulePaidPlansEnabledServer(),
     loadFrontendModuleMetaByKey(),
+    loadSubscriptionTrialPeriodDaysAdmin(),
   ]);
-  let plans = fallbackPlans();
+  let plans = fallbackPlans(paidCheckoutLive);
 
   if (isSupabaseAdminConfigured()) {
     try {
@@ -252,33 +255,33 @@ export async function loadLandingPricing(languageCode: string): Promise<LandingP
           const amountAnnual = Number(row.price_amount_annual);
           const isPro = planKey === "pro";
           const isFreeTier = planKey === "basic" || (!isPro && amount <= 0 && amountAnnual <= 0);
+          const hasMonthlyPrice = amount > 0;
           let priceLabel: string = PRICING.free.priceLabel;
-          if (isPro) {
-            priceLabel = amount > 0 ? formatPlanPrice(amount).replace("€ ", "€") : PRICING.pro.priceLabel;
-          } else if (amount > 0) {
+          if (hasMonthlyPrice) {
             priceLabel = formatPlanPrice(amount).replace("€ ", "€");
+          } else if (isPro) {
+            priceLabel = PRICING.pro.priceLabel;
           }
+          const paidPlan = hasMonthlyPrice || amountAnnual > 0;
           return {
             planKey,
             name: resolvePlanName(namesByPlan.get(row.id as string) ?? {}, languageCode, planKey),
             priceAmountMonthly: amount,
             priceAmountAnnual: amountAnnual,
             priceLabel,
-            periodKey: isFreeTier
-              ? ("landing.pricing.period.beta" as const)
-              : ("landing.pricing.pro.period" as const),
-            badgeKey: isFreeTier ? "landing.pricing.free.badge" : "landing.pricing.pro.badge",
-            bodyKey: isFreeTier ? "landing.pricing.free.body" : "landing.pricing.pro.body",
+            periodKey: paidPlan ? ("landing.pricing.pro.period" as const) : null,
+            badgeKey: isPro ? "landing.pricing.pro.badge" : "landing.pricing.free.badge",
+            bodyKey: isPro ? "landing.pricing.pro.body" : "landing.pricing.free.body",
             highlighted: index === 0,
-            showCta: isFreeTier,
-            comingSoon: isPro && (PRICING.pro.comingSoon || !paidCheckoutLive),
+            showCta: isPro ? paidCheckoutLive && paidPlan : true,
+            comingSoon: isPro && (!paidCheckoutLive || !paidPlan),
             isFreeTier,
             moduleKeys: modulesByPlan.get(row.id as string) ?? new Set(),
           };
         });
       }
     } catch {
-      plans = fallbackPlans();
+      plans = fallbackPlans(paidCheckoutLive);
     }
   }
 
@@ -309,5 +312,5 @@ export async function loadLandingPricing(languageCode: string): Promise<LandingP
     return { id: row.id, labelKey: row.labelKey, includedByPlan };
   });
 
-  return { plans, features, paidCheckoutLive };
+  return { plans, features, paidCheckoutLive, trialPeriodDays };
 }
