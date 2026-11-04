@@ -1345,4 +1345,7 @@ export const de: Record<string, string> = {
   "admin.email_templates.placeholders_account_deletion": "Platzhalter: {name}, {days} (nur „Konto gelöscht“), {system}",
   "studio.subscription.error_no_subscription": "Abonnement nicht gefunden. Seite aktualisieren oder Support kontaktieren.",
   "studio.subscription.error_stripe_unavailable": "Zahlungen sind vorübergehend nicht verfügbar.",
+  "studio.color_picker.eyedropper": "Pipette",
+  "studio.color_picker.from_image": "Aus Bild wählen",
+  "studio.color_picker.from_image_hint": "Klicke die gewünschte Farbe im Bild an.",
 };

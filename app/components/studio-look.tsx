@@ -340,7 +340,12 @@ export function LookColumn({
 
       {view === "page" ? (
         <StudioGroup>
-          <ColorRow label={t("onboarding.bg_color", "Fona krāsa")} value={page.pageColor ?? themeHex} onChange={(pageColor) => update({ pageColor })} />
+          <ColorRow
+            label={t("onboarding.bg_color", "Fona krāsa")}
+            value={page.pageColor ?? themeHex}
+            onChange={(pageColor) => update({ pageColor })}
+            sampleImageUrl={page.pageImageUrl}
+          />
           <ImageField
             title={t("onboarding.image.bg", "Fona attēls")}
             src={page.pageImageUrl}
@@ -378,11 +383,21 @@ export function LookColumn({
   );
 }
 
-function ColorRow({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function ColorRow({
+  label,
+  value,
+  onChange,
+  sampleImageUrl,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  sampleImageUrl?: string | null;
+}) {
   const safe = /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#111111";
   return (
     <div className="mt-3 flex items-center gap-3">
-      <ColorPicker label={label} value={safe} onChange={onChange} />
+      <ColorPicker label={label} value={safe} onChange={onChange} sampleImageUrl={sampleImageUrl} />
       <span className="text-sm text-[var(--muted)]">{label}</span>
     </div>
   );

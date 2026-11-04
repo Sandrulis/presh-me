@@ -1345,4 +1345,7 @@ export const fr: Record<string, string> = {
   "admin.email_templates.placeholders_account_deletion": "Variables : {name}, {days} (e-mail « compte supprimé » uniquement), {system}",
   "studio.subscription.error_no_subscription": "Abonnement introuvable. Actualisez la page ou contactez le support.",
   "studio.subscription.error_stripe_unavailable": "Les paiements sont temporairement indisponibles.",
+  "studio.color_picker.eyedropper": "Pipette",
+  "studio.color_picker.from_image": "Prendre sur l'image",
+  "studio.color_picker.from_image_hint": "Cliquez la couleur souhaitée sur l'image.",
 };

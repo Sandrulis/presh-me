@@ -1345,4 +1345,7 @@ export const fi: Record<string, string> = {
   "admin.email_templates.placeholders_account_deletion": "Paikkamerkit: {name}, {days} (vain „tili poistettu“), {system}",
   "studio.subscription.error_no_subscription": "Tilausta ei löytynyt. Päivitä sivu tai ota yhteyttä tukeen.",
   "studio.subscription.error_stripe_unavailable": "Maksut eivät ole tilapäisesti käytettävissä.",
+  "studio.color_picker.eyedropper": "Värinpoimija",
+  "studio.color_picker.from_image": "Ota kuvasta",
+  "studio.color_picker.from_image_hint": "Napsauta haluamaasi väriä kuvassa.",
 };

@@ -1345,4 +1345,7 @@ export const sv: Record<string, string> = {
   "admin.email_templates.placeholders_account_deletion": "Platshållare: {name}, {days} (endast „konto raderat“), {system}",
   "studio.subscription.error_no_subscription": "Prenumerationen hittades inte. Uppdatera sidan eller kontakta support.",
   "studio.subscription.error_stripe_unavailable": "Betalningar är tillfälligt otillgängliga.",
+  "studio.color_picker.eyedropper": "Pipett",
+  "studio.color_picker.from_image": "Välj från bild",
+  "studio.color_picker.from_image_hint": "Klicka på önskad färg i bilden.",
 };

@@ -1345,4 +1345,7 @@ export const ru: Record<string, string> = {
   "admin.email_templates.placeholders_account_deletion": "Плейсхолдеры: {name}, {days} (только «аккаунт удалён»), {system}",
   "studio.subscription.error_no_subscription": "Подписка не найдена. Обновите страницу или свяжитесь с поддержкой.",
   "studio.subscription.error_stripe_unavailable": "Платежи временно недоступны.",
+  "studio.color_picker.eyedropper": "Пипетка",
+  "studio.color_picker.from_image": "Взять с изображения",
+  "studio.color_picker.from_image_hint": "Щёлкните нужный цвет на изображении.",
 };

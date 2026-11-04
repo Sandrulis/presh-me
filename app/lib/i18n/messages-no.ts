@@ -1345,4 +1345,7 @@ export const no: Record<string, string> = {
   "admin.email_templates.placeholders_account_deletion": "Plassholdere: {name}, {days} (kun « konto slettet »), {system}",
   "studio.subscription.error_no_subscription": "Abonnement ikke funnet. Oppdater siden eller kontakt support.",
   "studio.subscription.error_stripe_unavailable": "Betalinger er midlertidig utilgjengelige.",
+  "studio.color_picker.eyedropper": "Pipette",
+  "studio.color_picker.from_image": "Hent fra bilde",
+  "studio.color_picker.from_image_hint": "Klikk på ønsket farge i bildet.",
 };

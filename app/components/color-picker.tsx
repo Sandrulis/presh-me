@@ -2,12 +2,16 @@
 
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "@/app/components/translations-provider";
+import { pickColorFromScreen, samplePixelFromImageElement, supportsEyeDropper } from "@/app/lib/color/sample-image-pixel";
 
 type Hsv = { h: number; s: number; v: number };
 
 const HUE = "linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)";
 const PANEL_W = 244;
-const PANEL_H = 248;
+const PANEL_BASE_H = 248;
+const PANEL_EYEDROPPER_H = 44;
+const PANEL_SAMPLE_H = 96;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -61,33 +65,58 @@ function pointerRatio(event: ReactPointerEvent<HTMLElement>) {
   };
 }
 
-function panelLayout(rect: DOMRect) {
+function panelLayout(rect: DOMRect, panelHeight: number) {
   const left = Math.min(Math.max(12, rect.left), window.innerWidth - PANEL_W - 12);
   const below = rect.bottom + 8;
-  const top = below + PANEL_H > window.innerHeight - 12 ? Math.max(12, rect.top - PANEL_H - 8) : below;
+  const top = below + panelHeight > window.innerHeight - 12 ? Math.max(12, rect.top - panelHeight - 8) : below;
   return { left, top };
+}
+
+function EyedropperIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M4 20l4-1 9.5-9.5a2.12 2.12 0 0 0-3-3L5 16l-1 4Z" strokeLinejoin="round" />
+      <path d="M13.5 6.5l3 3" strokeLinecap="round" />
+    </svg>
+  );
 }
 
 export function ColorPicker({
   label,
   value,
   onChange,
+  sampleImageUrl,
 }: {
   label: string;
   value: string;
   onChange: (hex: string) => void;
+  /** When set, user can click the preview to sample a pixel (e.g. page background image). */
+  sampleImageUrl?: string | null;
 }) {
+  const { t } = useTranslations();
   const safe = /^#[0-9a-fA-F]{6}$/.test(value) ? value.toLowerCase() : "#111111";
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const sampleImgRef = useRef<HTMLImageElement>(null);
   const [open, setOpen] = useState(false);
   const [box, setBox] = useState({ left: 12, top: 12 });
   const [hexDraft, setHexDraft] = useState<string | null>(null);
   const [model, setModel] = useState<Hsv>(() => hexToHsv(safe));
+  const eyedropperAvailable = supportsEyeDropper();
+  const sampleUrl = sampleImageUrl?.trim() || "";
+  const panelHeight =
+    PANEL_BASE_H + (eyedropperAvailable ? PANEL_EYEDROPPER_H : 0) + (sampleUrl ? PANEL_SAMPLE_H : 0);
   const parsed = hexToHsv(safe);
   const emitted = hsvToHex(model.h, model.s, model.v).toLowerCase();
   const active: Hsv = emitted === safe ? model : { h: parsed.s < 0.02 ? model.h : parsed.h, s: parsed.s, v: parsed.v };
+
+  function applyHex(hex: string) {
+    const next = hexToHsv(hex);
+    setHexDraft(null);
+    setModel((current) => ({ h: next.s < 0.02 ? current.h : next.h, s: next.s, v: next.v }));
+    onChange(hex);
+  }
 
   function paint(next: Hsv) {
     setHexDraft(null);
@@ -97,18 +126,27 @@ export function ColorPicker({
 
   function commitHex(raw: string) {
     if (!/^[0-9a-fA-F]{6}$/.test(raw)) return;
-    const hex = `#${raw.toLowerCase()}`;
-    const next = hexToHsv(hex);
-    setHexDraft(null);
-    setModel((current) => ({ h: next.s < 0.02 ? current.h : next.h, s: next.s, v: next.v }));
-    onChange(hex);
+    applyHex(`#${raw.toLowerCase()}`);
+  }
+
+  async function onEyedropperClick() {
+    setOpen(false);
+    const hex = await pickColorFromScreen();
+    if (hex) applyHex(hex);
+  }
+
+  function onSampleImagePointer(event: ReactPointerEvent<HTMLImageElement>) {
+    const img = sampleImgRef.current;
+    if (!img) return;
+    const hex = samplePixelFromImageElement(img, event.clientX, event.clientY);
+    if (hex) applyHex(hex);
   }
 
   useEffect(() => {
     if (!open) return;
     function place() {
       const rect = triggerRef.current?.getBoundingClientRect();
-      if (rect) setBox(panelLayout(rect));
+      if (rect) setBox(panelLayout(rect, panelHeight));
     }
     function onDoc(event: MouseEvent) {
       const target = event.target as Node;
@@ -131,7 +169,7 @@ export function ColorPicker({
       document.removeEventListener("mousedown", onDoc);
       window.removeEventListener("keydown", onKey, true);
     };
-  }, [open]);
+  }, [open, panelHeight]);
 
   const panel =
     open && typeof document !== "undefined"
@@ -177,7 +215,7 @@ export function ColorPicker({
               }}
             >
               <span
-                className="pointer-events-none absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
+                className="pointer-events-none absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0.35)]"
                 style={{ left: `${(active.h / 360) * 100}%`, background: `hsl(${active.h}, 100%, 50%)` }}
               />
             </div>
@@ -201,6 +239,35 @@ export function ColorPicker({
                 }}
               />
             </label>
+            {eyedropperAvailable ? (
+              <button
+                type="button"
+                className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#c5d9cd] bg-[#f7faf8] text-sm font-medium text-[#143028] hover:border-[#1a6b4a]/40"
+                onClick={() => void onEyedropperClick()}
+              >
+                <EyedropperIcon />
+                {t("studio.color_picker.eyedropper", "Krāsu pipete")}
+              </button>
+            ) : null}
+            {sampleUrl ? (
+              <div className="mt-3">
+                <p className="text-xs font-medium text-[#5f756a]">
+                  {t("studio.color_picker.from_image", "Paņem no attēla")}
+                </p>
+                <p className="mt-0.5 text-[11px] leading-snug text-[#7a8f84]">
+                  {t("studio.color_picker.from_image_hint", "Noklikšķini attēlā uz vēlamo krāsu.")}
+                </p>
+                <img
+                  ref={sampleImgRef}
+                  src={sampleUrl}
+                  alt=""
+                  crossOrigin="anonymous"
+                  draggable={false}
+                  className="mt-2 h-16 w-full cursor-crosshair touch-none rounded-lg object-cover ring-1 ring-black/10"
+                  onPointerDown={onSampleImagePointer}
+                />
+              </div>
+            ) : null}
           </div>,
           document.body,
         )
@@ -215,7 +282,7 @@ export function ColorPicker({
         aria-expanded={open}
         onClick={() => {
           const rect = triggerRef.current?.getBoundingClientRect();
-          if (rect) setBox(panelLayout(rect));
+          if (rect) setBox(panelLayout(rect, panelHeight));
           setModel(hexToHsv(safe));
           setOpen((current) => !current);
         }}

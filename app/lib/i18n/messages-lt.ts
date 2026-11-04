@@ -1345,4 +1345,7 @@ export const lt: Record<string, string> = {
   "admin.email_templates.placeholders_account_deletion": "Žymės: {name}, {days} (tik „paskyra ištrinta“), {system}",
   "studio.subscription.error_no_subscription": "Prenumerata nerasta. Atnaujinkite puslapį arba susisiekite su pagalba.",
   "studio.subscription.error_stripe_unavailable": "Mokėjimai laikinai nepasiekiami.",
+  "studio.color_picker.eyedropper": "Pipetė",
+  "studio.color_picker.from_image": "Imti iš paveikslėlio",
+  "studio.color_picker.from_image_hint": "Spustelėkite norimą spalvą paveikslėlyje.",
 };

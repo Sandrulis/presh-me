@@ -4,6 +4,13 @@
 
 - (none)
 
+## v0.2.1
+
+**Lapas fona krāsa — pipete un izvēle no attēla**
+
+- Color picker: pārlūka krāsu pipete (Chrome/Edge) un klikšķis pa fona attēlu, lai aizpildītu fona krāsu
+- Studijā un onboarding — Lapas fons → Fona krāsa
+
 ## v0.2.0
 
 **CI — security checks bez ilgas rindas**

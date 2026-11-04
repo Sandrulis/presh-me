@@ -663,7 +663,12 @@ function StepProfile({
       body: (
         <>
           <div className="flex items-center gap-3">
-            <ColorPicker label={t("onboarding.bg_color", "Fona krāsa")} value={draft.pageColor ?? themeHex} onChange={(pageColor) => onChange({ pageColor })} />
+            <ColorPicker
+              label={t("onboarding.bg_color", "Fona krāsa")}
+              value={draft.pageColor ?? themeHex}
+              onChange={(pageColor) => onChange({ pageColor })}
+              sampleImageUrl={draft.pageImageUrl}
+            />
             <span className="text-sm text-[var(--muted)]">{t("onboarding.bg_color", "Fona krāsa")}</span>
           </div>
           <ImageDrop

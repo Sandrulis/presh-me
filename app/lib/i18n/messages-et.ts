@@ -1345,4 +1345,7 @@ export const et: Record<string, string> = {
   "admin.email_templates.placeholders_account_deletion": "Kohatäited: {name}, {days} (ainult „konto kustutatud“), {system}",
   "studio.subscription.error_no_subscription": "Tellimust ei leitud. Värskenda lehte või võta ühendust toega.",
   "studio.subscription.error_stripe_unavailable": "Maksed pole ajutiselt saadaval.",
+  "studio.color_picker.eyedropper": "Värvipipett",
+  "studio.color_picker.from_image": "Võta pildilt",
+  "studio.color_picker.from_image_hint": "Klõpsa pildil soovitud värvil.",
 };

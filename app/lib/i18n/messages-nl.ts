@@ -1345,4 +1345,7 @@ export const nl: Record<string, string> = {
   "admin.email_templates.placeholders_account_deletion": "Placeholders: {name}, {days} (alleen „account verwijderd“), {system}",
   "studio.subscription.error_no_subscription": "Abonnement niet gevonden. Vernieuw de pagina of neem contact op met support.",
   "studio.subscription.error_stripe_unavailable": "Betalingen zijn tijdelijk niet beschikbaar.",
+  "studio.color_picker.eyedropper": "Pipet",
+  "studio.color_picker.from_image": "Uit afbeelding",
+  "studio.color_picker.from_image_hint": "Klik op de gewenste kleur in de afbeelding.",
 };

@@ -1345,4 +1345,7 @@ export const es: Record<string, string> = {
   "admin.email_templates.placeholders_account_deletion": "Marcadores: {name}, {days} (solo « cuenta eliminada »), {system}",
   "studio.subscription.error_no_subscription": "Suscripción no encontrada. Actualiza la página o contacta con soporte.",
   "studio.subscription.error_stripe_unavailable": "Los pagos no están disponibles temporalmente.",
+  "studio.color_picker.eyedropper": "Cuentagotas",
+  "studio.color_picker.from_image": "Tomar de la imagen",
+  "studio.color_picker.from_image_hint": "Haz clic en el color deseado en la imagen.",
 };

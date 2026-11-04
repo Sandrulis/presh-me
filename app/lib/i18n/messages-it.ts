@@ -1345,4 +1345,7 @@ export const it: Record<string, string> = {
   "admin.email_templates.placeholders_account_deletion": "Segnaposto: {name}, {days} (solo « account eliminato »), {system}",
   "studio.subscription.error_no_subscription": "Abbonamento non trovato. Aggiorna la pagina o contatta l'assistenza.",
   "studio.subscription.error_stripe_unavailable": "I pagamenti sono temporaneamente non disponibili.",
+  "studio.color_picker.eyedropper": "Contagocce",
+  "studio.color_picker.from_image": "Prendi dall'immagine",
+  "studio.color_picker.from_image_hint": "Clicca il colore desiderato nell'immagine.",
 };
