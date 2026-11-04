@@ -8,6 +8,7 @@ import {
   preloadBundledCatalogs,
 } from "@/app/lib/i18n/bundled-catalog";
 import { normalizeBrandImageUrl } from "@/app/lib/site-admin/branding";
+import { saveSiteSettingsServer } from "@/app/lib/site-admin/site-settings-server";
 import type {
   SiteAdminStore,
   SiteLanguage,
@@ -301,26 +302,7 @@ export async function resetLandingOverlaysToCatalog(): Promise<{ removed: number
 
 export async function saveSiteSettings(patch: Partial<SiteSettings>): Promise<SiteSettings> {
   const next = { ...cache.settings, ...patch, updatedAt: new Date().toISOString() };
-  const supabase = createClient();
-  await supabase.from("site_settings").upsert({
-    id: 1,
-    system_name: next.systemName,
-    legal_email: next.legalEmail,
-    legal_entity_name: next.legalEntityName,
-    legal_entity_reg_no: next.legalEntityRegNo,
-    legal_entity_address: next.legalEntityAddress,
-    timezone: next.timezone,
-    date_format: next.dateFormat,
-    date_separator: next.dateSeparator,
-    time_format: next.timeFormat,
-    week_start_day: next.weekStartDay,
-    logo_url: next.logoUrl,
-    favicon_url: next.faviconUrl,
-    notification_favicon_url: next.notificationFaviconUrl,
-    maintenance_mode: next.maintenanceMode,
-    trial_period_days: next.trialPeriodDays,
-    updated_at: next.updatedAt,
-  });
+  await saveSiteSettingsServer(next);
   await refreshSiteAdmin();
   return getSiteSettings();
 }

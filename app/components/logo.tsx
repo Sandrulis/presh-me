@@ -1,6 +1,10 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useSiteBranding } from "@/app/components/site-branding-provider";
 import { BRAND_MARK_P_PATH } from "@/app/lib/site-admin/branding";
 
 /** Square ink mark with “P” — same as studio sidebar. */
@@ -23,7 +27,7 @@ export function Logo({
   labelClassName = "",
   className = "",
   onClick,
-  ariaLabel = "presh",
+  ariaLabel,
 }: {
   href?: string;
   showLabel?: boolean;
@@ -32,19 +36,39 @@ export function Logo({
   onClick?: () => void;
   ariaLabel?: string;
 }) {
+  const { systemName, hasCustomLogo, logoSrc } = useSiteBranding();
+  const [logoFailed, setLogoFailed] = useState(false);
+  const showCustomLogo = hasCustomLogo && logoSrc && !logoFailed;
+
+  useEffect(() => {
+    setLogoFailed(false);
+  }, [logoSrc]);
+
+  const label = systemName.trim() || "Presh";
+  const linkAria = ariaLabel ?? label;
+
   return (
     <Link
       href={href}
-      aria-label={showLabel ? undefined : ariaLabel}
+      aria-label={showLabel ? undefined : linkAria}
       onClick={onClick}
       className={`inline-flex min-w-0 items-center gap-2 no-underline ${className}`}
     >
-      <BrandMarkIcon />
+      {showCustomLogo ? (
+        <img
+          src={logoSrc}
+          alt=""
+          className="h-9 w-auto max-w-[140px] shrink-0 object-contain object-left"
+          onError={() => setLogoFailed(true)}
+        />
+      ) : (
+        <BrandMarkIcon />
+      )}
       {showLabel ? (
         <span
           className={`min-w-0 truncate font-display text-base font-bold tracking-[-0.04em] text-[var(--ink)] ${labelClassName}`}
         >
-          presh
+          {label}
         </span>
       ) : null}
     </Link>

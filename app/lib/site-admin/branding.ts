@@ -5,6 +5,13 @@ export const BRAND_ICON_PATH = "/brand/icon";
 export const BRAND_LOGO_PATH = "/brand/logo";
 export const BRAND_NOTIFICATION_ICON_PATH = "/brand/notification-icon";
 
+/** Bust CDN/browser cache after admin branding save. */
+export function brandAssetUrl(path: string, version: string | null | undefined): string {
+  const token = version?.trim();
+  if (!token) return path;
+  return `${path}?v=${encodeURIComponent(token)}`;
+}
+
 /** “P” monogram path — matches studio sidebar / header logo mark. */
 export const BRAND_MARK_P_PATH =
   "M2.2 2.4h6.4a3.4 3.4 0 0 1 0 6.8H5.2V13.6H2.2V2.4Zm3 4.6h3.1a1.1 1.1 0 0 0 0-2.2H5.2v2.2Z";
@@ -74,20 +81,27 @@ export function setDocumentFavicon(href: string): void {
 
   if (links.length > 0) {
     for (const link of links) {
-      const next = link.cloneNode(true) as HTMLLinkElement;
-      if (href.startsWith("data:")) next.type = type;
-      else next.removeAttribute("type");
-      next.href = href;
-      link.replaceWith(next);
+      if (!link.isConnected) continue;
+      try {
+        if (href.startsWith("data:")) link.type = type;
+        else link.removeAttribute("type");
+        link.href = href;
+      } catch {
+        // Head may be reconciled by the framework; ignore stale nodes.
+      }
     }
     return;
   }
 
-  const icon = document.createElement("link");
-  icon.rel = "icon";
-  if (href.startsWith("data:")) icon.type = type;
-  icon.href = href;
-  document.head.appendChild(icon);
+  try {
+    const icon = document.createElement("link");
+    icon.rel = "icon";
+    if (href.startsWith("data:")) icon.type = type;
+    icon.href = href;
+    document.head.appendChild(icon);
+  } catch {
+    // ignore
+  }
 }
 
 function isLikelyImageFile(file: File): boolean {

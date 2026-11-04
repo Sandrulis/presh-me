@@ -4,7 +4,7 @@
 
 import { useRef, useState, type DragEvent } from "react";
 import { useTranslations } from "@/app/components/translations-provider";
-import { readBrandImageUrl } from "@/app/lib/site-admin/branding";
+import { uploadSiteBrandingImage } from "@/app/lib/site-admin/site-settings-server";
 
 const labelClass = "text-sm font-medium text-[var(--ink)]";
 const hintClass = "mt-1.5 text-xs text-[var(--muted)]";
@@ -32,12 +32,14 @@ export function BrandingImageField({
 
   async function applyFile(file: File | undefined) {
     if (!file) return;
-    const next = await readBrandImageUrl(file);
-    if (!next) {
+    const formData = new FormData();
+    formData.set("file", file);
+    try {
+      const { url } = await uploadSiteBrandingImage(formData);
+      onChange(url);
+    } catch {
       onInvalid?.();
-      return;
     }
-    onChange(next);
   }
 
   function handleDragEnter(event: DragEvent<HTMLElement>) {

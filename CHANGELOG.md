@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.1.22
+
+**Admin zīmols (logo / favicon)**
+
+- Branding augšupielāde uz Storage un saglabāšana ar service role; kļūdu toast ar servera ziņu
+- Header, sidebar un cilne: tieši URL, favicon fallback logo vietā, keša revalidācija un live iestatījumi
+- Favicon DOM labojums (bez `removeChild` kļūdas)
+
 ## v0.1.21
 
 - Landing **Gada** cenu kartītēs: liels mēneša ekvivalents, iekavās mazāks gada kopsumma

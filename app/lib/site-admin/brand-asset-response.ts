@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const CACHE_CONTROL = "public, max-age=86400, s-maxage=86400";
+const CACHE_CONTROL = "public, max-age=300, s-maxage=300, stale-while-revalidate=86400";
 
 /** Turn a stored `data:image/...` URL into a cacheable image response. */
 export function dataImageResponse(dataUrl: string): NextResponse | null {

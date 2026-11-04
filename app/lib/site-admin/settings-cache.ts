@@ -5,7 +5,7 @@ import { getServerMaintenanceMode, getServerSiteBranding } from "@/app/lib/site-
 export const getCachedSiteBranding = unstable_cache(
   async () => getServerSiteBranding(),
   ["site-branding"],
-  { revalidate: 60 },
+  { revalidate: 60, tags: ["site-branding"] },
 );
 
 export const getCachedMaintenanceMode = unstable_cache(

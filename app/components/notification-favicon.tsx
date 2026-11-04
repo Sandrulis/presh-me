@@ -24,12 +24,8 @@ export function NotificationFavicon({
   );
 
   useEffect(() => {
-    if (!notificationIcon) return;
     const href = resolveActiveHeadIcon(defaultIcon, notificationIcon, hasAlert);
     setDocumentFavicon(href);
-    return () => {
-      setDocumentFavicon(defaultIcon);
-    };
   }, [defaultIcon, notificationIcon, hasAlert]);
 
   return null;

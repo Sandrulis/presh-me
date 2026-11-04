@@ -20,6 +20,7 @@ import type {
   WeekStartDay,
 } from "@/app/lib/site-admin/types";
 import { revalidateMaintenanceModeCache } from "@/app/lib/site-admin/revalidate-maintenance";
+import { revalidateSiteBrandingCache } from "@/app/lib/site-admin/revalidate-branding";
 import { COMMON_TIMEZONES } from "@/app/lib/display-preferences";
 
 const fieldClass = "auth-field mt-2 w-full";
@@ -125,11 +126,20 @@ export function AdminSettingsForm() {
         onSubmit={(event) => {
           event.preventDefault();
           if (!dirty) return;
-          void saveSiteSettings(draft).then(async () => {
-            await revalidateMaintenanceModeCache();
-            notify(t("admin.settings.saved", "Sistēmas uzstādījumi saglabāti."), "ok");
-            router.refresh();
-          });
+          void saveSiteSettings(draft)
+            .then(async () => {
+              await revalidateSiteBrandingCache();
+              await revalidateMaintenanceModeCache();
+              notify(t("admin.settings.saved", "Sistēmas uzstādījumi saglabāti."), "ok");
+              router.refresh();
+            })
+            .catch((error: unknown) => {
+              const message =
+                error instanceof Error && error.message.trim()
+                  ? error.message
+                  : t("admin.settings.save_failed", "Neizdevās saglabāt.");
+              notify(message, "error");
+            });
         }}
       >
         <div className="space-y-8">
