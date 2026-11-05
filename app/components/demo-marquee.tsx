@@ -7,7 +7,7 @@ import { PageView } from "@/app/components/page-view";
 import { localizeDemos, type DemoProfile } from "@/app/lib/demos";
 
 /** Cap DOM size on the marketing homepage. */
-const MARQUEE_LIMIT = 9;
+const MARQUEE_LIMIT = 10;
 
 function useReducedMotion() {
   return useSyncExternalStore(

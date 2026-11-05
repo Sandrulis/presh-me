@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.2.5
+
+**Landing — profesiju demo un SEO lapas**
+
+- 10 dažādu profession demo (header layout, fons, pogas); jauni `/zobarsts`, `/skaistums`, `/masieris`, `/remonts`, `/adrese`, `/kafe`
+- Landing „Kam tas der” — 10 profesiju chipi; marquee rāda 10 demo
+- Jaunas intent lapas: `/for/dentists`, `/for/auto-service`, `/for/personal-trainers`, `/for/massage-therapists`, `/for/home-services`, `/for/real-estate`, `/for/cafes`
+
 ## v0.2.4
 
 **Booking kalendāra feed — Vercel un pārbaude**

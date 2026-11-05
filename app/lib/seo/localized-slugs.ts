@@ -31,6 +31,13 @@ export const MARKETING_CANONICAL_PATHS = [
   "/for/content-creators",
   "/for/small-businesses",
   "/for/coaches",
+  "/for/dentists",
+  "/for/auto-service",
+  "/for/personal-trainers",
+  "/for/massage-therapists",
+  "/for/home-services",
+  "/for/real-estate",
+  "/for/cafes",
   "/terms",
   "/privacy",
   "/cookies",
@@ -99,6 +106,13 @@ const FOR_AUDIENCE: Record<string, Partial<Record<LanguageCode, string>>> = {
   "content-creators": { lv: "satura-veidotajiem", de: "creator", pl: "tworcow" },
   "small-businesses": { lv: "mazajiem-uznemumiem", de: "kleinunternehmen", pl: "malych-firm" },
   coaches: { lv: "treneriem", de: "coaches", pl: "coachow" },
+  dentists: { lv: "zobarstiem", de: "zahnaerzte", pl: "dentystow" },
+  "auto-service": { lv: "autoservisiem", de: "autowerkstatt", pl: "warsztatow" },
+  "personal-trainers": { lv: "personiskajiem-treneriem", de: "personal-trainer", pl: "trenerow" },
+  "massage-therapists": { lv: "masieriem", de: "massage", pl: "masazystow" },
+  "home-services": { lv: "remontam", de: "handwerker", pl: "uslug-domowych" },
+  "real-estate": { lv: "nekustamajam", de: "immobilien", pl: "nieruchomosci" },
+  cafes: { lv: "kafejnīcām", de: "cafes", pl: "kawiarni" },
 };
 
 export function normalizeMarketingPath(path: string): string {

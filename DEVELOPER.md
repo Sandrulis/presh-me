@@ -58,7 +58,7 @@ Admin josla: tikai `isSessionAdmin()` (`users.is_admin`).
 | `/admin/*` | Admin josla: Todo → Lietotāji → Linki → Ziņojumi → Integrācijas → Moduļi → Valodas → Tulkojumi → Uzstādījumi; `isAdmin` gate; Valodas/Tulkojumi: `+ Pievienot` + side drawer |
 | `/` (viesim) | Claim + soļi + features/pricing/FAQ; JSON-LD; header: logo + valoda + login |
 | `/link-in-bio` | SEO intent lapa (`IntentLanding` + `seo.link_in_bio.*`); rezervēts `SYSTEM_LINKS`; publiskais URL ar lokalizētu segmentu (`app/lib/seo/localized-slugs.ts`, middleware rewrite) |
-| Intent lapas (`/portfolio-website`, `/for/*`, …) | `MarketingIntentPage` + `intent.*` atslēgas (`messages.ts` + `_catalog`); metadata caur `buildIntentPageMetadata` |
+| Intent lapas (`/portfolio-website`, `/for/*`, …) | `MarketingIntentPage` + `intent.*` atslēgas (`messages.ts` + `_catalog`); metadata caur `buildIntentPageMetadata`; landing profesijas — `landing-professions.ts`, demo — `demo-profiles.ts` + `demos.ts` |
 | `/compare/*` | Noņemts; `retired-compare-paths.ts` + middleware 302 (rezervēts `compare` handle nākotnei) |
 | `/robots.txt`, `/sitemap.xml` | Crawl + published profiles (skat. `SEO_AUDIT.md`) |
 | `/terms`, `/privacy`, `/cookies` | Juridiskās lapas (EN ceļi); `/rules` → `/terms` |

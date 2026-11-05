@@ -107,4 +107,67 @@ export const MARKETING_INTENT_PAGES: Record<string, MarketingIntentConfig> = {
       { href: "/", labelKey: "common.home", labelFallback: "Home" },
     ],
   },
+  "for/dentists": {
+    path: "/for/dentists",
+    prefix: "intent.for_dentists",
+    related: [
+      { href: "/digital-business-card", labelKey: "seo.card.title", labelFallback: "Digital business card" },
+      { href: "/for/beauty-professionals", labelKey: "intent.for_beauty_professionals.kicker", labelFallback: "Beauty" },
+      { href: "/", labelKey: "common.home", labelFallback: "Home" },
+    ],
+  },
+  "for/auto-service": {
+    path: "/for/auto-service",
+    prefix: "intent.for_auto_service",
+    related: [
+      { href: "/digital-business-card", labelKey: "seo.card.title", labelFallback: "Digital business card" },
+      { href: "/for/small-businesses", labelKey: "intent.for_small_businesses.kicker", labelFallback: "Small business" },
+      { href: "/", labelKey: "common.home", labelFallback: "Home" },
+    ],
+  },
+  "for/personal-trainers": {
+    path: "/for/personal-trainers",
+    prefix: "intent.for_personal_trainers",
+    related: [
+      { href: "/for/coaches", labelKey: "intent.for_coaches.kicker", labelFallback: "Coaches" },
+      { href: "/personal-website", labelKey: "intent.personal_website.kicker", labelFallback: "Personal site" },
+      { href: "/", labelKey: "common.home", labelFallback: "Home" },
+    ],
+  },
+  "for/massage-therapists": {
+    path: "/for/massage-therapists",
+    prefix: "intent.for_massage_therapists",
+    related: [
+      { href: "/for/beauty-professionals", labelKey: "intent.for_beauty_professionals.kicker", labelFallback: "Beauty" },
+      { href: "/digital-business-card", labelKey: "seo.card.title", labelFallback: "Digital business card" },
+      { href: "/", labelKey: "common.home", labelFallback: "Home" },
+    ],
+  },
+  "for/home-services": {
+    path: "/for/home-services",
+    prefix: "intent.for_home_services",
+    related: [
+      { href: "/digital-business-card", labelKey: "seo.card.title", labelFallback: "Digital business card" },
+      { href: "/for/small-businesses", labelKey: "intent.for_small_businesses.kicker", labelFallback: "Small business" },
+      { href: "/", labelKey: "common.home", labelFallback: "Home" },
+    ],
+  },
+  "for/real-estate": {
+    path: "/for/real-estate",
+    prefix: "intent.for_real_estate",
+    related: [
+      { href: "/digital-business-card", labelKey: "seo.card.title", labelFallback: "Digital business card" },
+      { href: "/for/freelancers", labelKey: "intent.for_freelancers.kicker", labelFallback: "Freelancers" },
+      { href: "/", labelKey: "common.home", labelFallback: "Home" },
+    ],
+  },
+  "for/cafes": {
+    path: "/for/cafes",
+    prefix: "intent.for_cafes",
+    related: [
+      { href: "/for/small-businesses", labelKey: "intent.for_small_businesses.kicker", labelFallback: "Small business" },
+      { href: "/digital-business-card", labelKey: "seo.card.title", labelFallback: "Digital business card" },
+      { href: "/", labelKey: "common.home", labelFallback: "Home" },
+    ],
+  },
 };

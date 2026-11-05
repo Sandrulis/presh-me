@@ -13,6 +13,7 @@ import { LANDING_FAQ_ITEMS } from "@/app/lib/landing-faq-items";
 import type { LandingPricingData } from "@/app/lib/pricing/load-landing-pricing";
 import { localePath } from "@/app/lib/seo/locale-path";
 import { absoluteUrl, getPublicSiteUrl } from "@/app/lib/site-url";
+import { LANDING_PROFESSION_LINKS } from "@/app/lib/landing-professions";
 
 type MarketingHomeProps = {
   t: TranslateFn;
@@ -73,13 +74,10 @@ export function MarketingHome({
     },
   ];
 
-  const uses = [
-    { href: "/for/photographers", label: t("landing.use.creatives", "Designers, photographers, artists") },
-    { href: "/for/barbers", label: t("landing.use.services", "Barbers, beauty pros, tattoo artists") },
-    { href: "/for/freelancers", label: t("landing.use.freelance", "Freelancers and consultants") },
-    { href: "/for/content-creators", label: t("landing.use.creators", "Creators and social profiles") },
-    { href: "/for/small-businesses", label: t("landing.use.business", "Cafés and small businesses") },
-  ];
+  const uses = LANDING_PROFESSION_LINKS.map((item) => ({
+    href: item.href,
+    label: t(item.labelKey, item.fallbackLv),
+  }));
 
   const faqEntities = LANDING_FAQ_ITEMS.map((item) => ({
     "@type": "Question",

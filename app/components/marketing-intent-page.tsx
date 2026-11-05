@@ -53,6 +53,41 @@ const BULLET_FALLBACKS: Record<string, [string, string, string]> = {
     "Link buttons for booking, prints or a shop — without ads in your bio.",
     "Update the page in the studio; keep the same handle.",
   ],
+  "intent.for_dentists": [
+    "Buttons for booking systems, WhatsApp or phone.",
+    "Text and FAQ blocks for services and hours.",
+    "Share as a bio link or QR at reception.",
+  ],
+  "intent.for_auto_service": [
+    "Buttons for booking, WhatsApp or a call to the shop.",
+    "Text blocks for services, tires and diagnostics.",
+    "Share as a bio link or QR at the entrance.",
+  ],
+  "intent.for_personal_trainers": [
+    "Clear offer, plans and sign-up in one flow.",
+    "FAQ and text blocks for sessions and boundaries.",
+    "One link from posts, stories and email signature.",
+  ],
+  "intent.for_massage_therapists": [
+    "Service menu and booking links in one tap.",
+    "Text and image blocks for relaxation and proof.",
+    "QR in the studio; same link in Instagram bio.",
+  ],
+  "intent.for_home_services": [
+    "Buttons for emergency calls, WhatsApp or phone — including after hours.",
+    "Text blocks for services, areas and pricing.",
+    "Share as a bio link or QR on a van sticker.",
+  ],
+  "intent.for_real_estate": [
+    "Links to newest listings and featured properties.",
+    "Consultation and booking buttons in one flow.",
+    "One URL for cards, Instagram and print materials.",
+  ],
+  "intent.for_cafes": [
+    "Menu link or PDF and seasonal dishes together.",
+    "Table booking and ordering buttons customers actually use.",
+    "Edit from your phone; guests always get the latest link.",
+  ],
   "intent.for_small_businesses": [
     "Maps, hours, menu PDF and ordering links together.",
     "Instagram and phone buttons customers actually use.",
@@ -153,6 +188,69 @@ const PAGE_COPY_FALLBACKS: Record<
     metaTitle: "Link in bio for photographers",
     metaDescription:
       "Share portfolios, booking and socials from one Presh.Me page — built for photographers who need a clean public link.",
+  },
+  "intent.for_dentists": {
+    kicker: "Dentists",
+    h1: "Booking and contact in one clinic link",
+    lead:
+      "Patients should not hunt through stories for your booking URL. One page holds booking, prices, Instagram and location.",
+    metaTitle: "Link in bio for dentists",
+    metaDescription:
+      "Booking, Instagram and clinic links on one Presh.Me page for dentists.",
+  },
+  "intent.for_auto_service": {
+    kicker: "Auto service",
+    h1: "Booking and contact in one shop link",
+    lead:
+      "Customers should not hunt through stories for your booking URL. One page holds appointments, prices, Instagram and directions.",
+    metaTitle: "Link in bio for auto shops",
+    metaDescription:
+      "Booking, Instagram and service links on one Presh.Me page for garages and auto service.",
+  },
+  "intent.for_personal_trainers": {
+    kicker: "Personal trainers",
+    h1: "Programs and sign-up in one shareable link",
+    lead:
+      "Lead people from social posts to a clear page: who you coach, how to sign up and what to expect — without a long website project.",
+    metaTitle: "Link in bio for personal trainers",
+    metaDescription:
+      "Programs, sign-up and FAQs on one Presh.Me page for personal trainers.",
+  },
+  "intent.for_massage_therapists": {
+    kicker: "Massage therapists",
+    h1: "Booking and services in one calm link",
+    lead:
+      "Clients should not hunt through stories for your booking URL. One page holds appointments, service menu, Instagram and location.",
+    metaTitle: "Link in bio for massage therapists",
+    metaDescription:
+      "Booking, services and contact on one Presh.Me page for massage therapists.",
+  },
+  "intent.for_home_services": {
+    kicker: "Trades",
+    h1: "Emergency call and pricing in one field link",
+    lead:
+      "Homeowners should not chase five numbers in your bio. One page holds emergency booking, services, phone and location.",
+    metaTitle: "Link in bio for electricians and plumbers",
+    metaDescription:
+      "Emergency call, services and contact on one Presh.Me page for home trades.",
+  },
+  "intent.for_real_estate": {
+    kicker: "Real estate",
+    h1: "Listings and consultation in one agent link",
+    lead:
+      "Buyers should not lose your latest listings in story highlights. One page holds new properties, consultation booking and contact.",
+    metaTitle: "Link in bio for real estate agents",
+    metaDescription:
+      "Listings, consultation and contact on one Presh.Me page for agents.",
+  },
+  "intent.for_cafes": {
+    kicker: "Cafés",
+    h1: "Menu and table booking in one restaurant link",
+    lead:
+      "Guests should not ask for the menu link every week. One page holds the menu, table booking, hours, Instagram and maps.",
+    metaTitle: "Link in bio for cafés and restaurants",
+    metaDescription:
+      "Menu, reservations and socials on one Presh.Me page for food and drink businesses.",
   },
   "intent.for_small_businesses": {
     kicker: "Small business",
