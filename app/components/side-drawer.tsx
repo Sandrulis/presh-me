@@ -91,13 +91,22 @@ export function SideDrawer({
       ? `option-drawer option-drawer-right ${panelZ} border-l border-[var(--line)]`
       : `option-drawer ${panelZ} border-r border-[var(--line)]`;
 
+  const shellLayout =
+    side === "left"
+      ? `option-drawer-shell option-drawer-shell--studio ${shellZ}`
+      : `fixed inset-0 ${shellZ}`;
+  const backdropClass =
+    side === "left"
+      ? "option-drawer-backdrop bg-[var(--ink)]/35"
+      : "absolute inset-0 bg-[var(--ink)]/35";
+
   return createPortal(
-    <div className={`fixed inset-0 ${shellZ}`}>
+    <div className={shellLayout}>
       <button
         ref={backdropRef}
         type="button"
         aria-label={closeLabel}
-        className="absolute inset-0 bg-[var(--ink)]/35"
+        className={backdropClass}
         style={{ opacity: 0 }}
         onClick={requestClose}
       />

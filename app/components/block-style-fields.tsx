@@ -21,6 +21,7 @@ export function BlockStyleFields({
   const { t } = useTranslations();
   switch (block.type) {
     case "link":
+    case "countdown":
       return (
         <div>
           <p className="mb-2 text-sm font-medium">{t("studio.style.button_look", "Pogas izskats")}</p>
@@ -59,9 +60,10 @@ export function BlockStyleFields({
           onSize={(fontSize) => onChange({ ...block, fontSize })}
         />
       );
-    case "youtube":
+    case "video":
     case "image":
     case "audio":
+    case "maps":
       return (
         <div>
           <p className="mb-2 text-sm font-medium">{t("studio.style.border", "Robeža")}</p>
@@ -167,6 +169,107 @@ export function BlockStyleFields({
           onFont={(fontId) => onChange({ ...block, fontId })}
           onSize={(fontSize) => onChange({ ...block, fontSize })}
         />
+      );
+    case "poll":
+      return (
+        <div className="flex flex-col gap-4">
+          <div>
+            <p className="mb-2 text-sm font-medium">{t("studio.style.block", "Bloks")}</p>
+            <div className="flex items-start gap-4">
+              <div className="shrink-0">
+                <p className="mb-2 text-sm text-[var(--muted)]">{t("onboarding.bg_color", "Fona krāsa")}</p>
+                <ColorPicker
+                  label={t("onboarding.bg_color", "Fona krāsa")}
+                  value={block.color ?? "#f4f6fb"}
+                  onChange={(color) => onChange({ ...block, color })}
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <RangeRow
+                  label={t("onboarding.avatar_radius", "Noapaļojums")}
+                  min={0}
+                  max={40}
+                  value={block.borderRadius ?? 8}
+                  suffix=" px"
+                  onChange={(borderRadius) => onChange({ ...block, borderRadius })}
+                />
+              </div>
+            </div>
+          </div>
+          <div>
+            <p className="mb-2 text-sm font-medium">{t("studio.style.border", "Robeža")}</p>
+            <RangeRow
+              label={t("studio.style.thickness", "Biezums")}
+              min={0}
+              max={16}
+              value={block.borderWidth ?? 0}
+              suffix=" px"
+              onChange={(borderWidth) => onChange({ ...block, borderWidth })}
+            />
+            <div className="mt-3 flex items-center gap-3">
+              <ColorPicker
+                label={t("studio.style.border_color", "Robežas krāsa")}
+                value={block.borderColor ?? "#111111"}
+                onChange={(borderColor) => onChange({ ...block, borderColor })}
+              />
+              <span className="text-sm text-[var(--muted)]">{t("studio.style.border_color", "Robežas krāsa")}</span>
+            </div>
+          </div>
+          <div>
+            <p className="mb-2 text-sm font-medium">{t("studio.blocks.poll.progress_color", "Progresa josla")}</p>
+            <ColorPicker
+              label={t("studio.blocks.poll.progress_color", "Progresa josla")}
+              value={block.progressColor ?? "#111111"}
+              onChange={(progressColor) => onChange({ ...block, progressColor })}
+            />
+          </div>
+        </div>
+      );
+    case "skills":
+      return (
+        <div className="flex flex-col gap-4">
+          <div>
+            <p className="mb-2 text-sm font-medium">{t("studio.style.button_look", "Pogas izskats")}</p>
+            <div className="flex items-start gap-4">
+              <div className="shrink-0">
+                <p className="mb-2 text-sm text-[var(--muted)]">{t("onboarding.color", "Krāsa")}</p>
+                <ColorPicker
+                  label={t("onboarding.color", "Krāsa")}
+                  value={block.color ?? "#111111"}
+                  onChange={(color) => onChange({ ...block, color })}
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <RangeRow
+                  label={t("onboarding.avatar_radius", "Noapaļojums")}
+                  min={0}
+                  max={40}
+                  value={block.borderRadius ?? 8}
+                  suffix=" px"
+                  onChange={(borderRadius) => onChange({ ...block, borderRadius })}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <ColorPicker
+              label={t("studio.blocks.skills.star_color", "Zvaigžņu krāsa")}
+              value={block.starColor ?? "#f59e0b"}
+              onChange={(starColor) => onChange({ ...block, starColor })}
+            />
+            <span className="text-sm text-[var(--muted)]">{t("studio.blocks.skills.star_color", "Zvaigžņu krāsa")}</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <FontSelect
+              value={(block.fontId ?? "sans") as FontId}
+              onChange={(fontId) => onChange({ ...block, fontId })}
+            />
+            <FontSizeSelect
+              value={block.fontSize ?? 14}
+              onChange={(fontSize) => onChange({ ...block, fontSize })}
+            />
+          </div>
+        </div>
       );
     case "faq":
       return (

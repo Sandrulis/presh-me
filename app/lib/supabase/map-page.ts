@@ -1,3 +1,4 @@
+import { parseUserVipTier } from "@/app/lib/billing/user-vip-tier";
 import type { Account, PageContent, Portfolio } from "@/app/lib/types";
 import { normalizePageBlocks } from "@/app/lib/blocks";
 
@@ -27,6 +28,7 @@ export type UserRow = {
   last_ip?: string | null;
   last_country?: string | null;
   active_page_id: string | null;
+  vip_tier?: string | null;
   created_at: string;
 };
 
@@ -122,6 +124,7 @@ export function rowToAccount(row: UserRow): Account {
     email: row.email,
     name: row.name,
     createdAt: row.created_at,
+    vipTier: parseUserVipTier(row.vip_tier),
     isAdmin: row.is_admin,
     isBlocked: row.is_blocked === true,
     weekStartDay: row.week_start_day ?? null,

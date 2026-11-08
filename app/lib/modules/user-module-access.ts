@@ -3,6 +3,7 @@ import {
   loadUserSubscriptionRow,
 } from "@/app/lib/billing/subscription-repository";
 import { isSubscriptionAccessActive } from "@/app/lib/billing/subscription-access";
+import { loadUserVipTier, vipTierGrantsPaidModule } from "@/app/lib/billing/user-vip-tier";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
 
@@ -31,6 +32,9 @@ export async function userCanUseFrontendModule(userId: string, moduleKey: string
 
   const paidPlansEnabled = await isModulePaidPlansEnabledServer();
   if (!paidPlansEnabled) return true;
+
+  const vipTier = await loadUserVipTier(userId);
+  if (vipTierGrantsPaidModule(vipTier, moduleKey)) return true;
 
   const row = await loadUserSubscriptionRow(userId);
   if (!isSubscriptionAccessActive(row)) return false;

@@ -31,7 +31,10 @@ export function PhoneFrame({ page }: { page: PageContent }) {
             <ReloadIcon />
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white" style={{ containerType: "size" }}>
+        <div
+          className="studio-phone-scroll min-h-0 flex-1 overflow-y-auto bg-white"
+          style={{ containerType: "size" }}
+        >
           <PageLanguageScope languageCode={page.publicLanguageCode}>
             <PageView page={page} mode="preview" framed />
           </PageLanguageScope>

@@ -4,6 +4,7 @@ import { clearSessionHintCookie, setSessionHintCookie } from "@/app/lib/auth/ses
 import { fetchMaintenanceModeClient } from "@/app/lib/site-admin/maintenance-client";
 import type { UserDisplayPreferences } from "@/app/lib/display-preferences";
 import { getExample } from "@/app/lib/examples";
+import type { UserVipTier } from "@/app/lib/billing/user-vip-tier";
 import { handleError, normalizeHandle, RESERVED_HANDLES } from "@/app/lib/handles";
 import { createClient } from "@/app/lib/supabase/client";
 import { fetchMyStorageUsage, type StorageUsage } from "@/app/lib/storage/usage";
@@ -266,7 +267,7 @@ async function fetchAdminLists(isAdmin: boolean, offset = 0) {
     supabase
       .from("users")
       .select(
-        "id, email, name, is_admin, is_blocked, week_start_day, date_format, date_separator, time_format, timezone, last_seen_at, last_ip, last_country, active_page_id, created_at",
+        "id, email, name, is_admin, is_blocked, vip_tier, week_start_day, date_format, date_separator, time_format, timezone, last_seen_at, last_ip, last_country, active_page_id, created_at",
       )
       .order("created_at", { ascending: true })
       .range(offset, end),
@@ -349,7 +350,7 @@ export async function hydrateSession() {
   const { data: profile, error: profileError } = await supabase
     .from("users")
     .select(
-      "id, email, name, is_admin, is_blocked, week_start_day, date_format, date_separator, time_format, timezone, last_seen_at, last_ip, last_country, active_page_id, created_at",
+      "id, email, name, is_admin, is_blocked, vip_tier, week_start_day, date_format, date_separator, time_format, timezone, last_seen_at, last_ip, last_country, active_page_id, created_at",
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -413,6 +414,32 @@ export async function reportPresence() {
   } catch {
     /* ignore */
   }
+}
+
+export async function setAccountVipTier(
+  accountId: string,
+  vipTier: UserVipTier,
+): Promise<{ ok: true; vipTier: UserVipTier } | { ok: false; message: string }> {
+  const response = await fetch("/api/admin/users", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: accountId, vipTier }),
+  });
+  const payload = (await response.json().catch(() => null)) as {
+    ok?: boolean;
+    message?: string;
+    vipTier?: UserVipTier;
+  } | null;
+  if (!response.ok || !payload?.ok) {
+    return { ok: false, message: payload?.message ?? "Neizdevās saglabāt VIP līmeni." };
+  }
+  const tier = payload.vipTier ?? vipTier;
+  setState({
+    allAccounts: state.allAccounts.map((item) =>
+      item.id === accountId ? { ...item, vipTier: tier } : item,
+    ),
+  });
+  return { ok: true, vipTier: tier };
 }
 
 export async function setAccountBlocked(

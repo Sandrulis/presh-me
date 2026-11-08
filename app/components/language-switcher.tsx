@@ -127,12 +127,12 @@ function LanguageSideDrawer({
   }, [closing]);
 
   return createPortal(
-    <div className="fixed inset-0 z-[80]">
+    <div className="option-drawer-shell option-drawer-shell--studio z-[80]">
       <button
         ref={backdropRef}
         type="button"
         aria-label={closeLabel}
-        className="absolute inset-0 bg-[var(--ink)]/35"
+        className="option-drawer-backdrop bg-[var(--ink)]/35"
         style={{ opacity: 0 }}
         onClick={requestClose}
       />

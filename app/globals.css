@@ -610,11 +610,6 @@ select.auth-field {
   animation: presh-marquee 72s linear infinite;
 }
 
-.marquee-track.reverse {
-  animation-duration: 86s;
-  animation-direction: reverse;
-}
-
 .marquee-row:hover .marquee-track {
   animation-play-state: paused;
 }
@@ -703,6 +698,55 @@ select.auth-field {
   box-shadow: 0 0 0 3px rgba(47, 91, 255, 0.18);
 }
 
+.option-drawer-shell {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.option-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  cursor: default;
+  border: none;
+  padding: 0;
+}
+
+/* Studio 3-column layout: dim/close only the info column; preview + look stay scrollable. */
+@media (min-width: 1280px) {
+  .option-drawer-shell--studio .option-drawer-backdrop {
+    inset: auto;
+    top: 0;
+    bottom: 0;
+    left: 3.5rem;
+    width: min(26rem, calc(100vw - 3.5rem));
+    background: transparent;
+  }
+}
+
+/* Block edit: dim everything except the center preview column. */
+@media (min-width: 1280px) {
+  .studio-dim-surround .studio-column-info,
+  .studio-dim-surround .studio-column-look {
+    pointer-events: none;
+  }
+
+  .studio-preview-spotlight {
+    position: relative;
+    z-index: 76;
+    box-shadow: 0 0 0 9999px rgba(14, 17, 22, 0.52);
+  }
+
+  .studio-dim-surround .studio-column-preview {
+    overscroll-behavior: contain;
+  }
+
+  .studio-dim-surround .studio-phone-scroll {
+    overscroll-behavior: contain;
+  }
+}
+
 .option-drawer {
   position: fixed;
   top: 0;
@@ -713,6 +757,7 @@ select.auth-field {
   width: 70%;
   max-width: 25.2rem;
   flex-direction: column;
+  pointer-events: auto;
   background: #fff;
   box-shadow: 12px 0 40px rgba(14, 17, 22, 0.08);
   transform: translateX(-100%);

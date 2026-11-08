@@ -1,23 +1,50 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import { PageMedia } from "@/app/components/page-media";
 import { fontFamilyOf } from "@/app/lib/font-catalog";
-import { instagramPostPageUrl, instagramProfileUrl, spotifyEmbedUrl, youtubeEmbedUrl } from "@/app/lib/blocks";
+import {
+  instagramPostPageUrl,
+  instagramProfileUrl,
+  spotifyEmbedUrl,
+  videoEmbedUrl,
+} from "@/app/lib/blocks";
+import { googleMapsEmbedUrl } from "@/app/lib/google-maps-embed";
 import type {
   AudioBlock,
   FaqBlock,
+  SkillsBlock,
   ImageBlock,
   InstagramBlock,
   LinkBlock,
+  MapsBlock,
   PageBlock,
   QuoteBlock,
   ResumeBlock,
   TextBlock,
-  YoutubeBlock,
+  VideoBlock,
 } from "@/app/lib/types";
 import type { Theme } from "@/app/lib/themes";
 import { safeHref } from "@/app/lib/urls";
+
+const PollBlockFace = dynamic(
+  () => import("@/app/components/poll-block-face").then((mod) => mod.PollBlockFace),
+  {
+    loading: () => (
+      <div className="block h-24 w-full animate-pulse rounded-lg bg-black/10" aria-hidden />
+    ),
+  },
+);
+
+const CountdownBlockFace = dynamic(
+  () => import("@/app/components/countdown-block-face").then((mod) => mod.CountdownBlockFace),
+  {
+    loading: () => (
+      <div className="block h-[120px] w-full animate-pulse rounded-lg bg-black/10" aria-hidden />
+    ),
+  },
+);
 
 const BookingBlockFace = dynamic(
   () => import("@/app/components/page-booking-ui").then((mod) => mod.BookingBlockFace),
@@ -49,18 +76,28 @@ export function BlockFace({
       return <LinkFace block={block} mode={mode} theme={theme} />;
     case "text":
       return <TextFace block={block} theme={theme} pageFontFamily={pageFontFamily} />;
-    case "youtube":
-      return <YoutubeFace block={block} />;
+    case "video":
+      return <VideoFace block={block} />;
     case "image":
       return <ImageFace block={block} />;
     case "audio":
       return <AudioFace block={block} />;
+    case "maps":
+      return <MapsFace block={block} />;
     case "resume":
       return <ResumeFace block={block} theme={theme} pageFontFamily={pageFontFamily} />;
     case "instagram":
       return <InstagramFace block={block} mode={mode} theme={theme} />;
     case "quote":
       return <QuoteFace block={block} theme={theme} pageFontFamily={pageFontFamily} />;
+    case "skills":
+      return <SkillsFace block={block} theme={theme} pageFontFamily={pageFontFamily} />;
+    case "countdown":
+      return <CountdownBlockFace block={block} theme={theme} />;
+    case "poll":
+      return (
+        <PollBlockFace block={block} mode={mode} theme={theme} pageHandle={pageHandle ?? ""} />
+      );
     case "faq":
       return <FaqFace block={block} theme={theme} />;
     case "booking":
@@ -145,12 +182,22 @@ function TextFace({
   );
 }
 
-function YoutubeFace({ block }: { block: YoutubeBlock }) {
-  const embed = youtubeEmbedUrl(block.url);
+function VideoFace({ block }: { block: VideoBlock }) {
+  const embed = videoEmbedUrl(block.url);
   if (!embed) return null;
   const radius = Math.max(0, block.borderRadius ?? 12);
   const borderWidth = Math.max(0, block.borderWidth ?? 0);
   const borderColor = block.borderColor || "#111111";
+  const frameClass =
+    embed.provider === "tiktok"
+      ? "relative aspect-[9/16] w-full max-w-[min(100%,340px)] overflow-hidden bg-black mx-auto"
+      : "relative aspect-video w-full overflow-hidden bg-black";
+  const allow =
+    embed.provider === "vimeo"
+      ? "autoplay; fullscreen; picture-in-picture"
+      : embed.provider === "tiktok"
+        ? "encrypted-media; fullscreen"
+        : "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
   return (
     <div className="w-full">
       {block.title?.trim() ? (
@@ -159,18 +206,18 @@ function YoutubeFace({ block }: { block: YoutubeBlock }) {
         </p>
       ) : null}
       <div
-        className="relative aspect-video w-full overflow-hidden bg-black"
+        className={frameClass}
         style={{
           borderRadius: radius,
           border: borderWidth > 0 ? `${borderWidth}px solid ${borderColor}` : undefined,
         }}
       >
         <iframe
-          title={block.title?.trim() || "YouTube"}
-          src={embed}
+          title={block.title?.trim() || "Video"}
+          src={embed.src}
           className="absolute inset-0 h-full w-full border-0"
           style={{ borderRadius: Math.max(0, radius - borderWidth) }}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allow={allow}
           allowFullScreen
         />
       </div>
@@ -204,6 +251,86 @@ function ImageFace({ block }: { block: ImageBlock }) {
         <figcaption className="mt-1.5 px-1 text-center text-xs opacity-70">{block.alt.trim()}</figcaption>
       ) : null}
     </figure>
+  );
+}
+
+function MapsFace({ block }: { block: MapsBlock }) {
+  const initialEmbed = block.embedSrc?.trim() || googleMapsEmbedUrl(block.url);
+  const [embed, setEmbed] = useState<string | null>(initialEmbed);
+  const [loading, setLoading] = useState(!initialEmbed && Boolean(block.url.trim()));
+
+  useEffect(() => {
+    const cached = block.embedSrc?.trim() || googleMapsEmbedUrl(block.url);
+    if (cached) {
+      setEmbed(cached);
+      setLoading(false);
+      return;
+    }
+    const raw = block.url.trim();
+    if (!raw) {
+      setEmbed(null);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    void fetch(`/api/maps/embed?url=${encodeURIComponent(raw)}`)
+      .then((response) => response.json())
+      .then((data: { success?: boolean; embedUrl?: string }) => {
+        if (cancelled) return;
+        setEmbed(data.success && data.embedUrl ? data.embedUrl : null);
+      })
+      .catch(() => {
+        if (!cancelled) setEmbed(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [block.url, block.embedSrc]);
+
+  if (loading) {
+    return (
+      <div
+        className="h-[280px] w-full animate-pulse rounded-xl bg-black/10"
+        aria-busy="true"
+        aria-label="Google Maps"
+      />
+    );
+  }
+  if (!embed) return null;
+  const radius = Math.max(0, block.borderRadius ?? 12);
+  const borderWidth = Math.max(0, block.borderWidth ?? 0);
+  const borderColor = block.borderColor || "#111111";
+  const height = Math.max(160, Math.min(560, block.height ?? 280));
+  return (
+    <div className="w-full">
+      {block.title?.trim() ? (
+        <p className="mb-2 px-1 text-left text-sm font-semibold" style={{ color: "inherit" }}>
+          {block.title.trim()}
+        </p>
+      ) : null}
+      <div
+        className="relative w-full overflow-hidden bg-[#e8edf5]"
+        style={{
+          height,
+          borderRadius: radius,
+          border: borderWidth > 0 ? `${borderWidth}px solid ${borderColor}` : undefined,
+        }}
+      >
+        <iframe
+          title={block.title?.trim() || "Google Maps"}
+          src={embed}
+          className="absolute inset-0 h-full w-full border-0"
+          style={{ borderRadius: Math.max(0, radius - borderWidth) }}
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      </div>
+    </div>
   );
 }
 
@@ -402,6 +529,87 @@ function QuoteFace({
         <footer className="mt-2 text-sm not-italic opacity-70">— {block.author.trim()}</footer>
       ) : null}
     </blockquote>
+  );
+}
+
+function SkillsFace({
+  block,
+  theme,
+  pageFontFamily,
+}: {
+  block: SkillsBlock;
+  theme: Theme;
+  pageFontFamily?: string;
+}) {
+  const items = block.items.filter((item) => item.name.trim());
+  if (items.length === 0) return null;
+  const radius = Math.max(0, block.borderRadius ?? 8);
+  const starColor = block.starColor ?? "#f59e0b";
+  const fontSize = block.fontSize ?? 14;
+  const fontFamily = fontFamilyOf(block.fontId) || pageFontFamily;
+  const background = block.color || theme.button;
+  const ink = block.color ? contrastInk(block.color) : theme.buttonText;
+  const cardStyle = {
+    borderRadius: radius,
+    background,
+    color: ink,
+    border: block.color ? "1px solid transparent" : `1px solid ${theme.buttonBorder ?? "transparent"}`,
+  };
+  const rowDivider = `${ink}22`;
+  const starMuted = block.color ? `${ink}55` : theme.muted;
+  return (
+    <div className="w-full text-left" style={{ fontFamily }}>
+      {block.heading?.trim() ? (
+        <h3 className="mb-3 text-center font-bold" style={{ color: theme.text, fontSize: fontSize + 2 }}>
+          {block.heading.trim()}
+        </h3>
+      ) : null}
+      <ul className="m-0 list-none overflow-hidden p-0" style={cardStyle}>
+        {items.map((item, index) => {
+          const rating = Math.max(0, Math.min(5, Math.round(item.rating)));
+          return (
+            <li
+              key={item.id}
+              className="flex items-center justify-between gap-3 px-3 py-2.5"
+              style={index < items.length - 1 ? { borderBottom: `1px solid ${rowDivider}` } : undefined}
+            >
+              <span className="min-w-0 truncate font-semibold" style={{ fontSize }}>
+                {item.name.trim()}
+              </span>
+              <SkillStars rating={rating} color={starColor} emptyColor={starMuted} />
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function SkillStars({
+  rating,
+  color,
+  emptyColor,
+}: {
+  rating: number;
+  color: string;
+  emptyColor: string;
+}) {
+  return (
+    <span className="inline-flex shrink-0 gap-0.5" aria-label={`${rating} no 5`}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <svg
+          key={star}
+          viewBox="0 0 24 24"
+          className="size-4"
+          aria-hidden="true"
+          fill={star <= rating ? color : "none"}
+          stroke={star <= rating ? color : emptyColor}
+          strokeWidth="1.8"
+        >
+          <path d="M12 3.2l2.4 5.6 6.1.6-4.6 4 1.4 6-5.3-3.2L6.7 19.4l1.4-6-4.6-4 6.1-.6L12 3.2z" />
+        </svg>
+      ))}
+    </span>
   );
 }
 

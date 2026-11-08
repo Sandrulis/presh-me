@@ -245,12 +245,12 @@ function SocialPickerModal({
   }, [closing]);
 
   return createPortal(
-    <div className="fixed inset-0 z-[80]">
+    <div className="option-drawer-shell option-drawer-shell--studio z-[80]">
       <button
         ref={backdropRef}
         type="button"
         aria-label={t("actions.close", "Aizvērt")}
-        className="absolute inset-0 bg-[var(--ink)]/35 backdrop-blur-[2px]"
+        className="option-drawer-backdrop bg-[var(--ink)]/35 backdrop-blur-[2px]"
         style={{ opacity: 0 }}
         onClick={requestClose}
       />

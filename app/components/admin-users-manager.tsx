@@ -20,6 +20,8 @@ import {
 import { formatRelativeSeen } from "@/app/lib/format-relative-seen";
 import { countryDisplayName } from "@/app/lib/request-geo";
 import { getSiteSettings, refreshSiteAdmin, subscribeSiteAdmin } from "@/app/lib/site-admin/store";
+import { AdminUserDetailDrawer } from "@/app/components/admin-user-detail-drawer";
+import { isFrontendModuleEnabled } from "@/app/lib/site-admin/modules";
 import {
   deleteAccountById,
   getSessionId,
@@ -32,6 +34,15 @@ import {
 } from "@/app/lib/store";
 import type { Account } from "@/app/lib/types";
 
+type AdminSubscriptionSummary = {
+  planKey: string | null;
+  planName: string | null;
+  status: string;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  isActive: boolean;
+};
+
 export function AdminUsersManager() {
   const { t, languageCode } = useTranslations();
   const accounts = useSyncExternalStore(subscribeStore, listAllAccounts, () => []);
@@ -43,11 +54,43 @@ export function AdminUsersManager() {
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Account | null>(null);
+  const [detailAccountId, setDetailAccountId] = useState<string | null>(null);
+  const [paidPlansModuleEnabled, setPaidPlansModuleEnabled] = useState(false);
+  const [subscriptionsByUserId, setSubscriptionsByUserId] = useState<Record<string, AdminSubscriptionSummary>>({});
 
   useEffect(() => {
     void refreshSiteAdmin();
     void hydrateSession();
+    let cancelled = false;
+    void isFrontendModuleEnabled("module_paid_plans").then((enabled) => {
+      if (!cancelled) setPaidPlansModuleEnabled(enabled);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  useEffect(() => {
+    if (!paidPlansModuleEnabled) {
+      setSubscriptionsByUserId({});
+      return;
+    }
+    let cancelled = false;
+    void fetch(`/api/admin/subscriptions/summary?lang=${encodeURIComponent(languageCode)}`, {
+      credentials: "same-origin",
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.byUserId) return;
+        setSubscriptionsByUserId(data.byUserId as Record<string, AdminSubscriptionSummary>);
+      })
+      .catch(() => {
+        if (!cancelled) setSubscriptionsByUserId({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [languageCode, paidPlansModuleEnabled, accounts.length]);
 
   const systemPrefs = useMemo(() => siteDisplayFromSettings(siteSettings), [siteSettings]);
   const viewerPrefs = useMemo(() => {
@@ -86,6 +129,9 @@ export function AdminUsersManager() {
 
   const adminCount = accounts.filter((account) => account.isAdmin).length;
   const blockedCount = accounts.filter((account) => account.isBlocked).length;
+  const detailAccount = detailAccountId
+    ? accounts.find((account) => account.id === detailAccountId) ?? null
+    : null;
 
   function formatRegistered(iso: string) {
     const merged = mergeDisplayPreferences(systemPrefs, viewerPrefs);
@@ -142,6 +188,7 @@ export function AdminUsersManager() {
       notify(result.message, "error");
       return;
     }
+    if (detailAccountId === target.id) setDetailAccountId(null);
     notify(t("admin.users.deleted", "Lietotājs dzēsts."), "ok");
   }
 
@@ -184,13 +231,24 @@ export function AdminUsersManager() {
                 const busy = busyId === account.id;
                 const blocked = account.isBlocked === true;
                 return (
-                  <tr key={account.id} className={`align-top ${blocked ? "bg-[#faf7f7]" : ""}`}>
+                  <tr
+                    key={account.id}
+                    className={`cursor-pointer align-top hover:bg-[var(--paper)] ${blocked ? "bg-[#faf7f7]" : ""}`}
+                    onClick={() => setDetailAccountId(account.id)}
+                  >
                     <td className="px-5 py-4">
                       <p className="font-semibold text-[var(--ink)]">{account.name || "—"}</p>
                       <p className="mt-0.5 text-sm text-[var(--muted)]">{account.email || account.id}</p>
                       {blocked ? (
                         <p className="mt-1 text-xs font-medium text-[var(--stamp)]">
                           {t("admin.users.blocked", "Pieeja aizslēgta")}
+                        </p>
+                      ) : null}
+                      {!blocked && account.vipTier && account.vipTier !== "off" ? (
+                        <p className="mt-1 text-xs font-medium text-[var(--accent)]">
+                          {account.vipTier === "vip"
+                            ? t("admin.users.vip.full", "VIP")
+                            : t("admin.users.vip.semi", "Semi VIP")}
                         </p>
                       ) : null}
                     </td>
@@ -213,7 +271,7 @@ export function AdminUsersManager() {
                         {formatLocation(account)}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4" onClick={(event) => event.stopPropagation()}>
                       <div className="flex justify-end gap-1">
                         <IconActionButton
                           label={
@@ -254,6 +312,20 @@ export function AdminUsersManager() {
       </div>
 
       <AdminLoadMore onError={(message) => notify(message, "error")} />
+
+      <AdminUserDetailDrawer
+        account={detailAccount}
+        pages={pages}
+        subscription={detailAccount ? subscriptionsByUserId[detailAccount.id] ?? null : null}
+        open={detailAccount !== null}
+        busy={detailAccount ? busyId === detailAccount.id : false}
+        onClose={() => setDetailAccountId(null)}
+        onError={(message) => notify(message, "error")}
+        onSuccess={(message) => notify(message, "ok")}
+        formatSeen={formatSeen}
+        formatLocation={formatLocation}
+        formatRegistered={formatRegistered}
+      />
 
       <ConfirmDialog
         open={deleteTarget !== null}

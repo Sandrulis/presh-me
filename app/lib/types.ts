@@ -1,3 +1,4 @@
+import type { UserVipTier } from "@/app/lib/billing/user-vip-tier";
 import type { FontId } from "@/app/lib/font-catalog";
 
 export type { FontId };
@@ -56,9 +57,9 @@ export type TextBlock = {
   fontSize?: number;
 };
 
-export type YoutubeBlock = {
+export type VideoBlock = {
   id: string;
-  type: "youtube";
+  type: "video";
   url: string;
   title?: string;
   /** px; noklusējums 12. */
@@ -84,6 +85,23 @@ export type AudioBlock = {
   id: string;
   type: "audio";
   url: string;
+  /** px; noklusējums 12. */
+  borderRadius?: number;
+  /** px; 0 = bez robežas. */
+  borderWidth?: number;
+  borderColor?: string;
+};
+
+export type MapsBlock = {
+  id: string;
+  type: "maps";
+  /** Google Maps saite, īsā saite vai iegultā (embed) saite. */
+  url: string;
+  /** Iegultā iframe saite pēc īsās saites izvēršanas. */
+  embedSrc?: string;
+  title?: string;
+  /** Kartes augstums px; noklusējums 280. */
+  height?: number;
   /** px; noklusējums 12. */
   borderRadius?: number;
   /** px; 0 = bez robežas. */
@@ -144,10 +162,72 @@ export type QuoteBlock = {
   fontSize?: number;
 };
 
+export type PollOption = {
+  id: string;
+  label: string;
+};
+
+export type PollBlock = {
+  id: string;
+  type: "poll";
+  question: string;
+  options: PollOption[];
+  /** Bloka fona krāsa. */
+  color?: string;
+  /** px; noklusējums 8. */
+  borderRadius?: number;
+  borderColor?: string;
+  borderWidth?: number;
+  /** Progresa joslas aizpildījuma krāsa. */
+  progressColor?: string;
+};
+
 export type FaqBlockItem = {
   id: string;
   question: string;
   answer: string;
+};
+
+export type CountdownEndMode = "datetime" | "duration";
+
+export type CountdownBlock = {
+  id: string;
+  type: "countdown";
+  title: string;
+  description?: string;
+  endMode: CountdownEndMode;
+  /** ISO — kad endMode ir datetime. */
+  endsAt?: string;
+  durationHours?: number;
+  durationMinutes?: number;
+  /** ISO — ilguma režīma sākuma brīdis (saglabāts kopā ar ilgumu). */
+  startsAt?: string;
+  /** Fona krāsa — kā link pogai. */
+  color?: string;
+  /** px; noklusējums 8. */
+  borderRadius?: number;
+};
+
+export type SkillItem = {
+  id: string;
+  name: string;
+  /** 0–5 */
+  rating: number;
+};
+
+export type SkillsBlock = {
+  id: string;
+  type: "skills";
+  heading?: string;
+  items: SkillItem[];
+  /** Kartītes fona krāsa — kā link pogai. */
+  color?: string;
+  /** px; noklusējums 8. */
+  borderRadius?: number;
+  /** Aizpildīto zvaigžņu krāsa. */
+  starColor?: string;
+  fontId?: FontId;
+  fontSize?: number;
 };
 
 export type FaqBlock = {
@@ -183,12 +263,16 @@ export type BookingBlock = {
 export type PageBlock =
   | LinkBlock
   | TextBlock
-  | YoutubeBlock
+  | VideoBlock
   | ImageBlock
   | AudioBlock
+  | MapsBlock
   | ResumeBlock
   | InstagramBlock
   | QuoteBlock
+  | CountdownBlock
+  | SkillsBlock
+  | PollBlock
   | FaqBlock
   | BookingBlock;
 
@@ -376,6 +460,8 @@ export type Account = {
   email: string;
   name: string;
   createdAt: string;
+  /** Admin piešķirts piekļuves līmenis (maksas moduļi bez abonementa). */
+  vipTier?: UserVipTier;
   /** Sistēmas administrators — labā admin josla. */
   isAdmin?: boolean;
   /** Bloķēta pieeja sistēmai (atslēga aizvērta). */

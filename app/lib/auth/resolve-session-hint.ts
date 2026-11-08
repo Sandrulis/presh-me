@@ -12,7 +12,8 @@ export type ResolvedSessionHint = {
 };
 
 /**
- * When `presh_session=1`, verify auth once. Stale hints are cleared so marketing header stays visible.
+ * When `presh_session=1`, verify auth once via Supabase.
+ * Stale hints are not cleared server-side here (RSC cannot mutate Set-Cookie); they are ignored when getUser() is null.
  */
 export const resolveSessionHintForRequest = cache(async function resolveSessionHintForRequest(): Promise<ResolvedSessionHint> {
   const empty: ResolvedSessionHint = {
@@ -32,7 +33,9 @@ export const resolveSessionHintForRequest = cache(async function resolveSessionH
     } = await supabase.auth.getUser();
 
     if (!user) {
-      cookieStore.delete(SESSION_HINT_COOKIE);
+      // Do not call cookieStore.delete() here: RSC / layout runs outside Route Handlers
+      // and Server Actions, and Next throws "Cookies can only be modified in...".
+      // Stale presh_session=1 is harmless; getUser() still returns null.
       return empty;
     }
 
@@ -42,7 +45,6 @@ export const resolveSessionHintForRequest = cache(async function resolveSessionH
       userId: user.id,
     };
   } catch {
-    cookieStore.delete(SESSION_HINT_COOKIE);
     return empty;
   }
 });

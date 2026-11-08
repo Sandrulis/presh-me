@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { BlockStyleFields } from "@/app/components/block-style-fields";
+import { BlockStyleFields, RangeRow } from "@/app/components/block-style-fields";
 import { DropLine } from "@/app/components/drop-line";
 import { FieldFrame } from "@/app/components/field-frame";
 import { BookingBlockFields } from "@/app/components/studio-booking-editor";
@@ -16,9 +16,16 @@ import {
   blockTypeLabel,
   emptyBlock,
   emptyFaqItem,
+  emptyPollOption,
   emptyResumeItem,
+  emptySkillItem,
+  clampSkillRating,
+  googleMapsEmbedUrl,
+  isGoogleMapsShortLink,
+  mapsBlockUrlAccepted,
   instagramMediaUrlsFromText,
   readImageFile,
+  videoEmbedUrl,
 } from "@/app/lib/blocks";
 import { normalizeLinkUrl, isValidLinkUrl } from "@/app/lib/urls";
 import { commitDropReorder, dropWouldMove, edgeFromPointer, type DropTarget } from "@/app/lib/dnd-reorder";
@@ -28,20 +35,34 @@ import type {
   FaqBlockItem,
   InstagramBlock,
   LinkBlock,
+  MapsBlock,
+  PollBlock,
+  PollOption,
   PageBlock,
+  VideoBlock,
   Portfolio,
   ResumeBlock,
   ResumeItem,
+  CountdownBlock,
+  SkillItem,
+  SkillsBlock,
 } from "@/app/lib/types";
+import {
+  clampCountdownDuration,
+  countdownCombineDateTime,
+  countdownDateTimeParts,
+} from "@/app/lib/countdown-block";
 
 export function BlocksEditor({
   page,
   update,
   onPreviewDraft,
+  onBlockDrawerOpen,
 }: {
   page: Portfolio;
   update: (patch: Partial<Portfolio>) => void;
   onPreviewDraft?: (draft: PageBlock | null) => void;
+  onBlockDrawerOpen?: (open: boolean) => void;
 }) {
   const { t } = useTranslations();
   const [dragId, setDragId] = useState<string | null>(null);
@@ -57,13 +78,20 @@ export function BlocksEditor({
   const editing = page.blocks.find((item) => item.id === editId) ?? null;
   const blockIds = page.blocks.map((item) => item.id);
   const hasBookingBlock = page.blocks.some((block) => block.type === "booking");
-
+  const blockDrawerOpen = Boolean(creating || editing || pickerOpen);
   const onPreviewDraftRef = useRef(onPreviewDraft);
   onPreviewDraftRef.current = onPreviewDraft;
   useEffect(() => {
     onPreviewDraftRef.current?.(creating);
     return () => onPreviewDraftRef.current?.(null);
   }, [creating]);
+
+  const onBlockDrawerOpenRef = useRef(onBlockDrawerOpen);
+  onBlockDrawerOpenRef.current = onBlockDrawerOpen;
+  useEffect(() => {
+    onBlockDrawerOpenRef.current?.(blockDrawerOpen);
+    return () => onBlockDrawerOpenRef.current?.(false);
+  }, [blockDrawerOpen]);
 
   function clearDrag() {
     setDragId(null);
@@ -382,13 +410,13 @@ function BlockFields({
           </div>
         </>
       );
-    case "youtube":
+    case "video":
       return (
         <>
-          <FieldFrame label={t("studio.blocks.field.youtube_url", "YouTube saite")}>
-            <input className="auth-field" autoFocus placeholder="https://youtube.com/watch?v=…" value={block.url} onChange={(e) => onChange({ ...block, url: e.target.value })} />
+          <FieldFrame label={t("studio.blocks.field.video_url", "Video saite")}>
+            <VideoUrlInput block={block} onChange={onChange} />
           </FieldFrame>
-          <FieldFrame label={t("studio.blocks.field.youtube_title", "Virsraksts")}>
+          <FieldFrame label={t("studio.blocks.field.video_title", "Virsraksts")}>
             <input className="auth-field" placeholder={optionalPh} value={block.title ?? ""} maxLength={80} onChange={(e) => onChange({ ...block, title: e.target.value })} />
           </FieldFrame>
           <div className="mt-4">
@@ -448,6 +476,36 @@ function BlockFields({
           </div>
         </>
       );
+    case "maps":
+      return (
+        <>
+          <FieldFrame label={t("studio.blocks.field.maps_url", "Google Maps saite")}>
+            <MapsUrlInput block={block} onChange={onChange} />
+          </FieldFrame>
+          <FieldFrame label={t("common.title", "Nosaukums")}>
+            <input
+              className="auth-field"
+              placeholder={optionalPh}
+              value={block.title ?? ""}
+              maxLength={80}
+              onChange={(e) => onChange({ ...block, title: e.target.value })}
+            />
+          </FieldFrame>
+          <FieldFrame label={t("studio.blocks.field.maps_height", "Kartes augstums")}>
+            <RangeRow
+              label={t("studio.blocks.field.maps_height", "Kartes augstums")}
+              min={160}
+              max={480}
+              value={block.height ?? 280}
+              suffix=" px"
+              onChange={(height) => onChange({ ...block, height })}
+            />
+          </FieldFrame>
+          <div className="mt-4">
+            <BlockStyleFields block={block} onChange={onChange} />
+          </div>
+        </>
+      );
     case "resume":
       return (
         <>
@@ -473,6 +531,72 @@ function BlockFields({
           </FieldFrame>
         </>
       );
+    case "countdown":
+      return (
+        <>
+          <FieldFrame label={t("common.title", "Nosaukums")}>
+            <input
+              className="auth-field"
+              autoFocus
+              placeholder={t("common.title", "Nosaukums")}
+              value={block.title}
+              maxLength={80}
+              onChange={(e) => onChange({ ...block, title: e.target.value })}
+            />
+          </FieldFrame>
+          <FieldFrame label={t("common.description", "Apraksts")}>
+            <textarea
+              className="auth-area min-h-[4.5rem]"
+              placeholder={t("common.optional", "Nav obligāts")}
+              value={block.description ?? ""}
+              maxLength={200}
+              onChange={(e) => onChange({ ...block, description: e.target.value })}
+            />
+          </FieldFrame>
+          <CountdownTimingFields block={block} onChange={onChange} />
+          <div className="mt-4">
+            <BlockStyleFields block={block} onChange={onChange} />
+          </div>
+        </>
+      );
+    case "poll":
+      return (
+        <>
+          <FieldFrame label={t("common.question", "Jautājums")}>
+            <input
+              className="auth-field"
+              autoFocus
+              placeholder={t("studio.blocks.poll.question_ph", "Ko vēlies noskaidrot?")}
+              value={block.question}
+              maxLength={200}
+              onChange={(e) => onChange({ ...block, question: e.target.value })}
+            />
+          </FieldFrame>
+          <div className="mt-4">
+            <BlockStyleFields block={block} onChange={onChange} />
+          </div>
+          <PollOptionsEditor block={block} onChange={onChange} />
+        </>
+      );
+    case "skills":
+      return (
+        <>
+          <FieldFrame label={t("studio.blocks.skills.heading", "Virsraksts")}>
+            <input
+              className="auth-field"
+              autoFocus
+              placeholder={optionalPh}
+              value={block.heading ?? ""}
+              maxLength={80}
+              onChange={(e) => onChange({ ...block, heading: e.target.value })}
+            />
+          </FieldFrame>
+          <div className="mb-4 mt-4">
+            <BlockStyleFields block={block} onChange={onChange} />
+          </div>
+          <SkillsItemsEditor block={block} onChange={onChange} />
+        </>
+      );
     case "faq":
       return (
         <>
@@ -492,6 +616,127 @@ function BlockFields({
         />
       );
   }
+}
+
+function VideoUrlInput({
+  block,
+  onChange,
+}: {
+  block: VideoBlock;
+  onChange: (next: VideoBlock) => void;
+}) {
+  const { t } = useTranslations();
+  const invalid = block.url.trim().length > 0 && !videoEmbedUrl(block.url);
+
+  return (
+    <>
+      <input
+        className={`auth-field${invalid ? " !border-[var(--stamp)]" : ""}`}
+        type="url"
+        inputMode="url"
+        autoComplete="url"
+        autoFocus
+        placeholder={t(
+          "studio.blocks.field.video_url_ph",
+          "https://youtube.com/…, vimeo.com/… vai tiktok.com/…",
+        )}
+        value={block.url}
+        aria-invalid={invalid}
+        onChange={(event) => onChange({ ...block, url: event.target.value })}
+      />
+      {invalid ? (
+        <p className="mt-1.5 text-xs text-[var(--stamp)]" role="alert">
+          {t(
+            "studio.blocks.field.video_invalid",
+            "Ievadi derīgu YouTube, Vimeo vai TikTok saiti.",
+          )}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+function MapsUrlInput({
+  block,
+  onChange,
+}: {
+  block: MapsBlock;
+  onChange: (next: MapsBlock) => void;
+}) {
+  const { t } = useTranslations();
+  const [resolving, setResolving] = useState(false);
+  const resolveGenerationRef = useRef(0);
+  const blockRef = useRef(block);
+  blockRef.current = block;
+  const accepted = mapsBlockUrlAccepted(block.url, block.embedSrc);
+  const invalid = block.url.trim().length > 0 && !accepted && !resolving;
+
+  function resolveShortLink() {
+    const current = blockRef.current;
+    const raw = current.url.trim();
+    if (!raw || googleMapsEmbedUrl(raw) || current.embedSrc?.trim()) return;
+    if (!isGoogleMapsShortLink(raw)) return;
+    const generation = ++resolveGenerationRef.current;
+    setResolving(true);
+    void fetch(`/api/maps/embed?url=${encodeURIComponent(raw)}`)
+      .then((response) => response.json())
+      .then((data: { success?: boolean; embedUrl?: string; canonicalUrl?: string }) => {
+        if (generation !== resolveGenerationRef.current) return;
+        if (!data.success || !data.embedUrl) return;
+        const latest = blockRef.current;
+        onChange({
+          ...latest,
+          url: data.canonicalUrl?.trim() || latest.url,
+          embedSrc: data.embedUrl,
+        });
+      })
+      .finally(() => {
+        if (generation === resolveGenerationRef.current) setResolving(false);
+      });
+  }
+
+  useEffect(() => {
+    const raw = block.url.trim();
+    if (!raw || block.embedSrc?.trim() || googleMapsEmbedUrl(raw)) return;
+    if (!isGoogleMapsShortLink(raw)) return;
+    const timer = window.setTimeout(() => resolveShortLink(), 350);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resolve when pasted short link stabilizes
+  }, [block.url, block.embedSrc]);
+
+  return (
+    <>
+      <input
+        className={`auth-field${invalid ? " !border-[var(--stamp)]" : ""}`}
+        type="text"
+        inputMode="url"
+        autoComplete="url"
+        autoFocus
+        placeholder={t("studio.blocks.field.maps_url_ph", "https://maps.app.goo.gl/…")}
+        value={block.url}
+        aria-invalid={invalid}
+        onChange={(event) => onChange({ ...block, url: event.target.value, embedSrc: undefined })}
+        onBlur={() => resolveShortLink()}
+      />
+      <p className="mt-1.5 text-xs leading-snug text-[var(--muted)]">
+        {t(
+          "studio.blocks.field.maps_embed_hint",
+          "Vari arī ielīmēt pilnu iegulšanas kodu no Google Maps (Kopīgot → Iegult karti), ieskaitot visu `<iframe>` fragmentu.",
+        )}
+      </p>
+      {resolving ? (
+        <p className="mt-1.5 text-xs text-[var(--muted)]">{t("studio.blocks.field.maps_resolving", "Pārbaudu karti…")}</p>
+      ) : null}
+      {invalid ? (
+        <p className="mt-1.5 text-xs text-[var(--stamp)]" role="alert">
+          {t(
+            "studio.blocks.field.maps_invalid",
+            "Ievadi Google Maps saiti vai iegulto (embed) saiti no Kopīgot.",
+          )}
+        </p>
+      ) : null}
+    </>
+  );
 }
 
 function LinkUrlInput({
@@ -666,6 +911,539 @@ function InstagramFields({
         </div>
       ) : null}
     </>
+  );
+}
+
+function PollOptionsEditor({
+  block,
+  onChange,
+}: {
+  block: PollBlock;
+  onChange: (next: PollBlock) => void;
+}) {
+  const { t } = useTranslations();
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [drop, setDrop] = useState<DropTarget | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const dragIdRef = useRef<string | null>(null);
+  const dropRef = useRef<DropTarget | null>(null);
+  dragIdRef.current = dragId;
+  dropRef.current = drop;
+
+  const itemIds = block.options.map((item) => item.id);
+  const editing = block.options.find((item) => item.id === editId) ?? null;
+
+  function clearDrag() {
+    setDragId(null);
+    setDrop(null);
+  }
+
+  function patchOption(id: string, patch: Partial<PollOption>) {
+    onChange({
+      ...block,
+      options: block.options.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    });
+  }
+
+  function addOption() {
+    const next = emptyPollOption();
+    onChange({ ...block, options: [...block.options, next] });
+    setEditId(next.id);
+  }
+
+  return (
+    <>
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <p className="text-sm font-medium">{t("studio.blocks.poll.options", "Atbilžu varianti")}</p>
+        <button type="button" className="btn-line gap-1 px-2.5 py-1.5 text-[0.64rem] leading-none" onClick={addOption}>
+          <span aria-hidden="true">+</span>
+          {t("actions.add", "Pievienot")}
+        </button>
+      </div>
+
+      {block.options.length === 0 ? (
+        <p className="mt-3 text-sm text-[var(--muted)]">
+          {t("studio.blocks.poll.empty", "Pievieno vismaz divus variantus.")}
+        </p>
+      ) : (
+        <ul className="mt-3 flex flex-col gap-2">
+          {block.options.map((item) => {
+            const dragging = dragId === item.id;
+            const incomplete = !item.label.trim();
+            const showLine = Boolean(dragId && drop && drop.id === item.id && dropWouldMove(itemIds, dragId, drop));
+            const title = item.label.trim() || t("studio.blocks.poll.new_option", "Jauns variants");
+            return (
+              <li
+                key={item.id}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  if (!dragId || dragId === item.id) {
+                    if (drop) setDrop(null);
+                    return;
+                  }
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  const next: DropTarget = {
+                    id: item.id,
+                    edge: edgeFromPointer(event.clientY, rect.top, rect.height),
+                  };
+                  if (!drop || drop.id !== next.id || drop.edge !== next.edge) setDrop(next);
+                }}
+                onDragLeave={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node) && drop?.id === item.id) {
+                    setDrop(null);
+                  }
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const fromId = dragIdRef.current ?? event.dataTransfer.getData("text/plain");
+                  const target = dropRef.current;
+                  if (fromId) {
+                    const next = commitDropReorder(block.options, fromId, target);
+                    if (next) onChange({ ...block, options: next });
+                  }
+                  clearDrag();
+                }}
+                className={`relative rounded-xl bg-white px-1.5 py-1.5 transition-[opacity,border-color,box-shadow,border-width] duration-150 ${
+                  dragging
+                    ? "border-2 border-dashed border-[var(--accent)] opacity-[0.35] shadow-none"
+                    : incomplete
+                      ? "border-2 border-solid border-[var(--stamp)] opacity-100"
+                      : "border border-solid border-[var(--line)] opacity-100"
+                }`}
+              >
+                {showLine && drop ? <DropLine edge={drop.edge} /> : null}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    draggable
+                    aria-label={t("studio.dnd.change_priority", "Mainīt prioritāti")}
+                    title={t("studio.dnd.drag_order", "Velc, lai mainītu secību")}
+                    className="grid size-8 shrink-0 cursor-grab place-items-center rounded-lg text-[var(--muted)] hover:bg-[var(--paper)] active:cursor-grabbing"
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", item.id);
+                      setDragId(item.id);
+                      setDrop(null);
+                    }}
+                    onDragEnd={clearDrag}
+                  >
+                    <DragHandle />
+                  </button>
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-1 py-1 text-left hover:bg-[var(--paper)]"
+                    onClick={() => setEditId(item.id)}
+                  >
+                    <span className="block truncate text-sm font-semibold">{title}</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("actions.edit", "Labot")}
+                    title={t("actions.edit", "Labot")}
+                    className="grid size-8 shrink-0 place-items-center rounded-lg text-[var(--muted)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"
+                    onClick={() => setEditId(item.id)}
+                  >
+                    <IconEdit />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("actions.delete", "Dzēst")}
+                    title={t("actions.delete", "Dzēst")}
+                    disabled={block.options.length <= 2}
+                    className="grid size-8 shrink-0 place-items-center rounded-lg text-[var(--muted)] hover:bg-red-50 hover:text-[var(--stamp)] disabled:cursor-not-allowed disabled:opacity-40"
+                    onClick={() => onChange({ ...block, options: block.options.filter((entry) => entry.id !== item.id) })}
+                  >
+                    <IconTrash />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {editing ? (
+        <SideDrawer
+          title={t("studio.blocks.poll.option_title", "Variants")}
+          hint={t("studio.blocks.poll.option_hint", "Atbildes teksts")}
+          ariaLabel={t("studio.blocks.poll.edit_option", "Labot variantu")}
+          nested
+          onClose={() => setEditId(null)}
+          footer={(close) => (
+            <button type="button" className="btn-ink w-full" onClick={close}>
+              {t("common.done", "Gatavs")}
+            </button>
+          )}
+        >
+          <FieldFrame label={t("studio.blocks.poll.option_label", "Teksts")}>
+            <input
+              className="auth-field"
+              autoFocus
+              placeholder={t("studio.blocks.poll.option_ph", "Atbildes variants")}
+              value={editing.label}
+              maxLength={120}
+              onChange={(e) => patchOption(editing.id, { label: e.target.value })}
+            />
+          </FieldFrame>
+        </SideDrawer>
+      ) : null}
+    </>
+  );
+}
+
+function CountdownTimingFields({
+  block,
+  onChange,
+}: {
+  block: CountdownBlock;
+  onChange: (next: CountdownBlock) => void;
+}) {
+  const { t } = useTranslations();
+  const { date, time } = countdownDateTimeParts(block.endsAt);
+
+  return (
+    <>
+      <p className="mb-2 text-sm font-medium">{t("studio.blocks.countdown.when_ends", "Kad beidzas")}</p>
+    <div className="mb-3 grid grid-cols-2 gap-2">
+      <button
+        type="button"
+        className={`rounded-lg border px-3 py-2 text-sm font-medium ${
+          block.endMode === "datetime"
+            ? "border-[var(--accent)] bg-[var(--paper)] text-[var(--ink)]"
+            : "border-[var(--line)] text-[var(--muted)]"
+        }`}
+        onClick={() => onChange({ ...block, endMode: "datetime" })}
+      >
+        {t("studio.blocks.countdown.mode.datetime", "Datums un laiks")}
+      </button>
+      <button
+        type="button"
+        className={`rounded-lg border px-3 py-2 text-sm font-medium ${
+          block.endMode === "duration"
+            ? "border-[var(--accent)] bg-[var(--paper)] text-[var(--ink)]"
+            : "border-[var(--line)] text-[var(--muted)]"
+        }`}
+        onClick={() =>
+          onChange({
+            ...block,
+            endMode: "duration",
+            startsAt: block.startsAt ?? new Date().toISOString(),
+          })
+        }
+      >
+        {t("studio.blocks.countdown.mode.duration", "Ilgums")}
+      </button>
+    </div>
+    {block.endMode === "datetime" ? (
+      <div className="grid gap-3 sm:grid-cols-2">
+        <FieldFrame label={t("studio.blocks.countdown.end_date", "Datums")}>
+          <input
+            className="auth-field"
+            type="date"
+            value={date}
+            onChange={(e) => {
+              const endsAt = countdownCombineDateTime(e.target.value, time);
+              onChange({ ...block, endsAt });
+            }}
+          />
+        </FieldFrame>
+        <FieldFrame label={t("studio.blocks.countdown.end_time", "Laiks")}>
+          <input
+            className="auth-field"
+            type="time"
+            value={time}
+            onChange={(e) => {
+              const endsAt = countdownCombineDateTime(date, e.target.value);
+              onChange({ ...block, endsAt });
+            }}
+          />
+        </FieldFrame>
+      </div>
+    ) : (
+      <div className="grid gap-3 sm:grid-cols-2">
+        <FieldFrame label={t("studio.blocks.countdown.hours", "Stundas")}>
+          <input
+            className="auth-field"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={999}
+            value={block.durationHours ?? 0}
+            onChange={(e) => {
+              const next = clampCountdownDuration(Number(e.target.value), block.durationMinutes ?? 0);
+              onChange({
+                ...block,
+                durationHours: next.hours,
+                durationMinutes: next.minutes,
+                startsAt: new Date().toISOString(),
+              });
+            }}
+          />
+        </FieldFrame>
+        <FieldFrame label={t("studio.blocks.countdown.minutes", "Minūtes")}>
+          <input
+            className="auth-field"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={59}
+            value={block.durationMinutes ?? 0}
+            onChange={(e) => {
+              const next = clampCountdownDuration(block.durationHours ?? 0, Number(e.target.value));
+              onChange({
+                ...block,
+                durationHours: next.hours,
+                durationMinutes: next.minutes,
+                startsAt: new Date().toISOString(),
+              });
+            }}
+          />
+        </FieldFrame>
+      </div>
+    )}
+    </>
+  );
+}
+
+function SkillsItemsEditor({
+  block,
+  onChange,
+}: {
+  block: SkillsBlock;
+  onChange: (next: SkillsBlock) => void;
+}) {
+  const { t } = useTranslations();
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [drop, setDrop] = useState<DropTarget | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const dragIdRef = useRef<string | null>(null);
+  const dropRef = useRef<DropTarget | null>(null);
+  dragIdRef.current = dragId;
+  dropRef.current = drop;
+
+  const itemIds = block.items.map((item) => item.id);
+  const editing = block.items.find((item) => item.id === editId) ?? null;
+
+  function clearDrag() {
+    setDragId(null);
+    setDrop(null);
+  }
+
+  function patchItem(id: string, patch: Partial<SkillItem>) {
+    const nextPatch = { ...patch };
+    if (typeof nextPatch.rating === "number") {
+      nextPatch.rating = clampSkillRating(nextPatch.rating);
+    }
+    onChange({
+      ...block,
+      items: block.items.map((item) => (item.id === id ? { ...item, ...nextPatch } : item)),
+    });
+  }
+
+  function addItem() {
+    const next = emptySkillItem();
+    onChange({ ...block, items: [...block.items, next] });
+    setEditId(next.id);
+  }
+
+  return (
+    <>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <p className="text-sm font-medium">{t("studio.blocks.skills.list", "Prasmes")}</p>
+        <button type="button" className="btn-line gap-1 px-2.5 py-1.5 text-[0.64rem] leading-none" onClick={addItem}>
+          <span aria-hidden="true">+</span>
+          {t("actions.add", "Pievienot")}
+        </button>
+      </div>
+
+      {block.items.length === 0 ? (
+        <p className="mt-3 text-sm text-[var(--muted)]">
+          {t("studio.blocks.skills.empty", "Pievieno prasmes. Secību maini ar vilkšanu.")}
+        </p>
+      ) : (
+        <ul className="mt-3 flex flex-col gap-2">
+          {block.items.map((item) => {
+            const dragging = dragId === item.id;
+            const incomplete = !item.name.trim();
+            const showLine = Boolean(dragId && drop && drop.id === item.id && dropWouldMove(itemIds, dragId, drop));
+            const title = item.name.trim() || t("studio.blocks.skills.new_skill", "Jauna prasme");
+            const hint = t("studio.blocks.skills.rating_summary", "{count} no 5", {
+              count: clampSkillRating(item.rating),
+            });
+            return (
+              <li
+                key={item.id}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  if (!dragId || dragId === item.id) {
+                    if (drop) setDrop(null);
+                    return;
+                  }
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  const next: DropTarget = {
+                    id: item.id,
+                    edge: edgeFromPointer(event.clientY, rect.top, rect.height),
+                  };
+                  if (!drop || drop.id !== next.id || drop.edge !== next.edge) setDrop(next);
+                }}
+                onDragLeave={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node) && drop?.id === item.id) {
+                    setDrop(null);
+                  }
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const fromId = dragIdRef.current ?? event.dataTransfer.getData("text/plain");
+                  const target = dropRef.current;
+                  if (fromId) {
+                    const next = commitDropReorder(block.items, fromId, target);
+                    if (next) onChange({ ...block, items: next });
+                  }
+                  clearDrag();
+                }}
+                className={`relative rounded-xl bg-white px-1.5 py-1.5 transition-[opacity,border-color,box-shadow,border-width] duration-150 ${
+                  dragging
+                    ? "border-2 border-dashed border-[var(--accent)] opacity-[0.35] shadow-none"
+                    : incomplete
+                      ? "border-2 border-solid border-[var(--stamp)] opacity-100"
+                      : "border border-solid border-[var(--line)] opacity-100"
+                }`}
+              >
+                {showLine && drop ? <DropLine edge={drop.edge} /> : null}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    draggable
+                    aria-label={t("studio.dnd.change_priority", "Mainīt prioritāti")}
+                    title={t("studio.dnd.drag_order", "Velc, lai mainītu secību")}
+                    className="grid size-8 shrink-0 cursor-grab place-items-center rounded-lg text-[var(--muted)] hover:bg-[var(--paper)] active:cursor-grabbing"
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", item.id);
+                      setDragId(item.id);
+                      setDrop(null);
+                    }}
+                    onDragEnd={clearDrag}
+                  >
+                    <DragHandle />
+                  </button>
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-1 py-1 text-left hover:bg-[var(--paper)]"
+                    onClick={() => setEditId(item.id)}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold">{title}</span>
+                      <span className="mt-0.5 block truncate text-xs text-[var(--muted)]">{hint}</span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("actions.edit", "Labot")}
+                    title={t("actions.edit", "Labot")}
+                    className="grid size-8 shrink-0 place-items-center rounded-lg text-[var(--muted)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"
+                    onClick={() => setEditId(item.id)}
+                  >
+                    <IconEdit />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("actions.delete", "Dzēst")}
+                    title={t("actions.delete", "Dzēst")}
+                    className="grid size-8 shrink-0 place-items-center rounded-lg text-[var(--muted)] hover:bg-red-50 hover:text-[var(--stamp)]"
+                    onClick={() => onChange({ ...block, items: block.items.filter((entry) => entry.id !== item.id) })}
+                  >
+                    <IconTrash />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {editing ? (
+        <SideDrawer
+          title={t("studio.blocks.skills.edit_title", "Prasme")}
+          hint={t("studio.blocks.skills.edit_hint", "Nosaukums un vērtējums ar zvaigznēm")}
+          ariaLabel={t("studio.blocks.skills.edit_aria", "Labot prasmi")}
+          nested
+          onClose={() => setEditId(null)}
+          footer={(close) => (
+            <button type="button" className="btn-ink w-full" onClick={close}>
+              {t("common.done", "Gatavs")}
+            </button>
+          )}
+        >
+          <FieldFrame label={t("common.name", "Nosaukums")}>
+            <input
+              className="auth-field"
+              autoFocus
+              placeholder={t("studio.blocks.skills.name_ph", "Piem. React, Excel, Valodu prasme")}
+              value={editing.name}
+              maxLength={80}
+              onChange={(e) => patchItem(editing.id, { name: e.target.value })}
+            />
+          </FieldFrame>
+          <FieldFrame label={t("studio.blocks.skills.field.rating", "Vērtējums")}>
+            <SkillRatingPicker
+              value={editing.rating}
+              onChange={(rating) => patchItem(editing.id, { rating })}
+            />
+          </FieldFrame>
+        </SideDrawer>
+      ) : null}
+    </>
+  );
+}
+
+function SkillRatingPicker({ value, onChange }: { value: number; onChange: (next: number) => void }) {
+  const { t } = useTranslations();
+  const rating = clampSkillRating(value);
+  return (
+    <div
+      role="radiogroup"
+      aria-label={t("studio.blocks.skills.field.rating", "Vērtējums")}
+      className="flex flex-wrap items-center gap-1"
+    >
+      <button
+        type="button"
+        role="radio"
+        aria-checked={rating === 0}
+        aria-label={t("studio.blocks.skills.rating_zero", "0 no 5")}
+        onClick={() => onChange(0)}
+        className={`min-w-9 rounded-lg border px-2 py-2 text-sm font-medium ${
+          rating === 0 ? "border-[var(--accent)] bg-[var(--paper)] text-[var(--ink)]" : "border-[var(--line)] text-[var(--muted)]"
+        }`}
+      >
+        0
+      </button>
+      {([1, 2, 3, 4, 5] as const).map((star) => (
+        <button
+          key={star}
+          type="button"
+          role="radio"
+          aria-checked={rating === star}
+          aria-label={t("feedback.rating.star", "{count} no 5", { count: star })}
+          onClick={() => onChange(star)}
+          className={`grid size-9 place-items-center rounded-lg hover:bg-[var(--paper)] ${
+            rating >= star ? "text-amber-500" : "text-[var(--muted)]"
+          }`}
+        >
+          <SkillStarIcon filled={rating >= star} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function SkillStarIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8">
+      <path d="M12 3.2l2.4 5.6 6.1.6-4.6 4 1.4 6-5.3-3.2L6.7 19.4l1.4-6-4.6-4 6.1-.6L12 3.2z" />
+    </svg>
   );
 }
 
@@ -1131,12 +1909,12 @@ function SideDrawer({
   }, [closing, nested]);
 
   return createPortal(
-    <div className={`fixed inset-0 ${shellZ}`}>
+    <div className={`option-drawer-shell option-drawer-shell--studio ${shellZ}`}>
       <button
         ref={backdropRef}
         type="button"
         aria-label={t("actions.close", "Aizvērt")}
-        className="absolute inset-0 bg-[var(--ink)]/35"
+        className="option-drawer-backdrop bg-[var(--ink)]/35"
         style={{ opacity: 0 }}
         onClick={requestClose}
       />

@@ -11,6 +11,7 @@ import type { LanguageCode } from "@/app/lib/i18n/language";
 import type { TranslateFn } from "@/app/lib/i18n/server";
 import { LANDING_FAQ_ITEMS } from "@/app/lib/landing-faq-items";
 import type { LandingPricingData } from "@/app/lib/pricing/load-landing-pricing";
+import type { Portfolio } from "@/app/lib/types";
 import { localePath } from "@/app/lib/seo/locale-path";
 import { absoluteUrl, getPublicSiteUrl } from "@/app/lib/site-url";
 import { LANDING_PROFESSION_LINKS } from "@/app/lib/landing-professions";
@@ -20,6 +21,7 @@ type MarketingHomeProps = {
   languageCode: LanguageCode;
   translationIncomplete?: boolean;
   pricing: LandingPricingData;
+  showcasePages: Portfolio[];
 };
 
 export function MarketingHome({
@@ -27,6 +29,7 @@ export function MarketingHome({
   languageCode,
   translationIncomplete = false,
   pricing,
+  showcasePages,
 }: MarketingHomeProps) {
   const site = getPublicSiteUrl();
   const steps = [
@@ -174,9 +177,11 @@ export function MarketingHome({
           </p>
         </section>
 
-        <div id="examples">
-          <DemoMarquee />
-        </div>
+        {showcasePages.length > 0 ? (
+          <div id="examples">
+            <DemoMarquee pages={showcasePages} />
+          </div>
+        ) : null}
 
         <section id="studio-preview" className="border-b border-[var(--line)] bg-[var(--paper)]">
           <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-14 lg:grid-cols-2 lg:py-20">

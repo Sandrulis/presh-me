@@ -65,6 +65,7 @@ export function StudioApp() {
   const [handleDraft, setHandleDraft] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [blockDraft, setBlockDraft] = useState<PageBlock | null>(null);
+  const [blockDrawerOpen, setBlockDrawerOpen] = useState(false);
   const [languageDrawerOpen, setLanguageDrawerOpen] = useState(false);
   const [pageSettingsOpen, setPageSettingsOpen] = useState(false);
   const [trailModuleEnabled, setTrailModuleEnabled] = useState(false);
@@ -198,8 +199,14 @@ export function StudioApp() {
           </PanelButton>
         </div>
 
-        <div className="grid min-h-0 flex-1 xl:grid-cols-[minmax(20rem,26rem)_minmax(0,1fr)_minmax(17rem,22rem)]">
-          <section className={`${columnVisibility(panel, "info")} min-h-0 flex-col overflow-y-auto border-[var(--line)] bg-white xl:border-r`}>
+        <div
+          className={`grid min-h-0 flex-1 xl:grid-cols-[minmax(20rem,26rem)_minmax(0,1fr)_minmax(17rem,22rem)]${
+            blockDrawerOpen ? " studio-dim-surround" : ""
+          }`}
+        >
+          <section
+            className={`studio-column-info ${columnVisibility(panel, "info")} min-h-0 flex-col overflow-y-auto border-[var(--line)] bg-white xl:border-r`}
+          >
             <div className="flex flex-col gap-2.5 px-3 py-4">
               {infoView ? (
                 <InfoScreen
@@ -218,6 +225,7 @@ export function StudioApp() {
                   onCopy={() => void copyLink()}
                   update={update}
                   onBlockDraft={setBlockDraft}
+                  onBlockDrawerOpen={setBlockDrawerOpen}
                   onError={(message) => notify(message, "error")}
                   onAnalyticsSaved={() =>
                     notify(t("studio.analytics.saved", "Analytics dati saglabāti."), "ok")
@@ -349,7 +357,11 @@ export function StudioApp() {
             </div>
           </section>
 
-          <section className={`${columnVisibility(panel, "preview")} min-h-0 flex-col items-center justify-start overflow-y-auto bg-[#eef1f6] px-6 py-6`}>
+          <section
+            className={`studio-column-preview ${columnVisibility(panel, "preview")} min-h-0 flex-col items-center justify-start overflow-y-auto bg-[#eef1f6] px-6 py-6${
+              blockDrawerOpen ? " studio-preview-spotlight" : ""
+            }`}
+          >
             <DevicePreview
               page={previewPage}
               published={page.published}
@@ -358,7 +370,9 @@ export function StudioApp() {
             />
           </section>
 
-          <section className={`${columnVisibility(panel, "look")} min-h-0 flex-col overflow-y-auto border-[var(--line)] bg-white xl:border-l`}>
+          <section
+            className={`studio-column-look ${columnVisibility(panel, "look")} min-h-0 flex-col overflow-y-auto border-[var(--line)] bg-white xl:border-l`}
+          >
             <div className="flex flex-col gap-2.5 px-3 py-4">
               <LookColumn page={page} update={update} onError={(message) => notify(message, "error")} />
             </div>
@@ -396,6 +410,7 @@ function InfoScreen({
   onCopy,
   update,
   onBlockDraft,
+  onBlockDrawerOpen,
   onError,
   onAnalyticsSaved,
   accountEmail,
@@ -413,6 +428,7 @@ function InfoScreen({
   onCopy: () => void;
   update: (patch: Partial<Portfolio>) => void;
   onBlockDraft: (draft: PageBlock | null) => void;
+  onBlockDrawerOpen: (open: boolean) => void;
   onError: (message: string) => void;
   onAnalyticsSaved: () => void;
   accountEmail: string | null;
@@ -517,7 +533,14 @@ function InfoScreen({
 
       {view === "socials" ? <SocialsEditor page={page} update={update} /> : null}
 
-      {view === "blocks" ? <BlocksEditor page={page} update={update} onPreviewDraft={onBlockDraft} /> : null}
+      {view === "blocks" ? (
+        <BlocksEditor
+          page={page}
+          update={update}
+          onPreviewDraft={onBlockDraft}
+          onBlockDrawerOpen={onBlockDrawerOpen}
+        />
+      ) : null}
     </StudioScreen>
   );
 }

@@ -2,10 +2,14 @@ import type {
   BlockType,
   BookingBlock,
   FaqBlockItem,
+  PollOption,
+  SkillItem,
   PageBlock,
   PageContent,
   ResumeItem,
 } from "@/app/lib/types";
+import { countdownIsConfigured } from "@/app/lib/countdown-block";
+import { googleMapsEmbedUrl, isGoogleMapsShortLink, mapsBlockUrlAccepted } from "@/app/lib/google-maps-embed";
 import { isValidLinkUrl } from "@/app/lib/urls";
 
 export const BLOCK_TYPE_OPTIONS: {
@@ -15,12 +19,16 @@ export const BLOCK_TYPE_OPTIONS: {
 }[] = [
   { id: "link", label: "Linki", hint: "Poga ar nosaukumu un URL" },
   { id: "text", label: "Teksts", hint: "Brīvs teksts ar stilu" },
-  { id: "youtube", label: "YouTube", hint: "Video no YouTube saites" },
+  { id: "video", label: "Video", hint: "YouTube, Vimeo vai TikTok" },
   { id: "image", label: "Attēls", hint: "Viens attēls lapā" },
   { id: "audio", label: "Audio", hint: "Spotify ieraksts vai playlists" },
+  { id: "maps", label: "Google karte", hint: "Atrašanās vieta ar karti" },
   { id: "resume", label: "Resumē", hint: "Laika josla ar sasniegumiem" },
   { id: "instagram", label: "Instagram", hint: "Bildžu režģis no ierakstu saitēm" },
   { id: "quote", label: "Citāts", hint: "Izcelts citāts" },
+  { id: "skills", label: "Prasmes", hint: "Prasmju saraksts ar vērtējumu" },
+  { id: "countdown", label: "Atpakaļskaitīšana", hint: "Taimeris līdz datumam vai ilgumam" },
+  { id: "poll", label: "Aptauja", hint: "Jautājums ar atbilžu variantiem" },
   { id: "faq", label: "FAQ", hint: "Jautājumi un atbildes" },
   { id: "booking", label: "Booking", hint: "Darba laiki un rezervācijas poga" },
 ];
@@ -32,12 +40,23 @@ export function emptyBlock(type: BlockType): PageBlock {
       return { id, type: "link", title: "", url: "", note: "", borderRadius: 8 };
     case "text":
       return { id, type: "text", body: "", align: "center", fontSize: 14 };
-    case "youtube":
-      return { id, type: "youtube", url: "", title: "", borderRadius: 12, borderWidth: 0, borderColor: "#111111" };
+    case "video":
+      return { id, type: "video", url: "", title: "", borderRadius: 12, borderWidth: 0, borderColor: "#111111" };
     case "image":
       return { id, type: "image", src: null, alt: "", borderRadius: 12, borderWidth: 0, borderColor: "#111111" };
     case "audio":
       return { id, type: "audio", url: "", borderRadius: 12, borderWidth: 0, borderColor: "#111111" };
+    case "maps":
+      return {
+        id,
+        type: "maps",
+        url: "",
+        title: "",
+        height: 280,
+        borderRadius: 12,
+        borderWidth: 0,
+        borderColor: "#111111",
+      };
     case "resume":
       return {
         id,
@@ -55,6 +74,38 @@ export function emptyBlock(type: BlockType): PageBlock {
       return { id, type: "instagram", username: "", columns: 3, count: 6, images: [] };
     case "quote":
       return { id, type: "quote", text: "", author: "", align: "center", fontSize: 18 };
+    case "skills":
+      return {
+        id,
+        type: "skills",
+        heading: "",
+        items: [],
+        borderRadius: 8,
+        starColor: "#f59e0b",
+        fontSize: 14,
+      };
+    case "countdown":
+      return {
+        id,
+        type: "countdown",
+        title: "",
+        description: "",
+        endMode: "datetime",
+        endsAt: "",
+        durationHours: 0,
+        durationMinutes: 30,
+        startsAt: new Date().toISOString(),
+        borderRadius: 8,
+      };
+    case "poll":
+      return {
+        id,
+        type: "poll",
+        question: "",
+        options: [emptyPollOption(), emptyPollOption()],
+        borderRadius: 8,
+        progressColor: "#111111",
+      };
     case "faq":
       return {
         id,
@@ -89,6 +140,19 @@ export function emptyFaqItem(): FaqBlockItem {
   return { id: crypto.randomUUID(), question: "", answer: "" };
 }
 
+export function emptyPollOption(): PollOption {
+  return { id: crypto.randomUUID(), label: "" };
+}
+
+export function emptySkillItem(): SkillItem {
+  return { id: crypto.randomUUID(), name: "", rating: 0 };
+}
+
+export function clampSkillRating(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(5, Math.round(value)));
+}
+
 export function blockTypeLabel(type: BlockType) {
   return BLOCK_TYPE_OPTIONS.find((item) => item.id === type)?.label ?? type;
 }
@@ -99,18 +163,28 @@ export function blockIsComplete(block: PageBlock): boolean {
       return Boolean(block.title.trim() && isValidLinkUrl(block.url));
     case "text":
       return Boolean(block.body.trim());
-    case "youtube":
-      return Boolean(youtubeVideoId(block.url));
+    case "video":
+      return Boolean(videoEmbedUrl(block.url));
     case "image":
       return Boolean(block.src);
     case "audio":
       return Boolean(spotifyEmbedUrl(block.url));
+    case "maps":
+      return Boolean(
+        googleMapsEmbedUrl(block.url) || block.embedSrc?.trim() || isGoogleMapsShortLink(block.url),
+      );
     case "resume":
       return block.items.some((item) => item.date.trim() && item.title.trim());
     case "instagram":
       return block.images.filter(Boolean).length > 0;
     case "quote":
       return Boolean(block.text.trim());
+    case "skills":
+      return block.items.some((item) => item.name.trim());
+    case "countdown":
+      return Boolean(block.title.trim() && countdownIsConfigured(block));
+    case "poll":
+      return Boolean(block.question.trim() && block.options.filter((o) => o.label.trim()).length >= 2);
     case "faq":
       return block.items.some((item) => item.question.trim());
     case "booking":
@@ -127,12 +201,14 @@ export function blockDisplayTitle(block: PageBlock) {
       if (!body) return "Teksts";
       return body.length > 40 ? `${body.slice(0, 40)}…` : body;
     }
-    case "youtube":
-      return block.title?.trim() || "YouTube";
+    case "video":
+      return block.title?.trim() || "Video";
     case "image":
       return block.alt.trim() || "Attēls";
     case "audio":
       return "Spotify";
+    case "maps":
+      return block.title?.trim() || "Google karte";
     case "resume":
       return block.heading?.trim() || "Resumē";
     case "instagram":
@@ -141,6 +217,15 @@ export function blockDisplayTitle(block: PageBlock) {
       const text = block.text.trim();
       if (!text) return "Citāts";
       return text.length > 40 ? `${text.slice(0, 40)}…` : text;
+    }
+    case "skills":
+      return block.heading?.trim() || "Prasmes";
+    case "countdown":
+      return block.title.trim() || "Atpakaļskaitīšana";
+    case "poll": {
+      const q = block.question.trim();
+      if (!q) return "Aptauja";
+      return q.length > 40 ? `${q.slice(0, 40)}…` : q;
     }
     case "faq":
       return `FAQ (${block.items.length})`;
@@ -156,18 +241,29 @@ export function blockDisplayHint(block: PageBlock) {
       return block.url.trim() || block.note.trim() || "Saite";
     case "text":
       return "Teksta bloks";
-    case "youtube":
-      return block.url.trim() || "YouTube video";
+    case "video":
+      return block.url.trim() || "Video";
     case "image":
       return block.src ? "Attēls" : "Nav attēla";
     case "audio":
       return block.url.trim() || "Spotify";
+    case "maps":
+      if (block.url.trim() && !mapsBlockUrlAccepted(block.url, block.embedSrc)) return "Nederīga karte";
+      return block.url.trim() || "Google Maps";
     case "resume":
       return `${block.items.length} ieraksti`;
     case "instagram":
       return `${block.images.length}/${block.count} bildes · ${block.columns} kolonnas`;
     case "quote":
       return block.author?.trim() || "Citāts";
+    case "skills":
+      return `${block.items.length} prasmes`;
+    case "countdown":
+      return block.endMode === "datetime"
+        ? block.endsAt?.trim() || "Datums"
+        : `${block.durationHours ?? 0} h ${block.durationMinutes ?? 0} min`;
+    case "poll":
+      return `${block.options.filter((o) => o.label.trim()).length} varianti`;
     case "faq":
       return "Jautājumi un atbildes";
     case "booking":
@@ -206,7 +302,65 @@ export function youtubeEmbedUrl(raw: string): string | null {
   return id ? `https://www.youtube.com/embed/${id}` : null;
 }
 
-/** Spotify track / album / playlist / episode → embed URL. */
+export function vimeoVideoId(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+  try {
+    const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+    const url = new URL(withProtocol);
+    const host = url.hostname.replace(/^www\./, "");
+    if (host !== "vimeo.com" && host !== "player.vimeo.com") return null;
+    const parts = url.pathname.split("/").filter(Boolean);
+    const videoIdx = parts.indexOf("video");
+    const id = (videoIdx >= 0 ? parts[videoIdx + 1] : parts[0])?.split("?")[0];
+    return id && /^\d+$/.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+export function vimeoEmbedUrl(raw: string): string | null {
+  const id = vimeoVideoId(raw);
+  return id ? `https://player.vimeo.com/video/${id}` : null;
+}
+
+export function tiktokVideoId(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+  try {
+    const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+    const url = new URL(withProtocol);
+    const host = url.hostname.replace(/^www\./, "");
+    if (!host.includes("tiktok.com")) return null;
+    const fromPath = url.pathname.match(/\/video\/(\d+)/);
+    if (fromPath?.[1]) return fromPath[1];
+    const fromEmbed = url.pathname.match(/\/embed\/v\d\/(\d+)/);
+    if (fromEmbed?.[1]) return fromEmbed[1];
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+export function tiktokEmbedUrl(raw: string): string | null {
+  const id = tiktokVideoId(raw);
+  return id ? `https://www.tiktok.com/embed/v2/${id}` : null;
+}
+
+export type VideoEmbedProvider = "youtube" | "vimeo" | "tiktok";
+
+export function videoEmbedUrl(raw: string): { src: string; provider: VideoEmbedProvider } | null {
+  const youtube = youtubeEmbedUrl(raw);
+  if (youtube) return { src: youtube, provider: "youtube" };
+  const vimeo = vimeoEmbedUrl(raw);
+  if (vimeo) return { src: vimeo, provider: "vimeo" };
+  const tiktok = tiktokEmbedUrl(raw);
+  if (tiktok) return { src: tiktok, provider: "tiktok" };
+  return null;
+}
+
+export { googleMapsEmbedUrl, isGoogleMapsShortLink, mapsBlockUrlAccepted } from "@/app/lib/google-maps-embed";
+
 export function spotifyEmbedUrl(raw: string): string | null {
   const value = raw.trim();
   if (!value) return null;
@@ -296,21 +450,33 @@ export async function readImageFile(
 const PAGE_BLOCK_TYPES = new Set<BlockType>([
   "link",
   "text",
-  "youtube",
+  "video",
   "image",
   "audio",
+  "maps",
   "resume",
   "instagram",
   "quote",
+  "skills",
+  "countdown",
+  "poll",
   "faq",
   "booking",
 ]);
 
-function isPageBlockRecord(value: unknown): value is PageBlock {
-  if (!value || typeof value !== "object") return false;
-  const record = value as { id?: unknown; type?: unknown };
-  if (typeof record.id !== "string" || !record.id.trim()) return false;
-  return typeof record.type === "string" && PAGE_BLOCK_TYPES.has(record.type as BlockType);
+function coercePageBlock(value: unknown): PageBlock | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const id = record.id;
+  const type = record.type;
+  if (typeof id !== "string" || !id.trim()) return null;
+  if (type === "youtube") {
+    return { ...record, id, type: "video" } as PageBlock;
+  }
+  if (typeof type === "string" && PAGE_BLOCK_TYPES.has(type as BlockType)) {
+    return record as PageBlock;
+  }
+  return null;
 }
 
 export function legacyContentToBookingBlock(content: Partial<PageContent>): BookingBlock {
@@ -333,7 +499,8 @@ export function normalizePageBlocks(content: Partial<PageContent>): PageBlock[] 
   const raw = Array.isArray(content.blocks) ? content.blocks : [];
   const blocks: PageBlock[] = [];
   for (const item of raw) {
-    if (isPageBlockRecord(item)) blocks.push(item);
+    const block = coercePageBlock(item);
+    if (block) blocks.push(block);
   }
   if (!blocks.some((block) => block.type === "booking") && content.bookingEnabled === true) {
     blocks.push(legacyContentToBookingBlock(content));

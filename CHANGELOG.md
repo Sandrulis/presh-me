@@ -4,6 +4,15 @@
 
 - (none)
 
+## v0.2.6
+
+**Studio bloki, aptauja un priekšskatījuma UX**
+
+- Jauni bloki: Google karte (īsās saites + embed), Video (YouTube/Vimeo/TikTok), Prasmes, Atpakaļskaitīšana (ritināmi cipari), Aptauja (balsošana DB)
+- Aptaujas un prasmju stils: fons, robeža, krāsas kā linkiem; aptaujas izskata lauki
+- Studija: preview ritināšana ar atvērtu sidemodāli, spotlight tumšajā fonā; Maps embed palīdzteksts
+- Migrācijas `031`–`033` (publicēto lapu SELECT anon, VIP tier, `page_poll_votes`); Maps CSP `google.com`
+
 ## v0.2.5
 
 **Landing — profesiju demo un SEO lapas**
