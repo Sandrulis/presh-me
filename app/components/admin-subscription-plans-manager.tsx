@@ -8,6 +8,7 @@ import {
   IconTrash,
   ToggleSwitch,
 } from "@/app/components/admin-ui";
+import { AdminEarlyOfferCard } from "@/app/components/admin-early-offer-card";
 import { AdminPage } from "@/app/components/admin-page";
 import { FeedbackToasts, useNotices } from "@/app/components/feedback-toast";
 import { SideDrawer } from "@/app/components/side-drawer";
@@ -285,6 +286,12 @@ export function AdminSubscriptionPlansManager() {
             </div>
           </div>
         )}
+
+        <AdminEarlyOfferCard
+          languages={activeLanguages.map((language) => ({ code: language.code, name: language.name }))}
+          onError={(message) => notify(message, "error")}
+          onSaved={(message) => notify(message, "ok")}
+        />
 
         <SideDrawer
           open={drawerOpen}

@@ -3,11 +3,17 @@ import type {
   BookingBlock,
   FaqBlockItem,
   PollOption,
+  GalleryItem,
+  InstagramBlock,
+  ProductItem,
+  ServiceItem,
   SkillItem,
   PageBlock,
   PageContent,
   ResumeItem,
+  XBlock,
 } from "@/app/lib/types";
+import { xStatusUrl } from "@/app/lib/social-embeds";
 import { countdownIsConfigured } from "@/app/lib/countdown-block";
 import { googleMapsEmbedUrl, isGoogleMapsShortLink, mapsBlockUrlAccepted } from "@/app/lib/google-maps-embed";
 import { isValidLinkUrl } from "@/app/lib/urls";
@@ -24,9 +30,13 @@ export const BLOCK_TYPE_OPTIONS: {
   { id: "audio", label: "Audio", hint: "Spotify ieraksts vai playlists" },
   { id: "maps", label: "Google karte", hint: "Atrašanās vieta ar karti" },
   { id: "resume", label: "Resumē", hint: "Laika josla ar sasniegumiem" },
-  { id: "instagram", label: "Instagram", hint: "Bildžu režģis no ierakstu saitēm" },
+  { id: "instagram", label: "Instagram", hint: "Viens Instagram ieraksts" },
+  { id: "x", label: "X", hint: "Viens X ieraksts" },
   { id: "quote", label: "Citāts", hint: "Izcelts citāts" },
   { id: "skills", label: "Prasmes", hint: "Prasmju saraksts ar vērtējumu" },
+  { id: "services", label: "Pakalpojumi", hint: "Nosaukums, apraksts un cena" },
+  { id: "products", label: "Produkti", hint: "Nosaukums, apraksts, attēls un cena" },
+  { id: "gallery", label: "Galerija", hint: "Režģis, masonry vai karuselis" },
   { id: "countdown", label: "Atpakaļskaitīšana", hint: "Taimeris līdz datumam vai ilgumam" },
   { id: "poll", label: "Aptauja", hint: "Jautājums ar atbilžu variantiem" },
   { id: "faq", label: "FAQ", hint: "Jautājumi un atbildes" },
@@ -71,7 +81,9 @@ export function emptyBlock(type: BlockType): PageBlock {
         fontSize: 14,
       };
     case "instagram":
-      return { id, type: "instagram", username: "", columns: 3, count: 6, images: [] };
+      return { id, type: "instagram", mode: "post", username: "", postUrl: "", columns: 3, count: 6, images: [] };
+    case "x":
+      return { id, type: "x", mode: "post", source: "", count: 1 };
     case "quote":
       return { id, type: "quote", text: "", author: "", align: "center", fontSize: 18 };
     case "skills":
@@ -83,6 +95,35 @@ export function emptyBlock(type: BlockType): PageBlock {
         borderRadius: 8,
         starColor: "#f59e0b",
         fontSize: 14,
+      };
+    case "services":
+      return {
+        id,
+        type: "services",
+        heading: "",
+        items: [],
+        borderRadius: 8,
+        fontSize: 14,
+      };
+    case "products":
+      return {
+        id,
+        type: "products",
+        heading: "",
+        items: [],
+        borderRadius: 8,
+        fontSize: 14,
+      };
+    case "gallery":
+      return {
+        id,
+        type: "gallery",
+        heading: "",
+        layout: "grid",
+        items: [],
+        autoplay: false,
+        intervalSeconds: 4,
+        borderRadius: 12,
       };
     case "countdown":
       return {
@@ -148,6 +189,64 @@ export function emptySkillItem(): SkillItem {
   return { id: crypto.randomUUID(), name: "", rating: 0 };
 }
 
+export function emptyServiceItem(): ServiceItem {
+  return { id: crypto.randomUUID(), name: "", description: "", price: "" };
+}
+
+export function emptyProductItem(): ProductItem {
+  return { id: crypto.randomUUID(), name: "", description: "", imageUrl: null, price: "" };
+}
+
+export function emptyGalleryItem(): GalleryItem {
+  return { id: crypto.randomUUID(), imageUrl: null, alt: "" };
+}
+
+export function galleryIntervalSeconds(value: number | undefined): number {
+  const seconds = Math.round(value ?? 4);
+  if (!Number.isFinite(seconds)) return 4;
+  return Math.min(30, Math.max(2, seconds));
+}
+
+/** Skaitlisku cenu rāda ar atstarpi kā tūkstošu atdalītāju. Cits teksts paliek kā ievadīts. */
+export function formatServicePrice(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  const compact = trimmed.replace(/\s/g, "").replace(",", ".");
+  if (!/^\d+(\.\d+)?$/.test(compact)) return trimmed;
+  const [whole, frac] = compact.split(".");
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return frac ? `${grouped}.${frac}` : grouped;
+}
+
+export const PRICE_CURRENCIES = [
+  { code: "EUR", symbol: "€" },
+  { code: "USD", symbol: "$" },
+  { code: "GBP", symbol: "£" },
+  { code: "CHF", symbol: "CHF" },
+  { code: "PLN", symbol: "zł" },
+  { code: "SEK", symbol: "kr" },
+  { code: "NOK", symbol: "kr" },
+  { code: "DKK", symbol: "kr" },
+  { code: "CZK", symbol: "Kč" },
+  { code: "HUF", symbol: "Ft" },
+  { code: "RON", symbol: "lei" },
+  { code: "JPY", symbol: "¥" },
+  { code: "CNY", symbol: "¥" },
+  { code: "CAD", symbol: "CA$" },
+  { code: "AUD", symbol: "A$" },
+  { code: "TRY", symbol: "₺" },
+  { code: "UAH", symbol: "₴" },
+  { code: "INR", symbol: "₹" },
+] as const;
+
+export function formatItemPrice(price?: string, currency?: string): string {
+  const formatted = formatServicePrice(price ?? "");
+  if (!formatted) return "";
+  const symbol = PRICE_CURRENCIES.find((item) => item.code === currency)?.symbol;
+  if (!symbol) return formatted;
+  return `${symbol} ${formatted}`;
+}
+
 export function clampSkillRating(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(5, Math.round(value)));
@@ -176,11 +275,19 @@ export function blockIsComplete(block: PageBlock): boolean {
     case "resume":
       return block.items.some((item) => item.date.trim() && item.title.trim());
     case "instagram":
-      return block.images.filter(Boolean).length > 0;
+      return instagramBlockReady(block);
+    case "x":
+      return xBlockReady(block);
     case "quote":
       return Boolean(block.text.trim());
     case "skills":
       return block.items.some((item) => item.name.trim());
+    case "services":
+      return block.items.some((item) => item.name.trim());
+    case "products":
+      return block.items.some((item) => item.name.trim());
+    case "gallery":
+      return block.items.some((item) => Boolean(item.imageUrl?.trim()));
     case "countdown":
       return Boolean(block.title.trim() && countdownIsConfigured(block));
     case "poll":
@@ -212,7 +319,9 @@ export function blockDisplayTitle(block: PageBlock) {
     case "resume":
       return block.heading?.trim() || "Resumē";
     case "instagram":
-      return block.username.trim() ? `@${block.username.replace(/^@/, "")}` : "Instagram";
+      return block.postUrl?.trim() || "Instagram";
+    case "x":
+      return block.source.trim() || "X";
     case "quote": {
       const text = block.text.trim();
       if (!text) return "Citāts";
@@ -220,6 +329,12 @@ export function blockDisplayTitle(block: PageBlock) {
     }
     case "skills":
       return block.heading?.trim() || "Prasmes";
+    case "services":
+      return block.heading?.trim() || "Pakalpojumi";
+    case "products":
+      return block.heading?.trim() || "Produkti";
+    case "gallery":
+      return block.heading?.trim() || "Galerija";
     case "countdown":
       return block.title.trim() || "Atpakaļskaitīšana";
     case "poll": {
@@ -253,11 +368,19 @@ export function blockDisplayHint(block: PageBlock) {
     case "resume":
       return `${block.items.length} ieraksti`;
     case "instagram":
-      return `${block.images.length}/${block.count} bildes · ${block.columns} kolonnas`;
+      return block.postUrl?.trim() || "Ieraksts";
+    case "x":
+      return block.source.trim() || "Ieraksts";
     case "quote":
       return block.author?.trim() || "Citāts";
     case "skills":
       return `${block.items.length} prasmes`;
+    case "services":
+      return `${block.items.length} pakalpojumi`;
+    case "products":
+      return `${block.items.length} produkti`;
+    case "gallery":
+      return `${block.items.filter((item) => item.imageUrl?.trim()).length} attēli`;
     case "countdown":
       return block.endMode === "datetime"
         ? block.endsAt?.trim() || "Datums"
@@ -410,6 +533,14 @@ export function instagramPostMediaUrl(raw: string, size: "t" | "m" | "l" = "l"):
   return `https://www.instagram.com/p/${encodeURIComponent(code)}/media/?size=${size}`;
 }
 
+function instagramBlockReady(block: InstagramBlock) {
+  return Boolean(instagramPostShortcode(block.postUrl ?? ""));
+}
+
+function xBlockReady(block: XBlock) {
+  return Boolean(xStatusUrl(block.source));
+}
+
 export function instagramPostPageUrl(raw: string): string | null {
   const code = instagramPostShortcode(raw);
   if (!code) return null;
@@ -437,9 +568,14 @@ export async function readImageFile(
   file: File | undefined,
   onUrl: (url: string) => void,
   onError: (message: string) => void,
+  onProgress?: (percent: number) => void,
 ) {
   const { processAndUploadImage } = await import("@/app/lib/storage/process-upload");
-  const result = await processAndUploadImage(file, { mode: "fit", maxEdge: 1400, folder: "blocks" });
+  const result = await processAndUploadImage(
+    file,
+    { mode: "fit", maxEdge: 1400, folder: "blocks" },
+    onProgress,
+  );
   if (!result.ok) {
     onError(result.error);
     return;
@@ -456,8 +592,12 @@ const PAGE_BLOCK_TYPES = new Set<BlockType>([
   "maps",
   "resume",
   "instagram",
+  "x",
   "quote",
   "skills",
+  "services",
+  "products",
+  "gallery",
   "countdown",
   "poll",
   "faq",

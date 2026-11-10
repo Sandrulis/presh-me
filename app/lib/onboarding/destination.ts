@@ -26,6 +26,12 @@ export function onboardingResumeStep(onboarding: Onboarding): number {
   return onboarding.step >= 6 ? 6 : Math.max(1, Math.min(5, onboarding.step));
 }
 
+/** Wizard was left after the first step and has not been finished. */
+export function pageDesignInProgress(onboarding: Onboarding | null | undefined): boolean {
+  if (!onboarding || onboarding.finished) return false;
+  return onboarding.step > 1;
+}
+
 export function onboardingNeedsWizard(content: unknown, hasPage: boolean): boolean {
   if (!hasPage) return true;
   const onboarding = readOnboarding(content);

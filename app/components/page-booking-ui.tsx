@@ -13,6 +13,7 @@ import {
   todayIsoDateLocal,
 } from "@/app/lib/booking/schedule";
 import { bookingSlotKey, parseBookingSlotKey } from "@/app/lib/booking/reservation-slot-key";
+import { surfacePaint } from "@/app/lib/color/surface";
 import type { BookingBlock } from "@/app/lib/types";
 import type { Theme } from "@/app/lib/themes";
 
@@ -34,9 +35,7 @@ export function BookingBlockFace({
   const [open, setOpen] = useState(false);
   const { t } = useTranslations();
 
-  const customColor = block.buttonColor?.trim();
-  const background = customColor || theme.button;
-  const color = customColor ? contrastInk(customColor) : theme.buttonText;
+  const paint = surfacePaint(block.buttonColor, theme.button, theme.buttonText, theme.text);
   const radius = Math.max(0, block.buttonBorderRadius ?? BOOKING_DEFAULT_RADIUS);
   const label = block.buttonText?.trim() || t("page.booking.open", "Rezervēt");
 
@@ -46,10 +45,10 @@ export function BookingBlockFace({
         type="button"
         className="block w-full px-4 py-3.5 text-center text-sm font-semibold no-underline"
         style={{
-          background,
-          color,
+          background: paint.background,
+          color: paint.color,
           borderRadius: radius,
-          border: customColor ? "1px solid transparent" : `1px solid ${theme.buttonBorder ?? "transparent"}`,
+          border: paint.solid ? "1px solid transparent" : `1px solid ${theme.buttonBorder ?? "transparent"}`,
         }}
         aria-label={label}
         onClick={() => setOpen(true)}
@@ -66,16 +65,6 @@ export function BookingBlockFace({
       />
     </>
   );
-}
-
-function contrastInk(hex: string): string {
-  const raw = hex.replace("#", "");
-  if (raw.length !== 6) return "#ffffff";
-  const r = parseInt(raw.slice(0, 2), 16);
-  const g = parseInt(raw.slice(2, 4), 16);
-  const b = parseInt(raw.slice(4, 6), 16);
-  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-  return yiq >= 128 ? "#111111" : "#ffffff";
 }
 
 function PageBookingDrawer({

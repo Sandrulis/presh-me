@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { surfacePaint } from "@/app/lib/color/surface";
 import {
-  contrastInk,
   countdownEndTimestamp,
   countdownRemaining,
   type CountdownRemaining,
@@ -37,8 +37,7 @@ export function CountdownBlockFace({
     return () => window.clearInterval(id);
   }, [endMs, block.endsAt, block.startsAt, block.durationHours, block.durationMinutes, block.endMode]);
 
-  const background = block.color || theme.button;
-  const color = block.color ? contrastInk(block.color) : theme.buttonText;
+  const paint = surfacePaint(block.color, theme.button, theme.buttonText, theme.text);
   const radius = Math.max(0, block.borderRadius ?? 8);
   const title = block.title.trim() || t("studio.block_type.countdown.label", "Atpakaļskaitīšana");
   const description = block.description?.trim();
@@ -49,10 +48,10 @@ export function CountdownBlockFace({
     <div
       className="w-full px-4 py-4 text-center"
       style={{
-        background,
-        color,
+        background: paint.background,
+        color: paint.color,
         borderRadius: radius,
-        border: block.color ? "1px solid transparent" : `1px solid ${theme.buttonBorder ?? "transparent"}`,
+        border: paint.solid ? "1px solid transparent" : `1px solid ${theme.buttonBorder ?? "transparent"}`,
       }}
     >
       <p className="text-base font-semibold">{title}</p>
@@ -65,25 +64,25 @@ export function CountdownBlockFace({
             value={remaining.days}
             minDigits={2}
             label={t("studio.blocks.countdown.unit.days", "Dienas")}
-            color={color}
+            color={paint.color}
           />
           <CountdownUnit
             value={remaining.hours}
             minDigits={2}
             label={t("studio.blocks.countdown.unit.hours", "Stundas")}
-            color={color}
+            color={paint.color}
           />
           <CountdownUnit
             value={remaining.minutes}
             minDigits={2}
             label={t("studio.blocks.countdown.unit.minutes", "Minūtes")}
-            color={color}
+            color={paint.color}
           />
           <CountdownUnit
             value={remaining.seconds}
             minDigits={2}
             label={t("studio.blocks.countdown.unit.seconds", "Sekundes")}
-            color={color}
+            color={paint.color}
           />
         </div>
       )}
@@ -112,25 +111,26 @@ function CountdownUnit({
         className="flex justify-center text-xl font-bold tabular-nums"
         style={{ color }}
         aria-label={display}
+        suppressHydrationWarning
       >
-        <RollingDigits value={display} color={color} />
+        <RollingDigits value={display} />
       </p>
       <p className="mt-0.5 truncate text-[0.65rem] uppercase tracking-wide opacity-70">{label}</p>
     </div>
   );
 }
 
-function RollingDigits({ value, color }: { value: string; color: string }) {
+function RollingDigits({ value }: { value: string }) {
   return (
     <span className="inline-flex items-baseline">
       {value.split("").map((ch, index) => (
-        <RollingDigit key={`${index}-${value.length}`} digit={Number(ch)} color={color} />
+        <RollingDigit key={`${index}-${value.length}`} digit={Number(ch)} />
       ))}
     </span>
   );
 }
 
-function RollingDigit({ digit, color }: { digit: number; color: string }) {
+function RollingDigit({ digit }: { digit: number }) {
   const d = Number.isFinite(digit) ? Math.max(0, Math.min(9, digit)) : 0;
   return (
     <span
@@ -139,12 +139,9 @@ function RollingDigit({ digit, color }: { digit: number; color: string }) {
       aria-hidden="true"
     >
       <span
-        className="countdown-digit-roller block motion-reduce:transition-none"
-        style={{
-          color,
-          transform: `translateY(-${d * DIGIT_ROW_EM}em)`,
-          transition: "transform 0.45s cubic-bezier(0.33, 1, 0.45, 1)",
-        }}
+        className="countdown-digit-roller block"
+        style={{ transform: `translateY(-${d * DIGIT_ROW_EM}em)` }}
+        suppressHydrationWarning
       >
         {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
           <span

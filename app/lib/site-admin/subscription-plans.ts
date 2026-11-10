@@ -47,9 +47,9 @@ export async function listSubscriptionPlans(): Promise<SubscriptionPlan[]> {
     const planId = row.plan_id as string;
     const code = row.language_code as string;
     const name = (row.name as string) ?? "";
-    const bucket = namesByPlan.get(planId) ?? {};
-    bucket[code] = name;
-    namesByPlan.set(planId, bucket);
+    const names = namesByPlan.get(planId) ?? {};
+    names[code] = name;
+    namesByPlan.set(planId, names);
   }
 
   const modulesByPlan = new Map<string, string[]>();

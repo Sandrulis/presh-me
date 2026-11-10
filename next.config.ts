@@ -26,6 +26,8 @@ function buildContentSecurityPolicy(): string {
     "https://challenges.cloudflare.com",
     "https://*.umami.is",
     "https://cloud.umami.is",
+    "https://platform.x.com",
+    "https://platform.twitter.com",
   ].join(" ");
 
   return [
@@ -39,8 +41,8 @@ function buildContentSecurityPolicy(): string {
     "font-src 'self' data:",
     "style-src 'self' 'unsafe-inline'",
     `script-src ${scriptSrc}`,
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://*.umami.is https://cloud.umami.is",
-    "frame-src 'self' https://challenges.cloudflare.com https://open.spotify.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://www.tiktok.com https://www.google.com https://maps.google.com",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://*.umami.is https://cloud.umami.is https://platform.x.com https://platform.twitter.com https://syndication.twitter.com https://cdn.syndication.twimg.com",
+    "frame-src 'self' https://challenges.cloudflare.com https://open.spotify.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://www.tiktok.com https://www.google.com https://maps.google.com https://www.instagram.com https://instagram.com https://platform.x.com https://platform.twitter.com https://syndication.twitter.com",
     ...(isProduction ? ["upgrade-insecure-requests"] : []),
   ].join("; ");
 }

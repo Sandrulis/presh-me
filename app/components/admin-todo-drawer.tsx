@@ -363,11 +363,11 @@ function TodoRow({
   onKeyMove: (dir: "up" | "down") => void;
 }) {
   const { t } = useTranslations();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const editingRef = useRef(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item.title);
-  const titleClass = `text-sm leading-5 ${archive ? "text-[var(--muted)] line-through" : "text-[var(--ink)]"}`;
+  const titleClass = `whitespace-pre-wrap break-words text-sm leading-5 ${archive ? "text-[var(--muted)] line-through" : "text-[var(--ink)]"}`;
 
   useEffect(() => {
     if (!editing) {
@@ -376,9 +376,11 @@ function TodoRow({
     }
     const input = inputRef.current;
     if (!input) return;
-    input.focus();
+    fitTodoTextarea(input);
+    input.focus({ preventScroll: true });
     const length = input.value.length;
     input.setSelectionRange(length, length);
+    input.scrollIntoView({ block: "nearest" });
   }, [editing, item.title]);
 
   function startEdit() {
@@ -405,7 +407,7 @@ function TodoRow({
     onRename(next);
   }
 
-  function onTitleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+  function onTitleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter") {
       event.preventDefault();
       commitEdit();
@@ -472,16 +474,20 @@ function TodoRow({
       )}
       <div className={`min-w-0 flex-1 ${editing ? "" : "cursor-text"}`} onClick={editing ? undefined : startEdit}>
         {editing ? (
-          <input
+          <textarea
             ref={inputRef}
             value={draft}
+            rows={1}
             maxLength={ADMIN_TODO_TITLE_MAX}
             aria-label={t("actions.edit", "Labot")}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => {
+              setDraft(event.target.value);
+              fitTodoTextarea(event.currentTarget);
+            }}
             onKeyDown={onTitleKeyDown}
             onBlur={commitEdit}
             onPointerDown={(event) => event.stopPropagation()}
-            className={`h-5 w-full bg-transparent outline-none ${titleClass}`}
+            className={`block w-full resize-none overflow-hidden bg-transparent p-0 outline-none ${titleClass}`}
           />
         ) : (
           <button
@@ -525,6 +531,11 @@ function TodoRow({
       )}
     </li>
   );
+}
+
+function fitTodoTextarea(element: HTMLTextAreaElement) {
+  element.style.height = "0px";
+  element.style.height = `${element.scrollHeight}px`;
 }
 
 function GripIcon() {

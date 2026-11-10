@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { DropLine } from "@/app/components/drop-line";
 import { FieldFrame } from "@/app/components/field-frame";
@@ -38,10 +38,13 @@ export function SocialsEditor({
   function addPlatform(platform: SocialPlatform) {
     const id = crypto.randomUUID();
     update({
-      socials: [...page.socials, { id, platform, url: "", label: socialMeta(platform).label }],
+      socials: [
+        ...page.socials,
+        { id, platform, url: "", label: platform === "break" ? "" : socialMeta(platform).label },
+      ],
     });
     setPickerOpen(false);
-    setEditId(id);
+    if (platform !== "break") setEditId(id);
   }
 
   function patch(id: string, patch: Partial<SocialLink>) {
@@ -62,6 +65,34 @@ export function SocialsEditor({
           {t("actions.add", "Pievienot")}
         </button>
       </div>
+
+      <section className="mt-4">
+        <h3 className="font-semibold">{t("onboarding.socials.title", "Sociālās ikonas")}</h3>
+        <RangeField
+          label={t("onboarding.icon_size", "Ikonu izmērs")}
+          min={24}
+          max={72}
+          value={page.socialIconSize ?? 40}
+          suffix=" px"
+          onChange={(socialIconSize) => update({ socialIconSize })}
+        />
+        <RangeField
+          label={t("onboarding.avatar_radius", "Noapaļojums")}
+          min={0}
+          max={50}
+          value={page.socialIconRadius ?? 50}
+          suffix=" %"
+          onChange={(socialIconRadius) => update({ socialIconRadius })}
+        />
+        <RangeField
+          label={t("onboarding.icon_padding", "Ikonas atstarpe")}
+          min={0}
+          max={16}
+          value={page.socialIconPadding ?? 9}
+          suffix=" px"
+          onChange={(socialIconPadding) => update({ socialIconPadding })}
+        />
+      </section>
 
       {page.socials.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--muted)]">{t("studio.socials.empty", "Pievieno sociālos tīklus. Secību maini ar vilkšanu.")}</p>
@@ -127,19 +158,29 @@ export function SocialsEditor({
                   <DragHandle />
                 </button>
 
-                <div className="relative min-w-0 flex-1">
-                  <input
-                    className="auth-field h-10 !pr-10"
-                    value={social.url}
-                    placeholder={meta.placeholder}
-                    onChange={(event) => patch(social.id, { url: event.target.value })}
-                    aria-label={socialDisplayName(social)}
-                  />
-                  <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-[var(--ink)]">
-                    <SocialIcon platform={social.platform} size={16} />
-                  </span>
-                </div>
+                {social.platform === "break" ? (
+                  <p className="flex min-h-10 min-w-0 flex-1 flex-col justify-center px-1">
+                    <span className="text-sm text-[var(--ink)]">{t("studio.socials.break", "Jauna rinda")}</span>
+                    <span className="text-xs text-[var(--muted)]">
+                      {t("studio.socials.break_hint", "Nākamās ikonas sākas jaunā rindā.")}
+                    </span>
+                  </p>
+                ) : (
+                  <div className="relative min-w-0 flex-1">
+                    <input
+                      className="auth-field h-10 !pr-10"
+                      value={social.url}
+                      placeholder={meta.placeholder}
+                      onChange={(event) => patch(social.id, { url: event.target.value })}
+                      aria-label={socialDisplayName(social)}
+                    />
+                    <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-[var(--ink)]">
+                      <SocialIcon platform={social.platform} size={16} />
+                    </span>
+                  </div>
+                )}
 
+                {social.platform === "break" ? null : (
                 <button
                   type="button"
                   aria-label={t("actions.edit", "Labot")}
@@ -149,6 +190,7 @@ export function SocialsEditor({
                 >
                   <IconEdit />
                 </button>
+                )}
                 <button
                   type="button"
                   aria-label={t("actions.delete", "Dzēst")}
@@ -192,7 +234,7 @@ function SocialPickerModal({
   onCloseRef.current = onClose;
 
   const items = useMemo(() => {
-    const popular = SOCIAL_CATALOG.filter((item) => item.popular);
+    const popular = SOCIAL_CATALOG.filter((item) => item.popular && item.id !== "break");
     const q = query.trim().toLowerCase();
     if (!q) return popular;
     return popular.filter((item) => item.label.toLowerCase().includes(q) || item.id.includes(q));
@@ -277,6 +319,16 @@ function SocialPickerModal({
           </label>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-3">
+          <button
+            type="button"
+            onClick={() => onPick("break")}
+            className="mb-2 flex w-full flex-col items-start rounded-xl border border-[var(--line)] bg-white px-3 py-2.5 text-left hover:border-[var(--accent)] hover:bg-[var(--paper)]"
+          >
+            <span className="text-sm font-medium">{t("studio.socials.break", "Jauna rinda")}</span>
+            <span className="text-xs text-[var(--muted)]">
+              {t("studio.socials.break_hint", "Nākamās ikonas sākas jaunā rindā.")}
+            </span>
+          </button>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {items.map((item) => (
               <button
@@ -315,6 +367,11 @@ function SocialEditModal({
   onChange: (patch: Partial<SocialLink>) => void;
 }) {
   const { t } = useTranslations();
+  const [closing, setClosing] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const backdropRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const meta = socialMeta(social.platform);
   const urlLabel =
     social.platform === "email"
@@ -323,82 +380,175 @@ function SocialEditModal({
         ? t("common.phone", "Telefons")
         : t("common.link", "Saite");
 
+  function requestClose() {
+    if (!closing) setClosing(true);
+  }
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    const backdrop = backdropRef.current;
+    if (!panel) return;
+
+    const panelAnim = panel.animate(
+      closing
+        ? [{ transform: "translateX(0)" }, { transform: "translateX(-100%)" }]
+        : [{ transform: "translateX(-100%)" }, { transform: "translateX(0)" }],
+      {
+        duration: closing ? 240 : 280,
+        easing: closing ? "ease-in" : "cubic-bezier(0.22, 1, 0.36, 1)",
+        fill: "forwards",
+      },
+    );
+    const backdropAnim = backdrop?.animate(
+      closing ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 0 }, { opacity: 1 }],
+      { duration: closing ? 200 : 240, easing: "ease", fill: "forwards" },
+    );
+
+    if (closing) {
+      panelAnim.onfinish = () => onCloseRef.current();
+    }
+
+    return () => {
+      panelAnim.cancel();
+      backdropAnim?.cancel();
+    };
+  }, [closing]);
+
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
+      if (event.key !== "Escape" || closing) return;
+      event.preventDefault();
+      requestClose();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [closing]);
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
-      <button type="button" aria-label={t("actions.close", "Aizvērt")} className="absolute inset-0 bg-[var(--ink)]/35 backdrop-blur-[2px]" onClick={onClose} />
+    <div className="option-drawer-shell option-drawer-shell--studio z-[80]">
+      <button
+        ref={backdropRef}
+        type="button"
+        aria-label={t("actions.close", "Aizvērt")}
+        className="option-drawer-backdrop bg-[var(--ink)]/35 backdrop-blur-[2px]"
+        style={{ opacity: 0 }}
+        onClick={requestClose}
+      />
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={t("studio.socials.edit_dialog_aria", "Labot sociālo tīklu")}
-        className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-[var(--line)] bg-white p-4 shadow-2xl"
+        className="option-drawer z-[81] border-r border-[var(--line)]"
+        style={{ transform: "translateX(-100%)" }}
       >
-        <div className="mb-4 flex items-center gap-3">
-          <span className="grid size-11 place-items-center rounded-xl bg-[var(--paper)] text-[var(--ink)]">
-            <SocialIcon platform={social.platform} size={20} />
-          </span>
+        <div className="flex items-center gap-3 border-b border-[var(--line)] p-4">
+          {social.platform === "break" ? null : (
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--paper)] text-[var(--ink)]">
+              <SocialIcon platform={social.platform} size={20} />
+            </span>
+          )}
           <div className="min-w-0 flex-1">
             <p className="font-semibold">{socialDisplayName(social)}</p>
             <p className="text-xs text-[var(--muted)]">{meta.label}</p>
           </div>
-          <button type="button" className="btn-quiet" onClick={onClose} aria-label={t("actions.close", "Aizvērt")}>
+          <button type="button" className="btn-quiet" onClick={requestClose} aria-label={t("actions.close", "Aizvērt")} disabled={closing}>
             ×
           </button>
         </div>
 
-        <FieldFrame label={t("common.title", "Nosaukums")}>
-          <input
-            className="auth-field"
-            value={social.label ?? meta.label}
-            maxLength={40}
-            onChange={(event) => onChange({ label: event.target.value })}
-          />
-        </FieldFrame>
-        <FieldFrame label={t("common.platform", "Platforma")}>
-          <select
-            className="auth-field"
-            value={social.platform}
-            onChange={(event) => {
-              const platform = event.target.value as SocialPlatform;
-              const nextMeta = socialMeta(platform);
-              onChange({
-                platform,
-                label: social.label?.trim() && social.label !== meta.label ? social.label : nextMeta.label,
-              });
-            }}
-          >
-            {SOCIAL_CATALOG.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </FieldFrame>
-        <FieldFrame label={urlLabel}>
-          <input
-            className="auth-field"
-            value={social.url}
-            placeholder={meta.placeholder}
-            onChange={(event) => onChange({ url: event.target.value })}
-          />
-        </FieldFrame>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          <FieldFrame label={t("common.title", "Nosaukums")}>
+            <input
+              className="auth-field"
+              value={social.label ?? meta.label}
+              maxLength={40}
+              onChange={(event) => onChange({ label: event.target.value })}
+            />
+          </FieldFrame>
+          <FieldFrame label={t("common.platform", "Platforma")}>
+            <select
+              className="auth-field"
+              value={social.platform}
+              onChange={(event) => {
+                const platform = event.target.value as SocialPlatform;
+                const nextMeta = socialMeta(platform);
+                onChange({
+                  platform,
+                  label: social.label?.trim() && social.label !== meta.label ? social.label : nextMeta.label,
+                });
+              }}
+            >
+              {SOCIAL_CATALOG.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.id === "break" ? t("studio.socials.break", "Jauna rinda") : item.label}
+                </option>
+              ))}
+            </select>
+          </FieldFrame>
+          {social.platform === "break" ? (
+            <p className="text-sm text-[var(--muted)]">
+              {t("studio.socials.break_hint", "Nākamās ikonas sākas jaunā rindā.")}
+            </p>
+          ) : (
+            <FieldFrame label={urlLabel}>
+              <input
+                className="auth-field"
+                value={social.url}
+                placeholder={meta.placeholder}
+                onChange={(event) => onChange({ url: event.target.value })}
+              />
+            </FieldFrame>
+          )}
+        </div>
 
-        <button type="button" className="btn-ink mt-4 w-full" onClick={onClose}>
-          {t("actions.save", "Saglabāt")}
-        </button>
+        <div className="border-t border-[var(--line)] p-3">
+          <button type="button" className="btn-ink w-full" onClick={requestClose} disabled={closing}>
+            {t("actions.save", "Saglabāt")}
+          </button>
+        </div>
       </div>
     </div>,
     document.body,
+  );
+}
+
+function RangeField({
+  label,
+  min,
+  max,
+  value,
+  suffix,
+  onChange,
+}: {
+  label: string;
+  min: number;
+  max: number;
+  value: number;
+  suffix: string;
+  onChange: (value: number) => void;
+}) {
+  const fill = max === min ? 0 : ((value - min) / (max - min)) * 100;
+  return (
+    <label className="mt-3 block">
+      <span className="flex items-center justify-between text-sm">
+        <span className="font-medium">{label}</span>
+        <span className="rounded-md bg-[#eef1f6] px-2 py-0.5 text-[var(--muted)] tabular-nums">
+          {value}
+          {suffix}
+        </span>
+      </span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        value={value}
+        aria-label={label}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="mt-2 w-full"
+        style={{ "--range-fill": `${fill}%` } as CSSProperties}
+      />
+    </label>
   );
 }
 

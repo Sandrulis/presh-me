@@ -74,6 +74,8 @@ const CONTENT_KEYS = [
   "bioFontId",
   "bioFontSize",
   "socialIconSize",
+  "socialIconRadius",
+  "socialIconPadding",
   "themeId",
   "socials",
   "blocks",

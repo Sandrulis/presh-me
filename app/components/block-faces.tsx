@@ -2,18 +2,23 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import { GalleryBlockFace } from "@/app/components/gallery-block-face";
+import { XEmbed } from "@/app/components/x-embed";
 import { PageMedia } from "@/app/components/page-media";
 import { fontFamilyOf } from "@/app/lib/font-catalog";
 import {
-  instagramPostPageUrl,
-  instagramProfileUrl,
+  formatItemPrice,
   spotifyEmbedUrl,
   videoEmbedUrl,
 } from "@/app/lib/blocks";
+import { instagramPostEmbedUrl } from "@/app/lib/social-embeds";
+import { contrastInk, hasSolidColor, isTransparentColor, surfacePaint } from "@/app/lib/color/surface";
 import { googleMapsEmbedUrl } from "@/app/lib/google-maps-embed";
 import type {
   AudioBlock,
   FaqBlock,
+  ProductsBlock,
+  ServicesBlock,
   SkillsBlock,
   ImageBlock,
   InstagramBlock,
@@ -87,11 +92,19 @@ export function BlockFace({
     case "resume":
       return <ResumeFace block={block} theme={theme} pageFontFamily={pageFontFamily} />;
     case "instagram":
-      return <InstagramFace block={block} mode={mode} theme={theme} />;
+      return <InstagramFace block={block} />;
+    case "x":
+      return <XEmbed source={block.source} />;
     case "quote":
       return <QuoteFace block={block} theme={theme} pageFontFamily={pageFontFamily} />;
     case "skills":
       return <SkillsFace block={block} theme={theme} pageFontFamily={pageFontFamily} />;
+    case "services":
+      return <ServicesFace block={block} theme={theme} pageFontFamily={pageFontFamily} />;
+    case "products":
+      return <ProductsFace block={block} theme={theme} pageFontFamily={pageFontFamily} />;
+    case "gallery":
+      return <GalleryBlockFace block={block} theme={theme} />;
     case "countdown":
       return <CountdownBlockFace block={block} theme={theme} />;
     case "poll":
@@ -118,8 +131,7 @@ function LinkFace({
 }) {
   const href = safeHref(block.url);
   const title = block.title.trim() || "Jauna saite";
-  const background = block.color || theme.button;
-  const color = block.color ? contrastInk(block.color) : theme.buttonText;
+  const paint = surfacePaint(block.color, theme.button, theme.buttonText, theme.text);
   const radius = Math.max(0, block.borderRadius ?? 8);
   const inner = (
     <>
@@ -129,10 +141,10 @@ function LinkFace({
   );
   const className = "block w-full px-4 py-3.5 text-center no-underline";
   const style = {
-    background,
-    color,
+    background: paint.background,
+    color: paint.color,
     borderRadius: radius,
-    border: block.color ? "1px solid transparent" : `1px solid ${theme.buttonBorder ?? "transparent"}`,
+    border: paint.solid ? "1px solid transparent" : `1px solid ${theme.buttonBorder ?? "transparent"}`,
   };
   if (href && mode === "live") {
     return (
@@ -146,15 +158,6 @@ function LinkFace({
       {inner}
     </div>
   );
-}
-
-function contrastInk(hex: string) {
-  const value = hex.replace("#", "");
-  if (!/^[0-9a-fA-F]{6}$/.test(value)) return "#ffffff";
-  const red = Number.parseInt(value.slice(0, 2), 16);
-  const green = Number.parseInt(value.slice(2, 4), 16);
-  const blue = Number.parseInt(value.slice(4, 6), 16);
-  return (red * 299 + green * 587 + blue * 114) / 1000 > 150 ? "#111111" : "#ffffff";
 }
 
 function TextFace({
@@ -447,60 +450,17 @@ function ResumeFace({
   );
 }
 
-function InstagramFace({
-  block,
-  mode,
-  theme,
-}: {
-  block: InstagramBlock;
-  mode: "live" | "preview";
-  theme: Theme;
-}) {
-  const handle = block.username.trim().replace(/^@/, "");
-  const profileHref = handle ? instagramProfileUrl(handle) : null;
-  const count = Math.min(12, Math.max(1, block.count || 6));
-  const cols = block.columns === 2 || block.columns === 4 ? block.columns : 3;
-  const pool = block.images.filter(Boolean).slice(0, count);
-  if (pool.length === 0) return null;
-
+function InstagramFace({ block }: { block: InstagramBlock }) {
+  const src = instagramPostEmbedUrl(block.postUrl ?? "");
+  if (!src) return null;
   return (
-    <div className="w-full">
-      {handle ? (
-        <div className="mb-2 flex items-center justify-between gap-2 px-1">
-          <span className="text-sm font-semibold" style={{ color: theme.text }}>
-            @{handle}
-          </span>
-          {mode === "live" && profileHref ? (
-            <a href={profileHref} className="text-xs no-underline" style={{ color: theme.muted }} target="_blank" rel="noreferrer">
-              Instagram
-            </a>
-          ) : (
-            <span className="text-xs" style={{ color: theme.muted }}>
-              Instagram
-            </span>
-          )}
-        </div>
-      ) : null}
-      <ul className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
-        {pool.map((src, index) => {
-          const postHref = instagramPostPageUrl(src);
-          const img = (
-            <PageMedia src={src} className="h-full w-full object-cover" sizes="120px" />
-          );
-          return (
-            <li key={`${block.id}-${index}`} className="aspect-square overflow-hidden rounded-lg" style={{ background: theme.button }}>
-              {postHref && mode === "live" ? (
-                <a href={postHref} className="block h-full w-full" target="_blank" rel="noreferrer">
-                  {img}
-                </a>
-              ) : (
-                img
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+    <iframe
+      src={src}
+      title="Instagram"
+      className="w-full overflow-hidden rounded-xl"
+      style={{ height: 540, border: 0 }}
+      loading="lazy"
+    />
   );
 }
 
@@ -547,16 +507,15 @@ function SkillsFace({
   const starColor = block.starColor ?? "#f59e0b";
   const fontSize = block.fontSize ?? 14;
   const fontFamily = fontFamilyOf(block.fontId) || pageFontFamily;
-  const background = block.color || theme.button;
-  const ink = block.color ? contrastInk(block.color) : theme.buttonText;
+  const paint = surfacePaint(block.color, theme.button, theme.buttonText, theme.text);
   const cardStyle = {
     borderRadius: radius,
-    background,
-    color: ink,
-    border: block.color ? "1px solid transparent" : `1px solid ${theme.buttonBorder ?? "transparent"}`,
+    background: paint.background,
+    color: paint.color,
+    border: paint.solid ? "1px solid transparent" : `1px solid ${theme.buttonBorder ?? "transparent"}`,
   };
-  const rowDivider = `${ink}22`;
-  const starMuted = block.color ? `${ink}55` : theme.muted;
+  const rowDivider = `${paint.color}22`;
+  const starMuted = paint.solid ? `${paint.color}55` : theme.muted;
   return (
     <div className="w-full text-left" style={{ fontFamily }}>
       {block.heading?.trim() ? (
@@ -577,6 +536,135 @@ function SkillsFace({
                 {item.name.trim()}
               </span>
               <SkillStars rating={rating} color={starColor} emptyColor={starMuted} />
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function ServicesFace({
+  block,
+  theme,
+  pageFontFamily,
+}: {
+  block: ServicesBlock;
+  theme: Theme;
+  pageFontFamily?: string;
+}) {
+  const items = block.items.filter((item) => item.name.trim());
+  if (items.length === 0) return null;
+  const radius = Math.max(0, block.borderRadius ?? 8);
+  const fontSize = block.fontSize ?? 14;
+  const fontFamily = fontFamilyOf(block.fontId) || pageFontFamily;
+  const paint = surfacePaint(block.color, theme.button, theme.buttonText, theme.text);
+  const cardStyle = {
+    borderRadius: radius,
+    background: paint.background,
+    color: paint.color,
+    border: paint.solid ? "1px solid transparent" : `1px solid ${theme.buttonBorder ?? "transparent"}`,
+  };
+  const rowDivider = `${paint.color}22`;
+  return (
+    <div className="w-full text-left" style={{ fontFamily }}>
+      {block.heading?.trim() ? (
+        <h3 className="mb-3 text-center font-bold" style={{ color: theme.text, fontSize: fontSize + 2 }}>
+          {block.heading.trim()}
+        </h3>
+      ) : null}
+      <ul className="m-0 list-none overflow-hidden p-0" style={cardStyle}>
+        {items.map((item, index) => {
+          const description = item.description?.trim() ?? "";
+          const price = formatItemPrice(item.price, item.currency);
+          return (
+            <li
+              key={item.id}
+              className="flex items-start justify-between gap-3 px-3 py-2.5"
+              style={index < items.length - 1 ? { borderBottom: `1px solid ${rowDivider}` } : undefined}
+            >
+              <span className="min-w-0">
+                <span className="block font-semibold" style={{ fontSize }}>
+                  {item.name.trim()}
+                </span>
+                {description ? (
+                  <span className="mt-0.5 block text-xs leading-relaxed opacity-70">{description}</span>
+                ) : null}
+              </span>
+              {price ? (
+                <span className="shrink-0 font-semibold tabular-nums" style={{ fontSize }}>
+                  {price}
+                </span>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function ProductsFace({
+  block,
+  theme,
+  pageFontFamily,
+}: {
+  block: ProductsBlock;
+  theme: Theme;
+  pageFontFamily?: string;
+}) {
+  const items = block.items.filter((item) => item.name.trim());
+  if (items.length === 0) return null;
+  const radius = Math.max(0, block.borderRadius ?? 8);
+  const fontSize = block.fontSize ?? 14;
+  const fontFamily = fontFamilyOf(block.fontId) || pageFontFamily;
+  const paint = surfacePaint(block.color, theme.button, theme.buttonText, theme.text);
+  const cardStyle = {
+    borderRadius: radius,
+    background: paint.background,
+    color: paint.color,
+    border: paint.solid ? "1px solid transparent" : `1px solid ${theme.buttonBorder ?? "transparent"}`,
+  };
+  const rowDivider = `${paint.color}22`;
+  return (
+    <div className="w-full text-left" style={{ fontFamily }}>
+      {block.heading?.trim() ? (
+        <h3 className="mb-3 text-center font-bold" style={{ color: theme.text, fontSize: fontSize + 2 }}>
+          {block.heading.trim()}
+        </h3>
+      ) : null}
+      <ul className="m-0 list-none overflow-hidden p-0" style={cardStyle}>
+        {items.map((item, index) => {
+          const description = item.description?.trim() ?? "";
+          const price = formatItemPrice(item.price, item.currency);
+          const image = item.imageUrl?.trim() ?? "";
+          return (
+            <li
+              key={item.id}
+              className="flex items-start gap-3 px-3 py-2.5"
+              style={index < items.length - 1 ? { borderBottom: `1px solid ${rowDivider}` } : undefined}
+            >
+              {image ? (
+                <PageMedia
+                  src={image}
+                  alt={item.name.trim()}
+                  className="size-14 shrink-0 rounded-lg object-cover"
+                  sizes="56px"
+                />
+              ) : null}
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold" style={{ fontSize }}>
+                  {item.name.trim()}
+                </span>
+                {description ? (
+                  <span className="mt-0.5 block text-xs leading-relaxed opacity-70">{description}</span>
+                ) : null}
+              </span>
+              {price ? (
+                <span className="shrink-0 font-semibold tabular-nums" style={{ fontSize }}>
+                  {price}
+                </span>
+              ) : null}
             </li>
           );
         })}
@@ -617,19 +705,24 @@ function FaqFace({ block, theme }: { block: FaqBlock; theme: Theme }) {
   const items = block.items.filter((item) => item.question.trim());
   if (items.length === 0) return null;
   const radius = Math.max(0, block.borderRadius ?? 8);
-  const cardBg = block.backgroundColor || theme.button;
-  const cardInk = block.backgroundColor ? contrastInk(cardBg) : theme.buttonText;
-  const questionBg = block.questionBackground;
-  const answerBg = block.answerBackground;
-  const questionInk = questionBg ? contrastInk(questionBg) : cardInk;
-  const answerInk = answerBg ? contrastInk(answerBg) : cardInk;
+  const card = surfacePaint(block.backgroundColor, theme.button, theme.buttonText, theme.text);
+  const questionBg = isTransparentColor(block.questionBackground)
+    ? "transparent"
+    : block.questionBackground?.trim() || undefined;
+  const answerBg = isTransparentColor(block.answerBackground)
+    ? "transparent"
+    : block.answerBackground?.trim() || undefined;
+  const questionInk = hasSolidColor(block.questionBackground)
+    ? contrastInk(block.questionBackground ?? "")
+    : card.color;
+  const answerInk = hasSolidColor(block.answerBackground) ? contrastInk(block.answerBackground ?? "") : card.color;
   return (
     <div className="flex w-full flex-col gap-2 text-left">
       {items.map((item) => (
         <details
           key={item.id}
           className="group overflow-hidden px-3 py-2.5"
-          style={{ background: cardBg, color: cardInk, borderRadius: radius }}
+          style={{ background: card.background, color: card.color, borderRadius: radius }}
         >
           <summary
             className="flex cursor-pointer list-none items-start gap-2 font-semibold [&::-webkit-details-marker]:hidden"

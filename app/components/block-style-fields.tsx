@@ -8,7 +8,7 @@ import type { FontId, PageBlock, TextAlign } from "@/app/lib/types";
 
 /** Vai blokam ir pielāgojami izskata iestatījumi. */
 export function blockHasStyles(block: PageBlock): boolean {
-  return block.type !== "instagram";
+  return block.type !== "instagram" && block.type !== "x";
 }
 
 export function BlockStyleFields({
@@ -31,6 +31,7 @@ export function BlockStyleFields({
               <ColorPicker
                 label={t("onboarding.color", "Krāsa")}
                 value={block.color ?? "#111111"}
+                allowTransparent
                 onChange={(color) => onChange({ ...block, color })}
               />
             </div>
@@ -181,6 +182,7 @@ export function BlockStyleFields({
                 <ColorPicker
                   label={t("onboarding.bg_color", "Fona krāsa")}
                   value={block.color ?? "#f4f6fb"}
+                  allowTransparent
                   onChange={(color) => onChange({ ...block, color })}
                 />
               </div>
@@ -225,6 +227,46 @@ export function BlockStyleFields({
           </div>
         </div>
       );
+    case "services":
+    case "products":
+      return (
+        <div className="flex flex-col gap-4">
+          <div>
+            <p className="mb-2 text-sm font-medium">{t("studio.style.button_look", "Pogas izskats")}</p>
+            <div className="flex items-start gap-4">
+              <div className="shrink-0">
+                <p className="mb-2 text-sm text-[var(--muted)]">{t("onboarding.color", "Krāsa")}</p>
+                <ColorPicker
+                  label={t("onboarding.color", "Krāsa")}
+                  value={block.color ?? "#111111"}
+                  allowTransparent
+                  onChange={(color) => onChange({ ...block, color })}
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <RangeRow
+                  label={t("onboarding.avatar_radius", "Noapaļojums")}
+                  min={0}
+                  max={40}
+                  value={block.borderRadius ?? 8}
+                  suffix=" px"
+                  onChange={(borderRadius) => onChange({ ...block, borderRadius })}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <FontSelect
+              value={(block.fontId ?? "sans") as FontId}
+              onChange={(fontId) => onChange({ ...block, fontId })}
+            />
+            <FontSizeSelect
+              value={block.fontSize ?? 14}
+              onChange={(fontSize) => onChange({ ...block, fontSize })}
+            />
+          </div>
+        </div>
+      );
     case "skills":
       return (
         <div className="flex flex-col gap-4">
@@ -236,6 +278,7 @@ export function BlockStyleFields({
                 <ColorPicker
                   label={t("onboarding.color", "Krāsa")}
                   value={block.color ?? "#111111"}
+                  allowTransparent
                   onChange={(color) => onChange({ ...block, color })}
                 />
               </div>
@@ -282,6 +325,7 @@ export function BlockStyleFields({
                 <ColorPicker
                   label={t("onboarding.bg_color", "Fona krāsa")}
                   value={block.backgroundColor ?? "#f4f6fb"}
+                  allowTransparent
                   onChange={(backgroundColor) => onChange({ ...block, backgroundColor })}
                 />
               </div>
@@ -303,6 +347,7 @@ export function BlockStyleFields({
               <ColorPicker
                 label={t("studio.style.bg_label", "Fons")}
                 value={block.questionBackground ?? block.backgroundColor ?? "#f4f6fb"}
+                allowTransparent
                 onChange={(questionBackground) => onChange({ ...block, questionBackground })}
               />
               <FontSelect
@@ -321,6 +366,7 @@ export function BlockStyleFields({
               <ColorPicker
                 label={t("studio.style.bg_label", "Fons")}
                 value={block.answerBackground ?? block.backgroundColor ?? "#f4f6fb"}
+                allowTransparent
                 onChange={(answerBackground) => onChange({ ...block, answerBackground })}
               />
               <FontSelect
@@ -335,7 +381,19 @@ export function BlockStyleFields({
           </div>
         </>
       );
+    case "gallery":
+      return (
+        <RangeRow
+          label={t("onboarding.avatar_radius", "Noapaļojums")}
+          min={0}
+          max={40}
+          value={block.borderRadius ?? 12}
+          suffix=" px"
+          onChange={(borderRadius) => onChange({ ...block, borderRadius })}
+        />
+      );
     case "instagram":
+    case "x":
       return <p className="text-sm text-[var(--muted)]">{t("studio.style.no_settings", "Šim blokam nav atsevišķu izskata iestatījumu.")}</p>;
   }
 }

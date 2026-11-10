@@ -23,7 +23,8 @@ export type SocialPlatform =
   | "behance"
   | "dribbble"
   | "paypal"
-  | "phone";
+  | "phone"
+  | "break";
 
 export type SocialLink = {
   id: string;
@@ -138,17 +139,31 @@ export type ResumeBlock = {
 export type InstagramBlock = {
   id: string;
   type: "instagram";
-  /** Profila @ — saitei uz Instagram (nav embed galvene). */
+  /** Vienmēr ieraksta iegulums. */
+  mode?: "post";
+  /** Profila @ vai profila saite. */
   username: string;
+  /** Viena ieraksta saite, ja mode ir post. */
+  postUrl?: string;
   /** Režģa kolonnas (2–4). */
   columns: 2 | 3 | 4;
   /** Cik bildes rādīt (1–12). */
   count: number;
   /**
-   * Attēli režģī: Instagram `/p/CODE/media/` URL vai paša augšupielāde.
-   * Profila embed netiek lietots — tikai bildes.
+   * Attēli režģī, ja mode ir links: Instagram `/p/CODE/media/` URL vai paša augšupielāde.
    */
   images: string[];
+};
+
+export type XBlock = {
+  id: string;
+  type: "x";
+  /** Vienmēr ieraksta iegulums. */
+  mode?: "post";
+  /** Profila @ vai saite, vai ieraksta saite / ieguluma kods. */
+  source: string;
+  /** Cik pēdējos ierakstus rādīt (1–20). */
+  count: number;
 };
 
 export type QuoteBlock = {
@@ -230,6 +245,75 @@ export type SkillsBlock = {
   fontSize?: number;
 };
 
+export type ServiceItem = {
+  id: string;
+  name: string;
+  description?: string;
+  /** Brīvs teksts, piem. 25 vai 1 200. */
+  price?: string;
+  /** ISO kods no PRICE_CURRENCIES, vai tukšs. */
+  currency?: string;
+};
+
+export type ServicesBlock = {
+  id: string;
+  type: "services";
+  heading?: string;
+  items: ServiceItem[];
+  /** Kartītes fona krāsa — kā link pogai. */
+  color?: string;
+  /** px; noklusējums 8. */
+  borderRadius?: number;
+  fontId?: FontId;
+  fontSize?: number;
+};
+
+export type ProductItem = {
+  id: string;
+  name: string;
+  description?: string;
+  imageUrl?: string | null;
+  /** Brīvs teksts, piem. 25 vai 1 200. */
+  price?: string;
+  /** ISO kods no PRICE_CURRENCIES, vai tukšs. */
+  currency?: string;
+};
+
+export type ProductsBlock = {
+  id: string;
+  type: "products";
+  heading?: string;
+  items: ProductItem[];
+  /** Kartītes fona krāsa — kā link pogai. */
+  color?: string;
+  /** px; noklusējums 8. */
+  borderRadius?: number;
+  fontId?: FontId;
+  fontSize?: number;
+};
+
+export type GalleryLayout = "grid" | "masonry" | "carousel";
+
+export type GalleryItem = {
+  id: string;
+  imageUrl?: string | null;
+  alt?: string;
+};
+
+export type GalleryBlock = {
+  id: string;
+  type: "gallery";
+  heading?: string;
+  layout: GalleryLayout;
+  items: GalleryItem[];
+  /** Tikai carousel: attēli mainās paši. */
+  autoplay?: boolean;
+  /** Sekundes līdz nākamajam attēlam, ja autoplay. */
+  intervalSeconds?: number;
+  /** px; noklusējums 12. */
+  borderRadius?: number;
+};
+
 export type FaqBlock = {
   id: string;
   type: "faq";
@@ -269,9 +353,13 @@ export type PageBlock =
   | MapsBlock
   | ResumeBlock
   | InstagramBlock
+  | XBlock
   | QuoteBlock
   | CountdownBlock
   | SkillsBlock
+  | ServicesBlock
+  | ProductsBlock
+  | GalleryBlock
   | PollBlock
   | FaqBlock
   | BookingBlock;
@@ -331,7 +419,9 @@ export type CarouselItem = {
 export type Onboarding = {
   step: number;
   finished: boolean;
-  source: "instagram" | "website" | "scratch" | null;
+  source: "instagram" | "website" | "scratch" | "page" | null;
+  /** Citas lapas links, ja source ir page. */
+  copiedHandle?: string;
   instagram: string;
   website: string;
   sourceNote: string;
@@ -391,8 +481,12 @@ export type PageContent = {
   bioColor?: string;
   bioFontId?: FontId;
   bioFontSize?: number;
-  /** Sociālās ikonas aplis pikseļos. Noklusējums 40. */
+  /** Sociālās pogas izmērs pikseļos. Noklusējums 40. */
   socialIconSize?: number;
+  /** Sociālās pogas noapaļojums procentos, 0–50. 50 ir aplis. */
+  socialIconRadius?: number;
+  /** Atstarpe starp ikonu un pogas malu, pikseļos. Noklusējums 9. */
+  socialIconPadding?: number;
   themeId: string;
   socials: SocialLink[];
   blocks: PageBlock[];

@@ -9,6 +9,7 @@ export type SocialCatalogItem = {
 };
 
 export const SOCIAL_CATALOG: SocialCatalogItem[] = [
+  { id: "break", label: "Jauna rinda", placeholder: "" },
   { id: "instagram", label: "Instagram", popular: true, placeholder: "Instagram lietotājvārds vai URL" },
   { id: "tiktok", label: "TikTok", popular: true, placeholder: "TikTok lietotājvārds vai URL" },
   { id: "youtube", label: "YouTube", popular: true, placeholder: "YouTube kanāls vai URL" },
@@ -42,4 +43,21 @@ export function socialDisplayName(social: { platform: SocialPlatform; label?: st
   const custom = social.label?.trim();
   if (custom) return custom;
   return socialMeta(social.platform).label;
+}
+
+function clampInt(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, Math.round(value)));
+}
+
+/** Viena forma visām sociālo tīklu pogām lapā. */
+export function socialButtonMetrics(input: {
+  socialIconSize?: number;
+  socialIconRadius?: number;
+  socialIconPadding?: number;
+}) {
+  const size = clampInt(input.socialIconSize ?? 40, 24, 72);
+  const radius = clampInt(input.socialIconRadius ?? 50, 0, 50);
+  const padding = clampInt(input.socialIconPadding ?? 9, 0, 16);
+  const icon = Math.max(8, size - padding * 2);
+  return { size, radius, padding, icon };
 }

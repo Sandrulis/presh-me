@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "@/app/components/translations-provider";
-import { contrastInk } from "@/app/lib/countdown-block";
+import { contrastInk, hasSolidColor, isTransparentColor } from "@/app/lib/color/surface";
 import type { PollBlock } from "@/app/lib/types";
 import type { Theme } from "@/app/lib/themes";
 
@@ -38,17 +38,18 @@ export function PollBlockFace({
   const radius = Math.max(0, block.borderRadius ?? 8);
   const barRadius = Math.min(radius, 999);
   const borderWidth = Math.max(0, block.borderWidth ?? 0);
-  const background = block.color?.trim() || undefined;
-  const ink = background ? contrastInk(background) : theme.text;
-  const mutedInk = background ? `${ink}99` : theme.muted;
+  const solidFill = hasSolidColor(block.color);
+  const background = isTransparentColor(block.color) ? "transparent" : block.color?.trim() || undefined;
+  const ink = solidFill ? contrastInk(block.color ?? "") : theme.text;
+  const mutedInk = solidFill ? `${ink}99` : theme.muted;
   const progressFill = block.progressColor?.trim() || ink;
-  const trackBg = background ? `${ink}22` : `${theme.muted}33`;
+  const trackBg = solidFill ? `${ink}22` : `${theme.muted}33`;
   const borderColor =
     borderWidth > 0
-      ? block.borderColor?.trim() || (background ? `${ink}33` : theme.buttonBorder ?? "var(--line)")
+      ? block.borderColor?.trim() || (solidFill ? `${ink}33` : theme.buttonBorder ?? "var(--line)")
       : undefined;
   const optionBorder = block.borderColor?.trim() || (theme.buttonBorder ?? "var(--line)");
-  const cardPadding = Boolean(background) || borderWidth > 0;
+  const cardPadding = solidFill || borderWidth > 0;
 
   const [counts, setCounts] = useState<Record<string, number>>(() =>
     Object.fromEntries(options.map((o) => [o.id, 0])),

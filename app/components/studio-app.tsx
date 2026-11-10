@@ -200,7 +200,7 @@ export function StudioApp() {
         </div>
 
         <div
-          className={`grid min-h-0 flex-1 xl:grid-cols-[minmax(20rem,26rem)_minmax(0,1fr)_minmax(17rem,22rem)]${
+          className={`studio-columns grid min-h-0 flex-1${
             blockDrawerOpen ? " studio-dim-surround" : ""
           }`}
         >

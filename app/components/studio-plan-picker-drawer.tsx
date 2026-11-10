@@ -8,9 +8,11 @@ import {
   StudioBillingResumeButton,
 } from "@/app/components/studio-billing-plan-button";
 import { BillingIntervalToggle } from "@/app/components/billing-interval-toggle";
+import { EarlyOfferNote, EarlyOfferStar } from "@/app/components/early-offer-note";
 import { SideDrawer } from "@/app/components/side-drawer";
 import { useTranslations } from "@/app/components/translations-provider";
 import type { BillingInterval } from "@/app/lib/billing/billing-interval";
+import type { EarlyOffer } from "@/app/lib/billing/early-offer";
 import { comparePlanChange, type PlanTier } from "@/app/lib/billing/plan-change";
 import { takeLandingCheckoutPlan } from "@/app/lib/billing/pending-landing-plan";
 import { formatPlanPrice } from "@/app/lib/billing/format-plan-price";
@@ -33,6 +35,7 @@ type PlanOption = {
   priceAmount: number;
   priceAmountAnnual: number;
   sortOrder: number;
+  earlyOffer: EarlyOffer | null;
 };
 
 function planTier(plan: PlanOption): PlanTier {
@@ -320,6 +323,7 @@ export function StudioPlanPickerDrawer({ open, onClose, onStartedCheckout }: Pro
                       <p className="font-semibold text-[var(--ink)]">{plan.name}</p>
                       <p className="mt-0.5 text-sm font-medium text-[var(--ink)]">
                         {formatPlanPrice(price.amount)}
+                        <EarlyOfferStar show={Boolean(plan.earlyOffer)} />
                         <span className="text-[var(--muted)]">
                           {" "}
                           /{" "}
@@ -331,6 +335,7 @@ export function StudioPlanPickerDrawer({ open, onClose, onStartedCheckout }: Pro
                           )}
                         </span>
                       </p>
+                      <EarlyOfferNote offer={plan.earlyOffer} />
                       {status.subscription?.pendingPlanName ? (
                         <p className="mt-2 text-xs text-amber-800">
                           {t(
@@ -400,12 +405,14 @@ export function StudioPlanPickerDrawer({ open, onClose, onStartedCheckout }: Pro
                       <span className="font-semibold text-[var(--ink)]">{plan.name}</span>
                       <span className="shrink-0 text-sm font-medium text-[var(--ink)]">
                         {formatPlanPrice(price.amount)}
+                        <EarlyOfferStar show={Boolean(plan.earlyOffer)} />
                         <span className="text-[var(--muted)]">
                           {" "}
                           / {t(price.perKey, price.perKey === "studio.subscription.per_year" ? "gads" : "mēn.")}
                         </span>
                       </span>
                     </div>
+                    <EarlyOfferNote offer={plan.earlyOffer} />
                     {direction === "upgrade" ? (
                       <p className="mt-1 text-xs text-[var(--muted)]">
                         {t("studio.subscription.upgrade_note", "Uzreiz ar proporcionālu piemaksu.")}

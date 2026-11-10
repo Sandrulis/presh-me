@@ -8,14 +8,17 @@ function isFileDrag(event: React.DragEvent | DragEvent) {
   return Array.from(types).includes("Files");
 }
 
-function takeFirstImageFile(list: FileList | null | undefined) {
-  const file = list?.[0];
-  if (!file || !file.type.startsWith("image/")) return undefined;
-  return file;
+function imageFiles(list: FileList | null | undefined, multiple: boolean): File[] {
+  const files = Array.from(list ?? []).filter((file) => file.type.startsWith("image/"));
+  return multiple ? files : files.slice(0, 1);
 }
 
 /** Kopīga drag-and-drop / faila izvēle attēliem. */
-export function useImageFileDrop(onFile: (file: File | undefined) => void, enabled = true) {
+export function useImageFileDrop(
+  onFile: (file: File | undefined) => void,
+  enabled = true,
+  options?: { multiple?: boolean; onFiles?: (files: File[]) => void },
+) {
   const [active, setActive] = useState(false);
   const depth = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,9 +37,14 @@ export function useImageFileDrop(onFile: (file: File | undefined) => void, enabl
     };
   }, [enabled]);
 
+  const multiple = Boolean(options?.multiple);
   function applyFile(list: FileList | null | undefined) {
-    const file = takeFirstImageFile(list);
-    if (file) onFile(file);
+    const files = imageFiles(list, multiple);
+    if (multiple && options?.onFiles) {
+      if (files.length > 0) options.onFiles(files);
+      return;
+    }
+    if (files[0]) onFile(files[0]);
   }
 
   function openPicker() {
@@ -78,6 +86,7 @@ export function useImageFileDrop(onFile: (file: File | undefined) => void, enabl
       ref={inputRef}
       type="file"
       accept="image/*"
+      multiple={multiple || undefined}
       className="sr-only"
       tabIndex={-1}
       onChange={(event) => {
@@ -96,16 +105,20 @@ export function ImageDropField({
   title,
   hint = "Ievelc attēlu vai izvēlies failu.",
   preview,
-  onFile,
+  onFile = () => {},
+  onFiles,
+  multiple = false,
   className = "",
 }: {
   title: string;
   hint?: string;
   preview: ReactNode;
-  onFile: (file: File | undefined) => void;
+  onFile?: (file: File | undefined) => void;
+  onFiles?: (files: File[]) => void;
+  multiple?: boolean;
   className?: string;
 }) {
-  const { active, dragDropProps, openPicker, fileInput } = useImageFileDrop(onFile);
+  const { active, dragDropProps, openPicker, fileInput } = useImageFileDrop(onFile, true, { multiple, onFiles });
 
   return (
     <div

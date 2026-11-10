@@ -1,3 +1,5 @@
+import { openEarlyOffer, type EarlyOffer } from "@/app/lib/billing/early-offer";
+import { loadGlobalEarlyOffer } from "@/app/lib/billing/subscription-repository";
 import { formatPlanPrice } from "@/app/lib/billing/format-plan-price";
 import { loadSubscriptionTrialPeriodDaysAdmin } from "@/app/lib/billing/trial-period";
 import { isModulePaidPlansEnabledServer } from "@/app/lib/billing/subscription-repository";
@@ -19,6 +21,7 @@ export type LandingPricingPlan = {
   comingSoon: boolean;
   isFreeTier: boolean;
   moduleKeys: Set<string>;
+  earlyOffer: EarlyOffer | null;
 };
 
 export type LandingPricingFeature = {
@@ -176,6 +179,7 @@ function fallbackPlans(paidCheckoutLive: boolean): LandingPricingPlan[] {
       comingSoon: false,
       isFreeTier: true,
       moduleKeys: new Set(),
+      earlyOffer: null,
     },
     {
       planKey: "pro",
@@ -191,6 +195,7 @@ function fallbackPlans(paidCheckoutLive: boolean): LandingPricingPlan[] {
       comingSoon: !paidCheckoutLive,
       isFreeTier: false,
       moduleKeys: new Set(DEFAULT_PLAN_MODULES.pro),
+      earlyOffer: null,
     },
   ];
 }
@@ -215,12 +220,15 @@ export async function loadLandingPricing(languageCode: string): Promise<LandingP
   if (isSupabaseAdminConfigured()) {
     try {
       const admin = createAdminClient();
-      const { data: planRows } = await admin
-        .from("subscription_plans")
-        .select("id, plan_key, price_amount, price_amount_annual, sort_order, is_active")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true })
-        .order("plan_key", { ascending: true });
+      const [{ data: planRows }, early] = await Promise.all([
+        admin
+          .from("subscription_plans")
+          .select("id, plan_key, price_amount, price_amount_annual, sort_order, is_active")
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true })
+          .order("plan_key", { ascending: true }),
+        loadGlobalEarlyOffer(),
+      ]);
 
       if (planRows && planRows.length > 0) {
         const planIds = planRows.map((row) => row.id as string);
@@ -236,10 +244,13 @@ export async function loadLandingPricing(languageCode: string): Promise<LandingP
         const namesByPlan = new Map<string, Record<string, string>>();
         for (const row of i18nRows ?? []) {
           const planId = row.plan_id as string;
+          const code = row.language_code as string;
           const bucket = namesByPlan.get(planId) ?? {};
-          bucket[row.language_code as string] = row.name as string;
+          bucket[code] = row.name as string;
           namesByPlan.set(planId, bucket);
         }
+        const earlyNote =
+          early.notes[languageCode]?.trim() || early.notes.en?.trim() || early.notes.lv?.trim() || "";
 
         const modulesByPlan = new Map<string, Set<string>>();
         for (const row of moduleRows ?? []) {
@@ -277,6 +288,16 @@ export async function loadLandingPricing(languageCode: string): Promise<LandingP
             comingSoon: isPro && (!paidCheckoutLive || !paidPlan),
             isFreeTier,
             moduleKeys: modulesByPlan.get(row.id as string) ?? new Set(),
+            earlyOffer: paidPlan
+              ? openEarlyOffer({
+                  enabled: early.enabled,
+                  users: early.users,
+                  months: early.months,
+                  claimed: early.claimed,
+                  extendable: early.extendable,
+                  note: earlyNote,
+                })
+              : null,
           };
         });
       }

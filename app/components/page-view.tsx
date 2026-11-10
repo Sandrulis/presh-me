@@ -9,7 +9,7 @@ import { textLookStyle } from "@/app/lib/text-look";
 import { fontFamilyOf } from "@/app/lib/font-catalog";
 import { initials } from "@/app/lib/handles";
 import { imageFrame, pageImageFrame, placedImageStyle } from "@/app/lib/image-frame";
-import { socialDisplayName } from "@/app/lib/socials";
+import { socialButtonMetrics, socialDisplayName } from "@/app/lib/socials";
 import { getTheme, type Theme } from "@/app/lib/themes";
 import type { HeaderLayout, PageContent, SectionId, StackSection } from "@/app/lib/types";
 import { resolveStackOrder } from "@/app/lib/types";
@@ -126,11 +126,20 @@ export function PageView({
             socials: page.socials.length > 0 ? (
               <ul key="socials" className="mt-5 flex flex-wrap items-center justify-center gap-2">
                 {page.socials.map((social) => {
+                  if (social.platform === "break") {
+                    return <li key={social.id} className="h-0 basis-full" aria-hidden="true" />;
+                  }
                   const href = safeHref(social.url, social.platform);
-                  const iconBox = Math.min(72, Math.max(24, page.socialIconSize ?? 40));
-                  const className = "grid place-items-center rounded-full border bg-transparent";
-                  const style = { width: iconBox, height: iconBox, borderColor: theme.muted, color: theme.text };
-                  const icon = <SocialIcon platform={social.platform} size={Math.round(iconBox * 0.42)} />;
+                  const button = socialButtonMetrics(page);
+                  const className = "grid place-items-center border bg-transparent";
+                  const style = {
+                    width: button.size,
+                    height: button.size,
+                    borderRadius: `${button.radius}%`,
+                    borderColor: theme.muted,
+                    color: theme.text,
+                  };
+                  const icon = <SocialIcon platform={social.platform} size={button.icon} />;
                   return (
                     <li key={social.id}>
                       {href && mode === "live" ? (

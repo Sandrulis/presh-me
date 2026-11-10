@@ -8,6 +8,7 @@ type FitOpts = { mode: "fit"; maxEdge?: number; folder?: string };
 export async function processAndUploadImage(
   file: File | undefined,
   opts: CoverOpts | FitOpts,
+  onProgress?: (percent: number) => void,
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   if (!file) return { ok: false, error: "Izvēlies attēlu." };
   if (!file.type.startsWith("image/")) return { ok: false, error: "Izvēlies attēlu." };
@@ -18,6 +19,15 @@ export async function processAndUploadImage(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Nepieciešama sesija." };
 
+  onProgress?.(8);
+  let crept = 8;
+  const creep = onProgress
+    ? window.setInterval(() => {
+        crept = Math.min(36, crept + 4);
+        onProgress(crept);
+      }, 180)
+    : 0;
+
   let jpeg: File;
   try {
     jpeg =
@@ -25,13 +35,25 @@ export async function processAndUploadImage(
         ? await canvasToJpegFile(file, opts.width, opts.height, "cover")
         : await canvasToJpegFile(file, opts.maxEdge ?? 1400, opts.maxEdge ?? 1400, "fit");
   } catch {
+    if (creep) window.clearInterval(creep);
     return { ok: false, error: "Neizdevās nolasīt attēlu." };
   }
+  if (creep) window.clearInterval(creep);
+  onProgress?.(40);
 
-  const uploaded = await uploadPageAsset(user.id, jpeg, opts.folder ?? "uploads", {
-    originalName: file.name,
-    sourceMime: file.type,
-  });
+  const uploaded = await uploadPageAsset(
+    user.id,
+    jpeg,
+    opts.folder ?? "uploads",
+    {
+      originalName: file.name,
+      sourceMime: file.type,
+    },
+    onProgress
+      ? (ratio) => onProgress(40 + Math.round(Math.min(1, ratio) * 59))
+      : undefined,
+  );
+  if (uploaded.ok) onProgress?.(100);
   if (!uploaded.ok) return { ok: false, error: uploaded.error };
   return { ok: true, url: uploaded.url };
 }

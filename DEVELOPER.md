@@ -28,7 +28,7 @@ Link-in-bio / portfolio lapas. Lietotājs reģistrējas, paņem `presh.me/{handl
 - Google: pašu OAuth (`app/lib/auth/google-oauth.ts`) — `/auth/google/sign-in` → Google → `/auth/callback`; lietotājs caur admin `createUser` + magiclink `verifyOtp` (ne Supabase Google provider)
 - `public.users`: **pirmais** ieraksts → `is_admin = true`; pārējie `false`
 - `public.pages`: handle + jsonb `content`; publiski `published`; īpašnieks CRUD; admin redz visu
-- Arī: `admin_todos`, `user_feedback`, `contact_messages`, `site_languages`, `site_translations`, `site_settings` (t.sk. `maintenance`, `trial_period_days`), `auth_lockouts`, storage usage kolonnas; abonementi (`subscription_plans`, `user_subscriptions`, Stripe webhook, gada cena, pending downgrade); **`page_booking_reservations`**; konta dzēšanas plānošana (`users` deletion kolonnas, cron purge)
+- Arī: `admin_todos`, `user_feedback`, `contact_messages`, `site_languages`, `site_translations`, `site_settings` (t.sk. `maintenance`, `trial_period_days`), `auth_lockouts`, storage usage kolonnas; abonementi (`subscription_plans`, `user_subscriptions`, Stripe webhook, gada cena, pending downgrade; agrīnais piedāvājums `subscription_early_offer` + `subscription_early_claims`, `claim_early_offer`, migrācija `035`); **`page_booking_reservations`**; konta dzēšanas plānošana (`users` deletion kolonnas, cron purge)
 - Labā admin josla tikai `is_admin = true`; navigācijas badge: `fetchAdminNavCounts()` (`app/lib/admin-nav-counts.ts`), refresh ~45s + focus (`admin-sidebar.tsx`); Settings bez badge
 - Marketing top nav: `Header` slēpj tikai ar apstiprinātu sesiju (`sessionId` vai SSR `hideMarketingHeader`); novecojusi `presh_session` tiek notīrīta (`resolveSessionHintForRequest`)
 
@@ -49,7 +49,7 @@ Admin josla: tikai `isSessionAdmin()` (`users.is_admin`).
 | Ceļš | Saturs |
 |---|---|
 | `/` | Landing; ielogotam redirect → `/studio` vai `/start` |
-| `/login`, `/register`, `/forgot-password` | Auth formas (+ Google) |
+| `/login`, `/register`, `/forgot-password`, `/update-password` | Auth formas (+ Google). Labajā pusē (`lg+`) nejauša publicēto lapu kolāža (`loadAuthShowcasePages`); zem 1024 px kolāža ir paslēpta |
 | `/auth/google/sign-in`, `/auth/callback` | Pašu Google OAuth |
 | `/start` | Onboarding (6 soļi) pēc reģistrācijas vai „Jauns links” |
 | `/studio` | Redaktors (Pamati / Skats / Izskats) |
@@ -75,13 +75,13 @@ Kad ir sesija:
 
 - Globālais `Header` **nerādās** (`app/components/header.tsx`).
 - `AppShell` (`app/components/app-shell.tsx`):
-  - **Kreisā** `StudioSidebar`: burger/X virs logo; sašaurināts `w-14`, atvērts `w-60`; linku dropdown + jauns links; uzstādījumi; Atrast kļūdu? / Ieteikumi / Atsauksmes / Kontakti (virs Iziet); iziet.
-  - **Labā** `AdminSidebar` (pagaidām visiem ielogotajiem): **Todo** → sidemodālis pie labās malas (`presh.admin-todos.v1`, dzēšana ar loading); **Ziņojumi** → iesūtne (`presh.user-feedback.v1`); Linki / Valodas / Tulkojumi / Uzstādījumi u.c.
+  - **Kreisā** `StudioSidebar`: burger/X virs logo; sašaurināts `w-14`, atvērts `w-60`; linku dropdown + jauns links; uzstādījumi; Atrast kļūdu? / Ieteikumi / Atsauksmes / Kontakti (virs Iziet); iziet. Iesāktai un nepabeigtai lapai (`pageDesignInProgress`, solis pēc pirmā un `finished` vēl false) izvēlnē ir sarkanīgs fons, un `/studio` citai lapai uzmet paziņojumu.
+  - **Labā** `AdminSidebar` (pagaidām visiem ielogotajiem): **Todo** → sidemodālis pie labās malas (`presh.admin-todos.v1`, labošana ar textarea, dzēšana ar loading); **Ziņojumi** → iesūtne (`presh.user-feedback.v1`); Linki / Valodas / Tulkojumi / Uzstādījumi u.c.
   - Mobilajā (<700px): plāna top josla (bez fixed rail).
 
 ## Onboarding (`/start`)
 
-Soļi: sākums → profils (vārds, **tagline**, bio) → sadaļas → izskats → links → kopsavilkums.
+Soļi: sākums → profils (vārds, **tagline**, bio) → sadaļas → izskats → links → kopsavilkums. Atgriežoties nepabeigtā vednī (solis pēc pirmā) rādās paziņojums. Ja `module_multisites` atļauj vairākas lapas, sākumā ir ceturtā izvēle „No cita lietotāja”: dizains no `localStorage` (`presh.copied-page-design.v1`) vai `GET /api/page-design`. Publiskajā lapā tādam kontam apakšējā labajā stūrī ir kopēšanas poga (`copy-page-design-button.tsx`); kopija patur izskatu un tukšas vietas, ne tekstus un bildes.
 
 - `FieldFrame` — etiķete kā zīmogs uz rāmja.
 - `ImageDropField` — drop zona ar highlight; bloķē pārlūka „atvērt failu jaunā tabulā”.
@@ -89,15 +89,16 @@ Soļi: sākums → profils (vārds, **tagline**, bio) → sadaļas → izskats �
 
 ## Studija (`/studio`)
 
-Trīs kolonnas (xl+): Pamati | priekšskats (`DevicePreview`) | Izskats.
+Trīs kolonnas (xl+, `.studio-columns` `globals.css`): Pamati | priekšskats (`DevicePreview`) | Izskats. Šaurāk — cilnes Pamati / Skats / Izskats.
 
 - Nav atsevišķa studijas top bara; **Publicēta / Nepublisks** + **Skatīt lapu** blakus ierīces pārslēdzējam (`DevicePreview`). Nepubliskam: atslēdziņa, neaktīva skatīt poga.
 - **`module_trail`:** publicējot iestata `content.trialStartedAt`; `StudioTrialMeter` + admin Links trial modālis; beidzot trial `useExpiredTrialClientRedirect()` met no studijas zonas uz `/`.
 - Profils: `displayName`, `tagline` (+ tipogrāfija), `bio`; vārdam opcija **burtu apmale** (`nameStrokeWidth` / `nameStrokeColor`, `app/lib/text-look.ts`).
-- Sociālie: `SocialsEditor` (`app/components/socials-editor.tsx`) — kompaktas rindas, FLIP DnD, „+ Pievienot” → kreisais picker sidemodāls; katalogs `app/lib/socials.ts` (`popular` karodziņš).
+- Sociālie: `SocialsEditor` (`app/components/socials-editor.tsx`) — kompaktas rindas, FLIP DnD, „+ Pievienot” un labošana abi ir kreisie sidemodāļi; zem Pievienot ir tie paši slīdņi, kas Izskatā. Katalogs `app/lib/socials.ts` (`popular` karodziņš). Platforma `break` pārnes nākamās ikonas jaunā rindā. Zīmoli ir Simple Icons (`social-icon.tsx`). Pogām kopīgs `socialIconSize`, `socialIconRadius` un `socialIconPadding` (`socialButtonMetrics`).
 - Pamatu izvēlnē Sociālie/Bloki ir sortable (`stackOrder`); secība atspoguļojas `PageView`.
 - **Valoda** (`studio-page-language-drawer`): `content.publicLanguageCode` — fiksēta UI valoda publiskajā lapā (`PublicPageI18nShell`) un studijas priekšskatā (`PageLanguageScope`); tukšs = apmeklētāja valoda.
-- Bloki: `BlocksEditor` + `block-faces` / `lib/blocks.ts` — tipi: saite, teksts, **video**, attēls, Spotify, **maps** (`/api/maps/embed`, `lib/google-maps-embed.ts`), resumē, Instagram, citāts, **skills**, **countdown**, **poll** (`/api/poll/*`, `page_poll_votes`), FAQ, **booking** (`page-booking-ui`, lazy chunk; kalendārs, Turnstile kad ieslēgts, `GET/POST /api/booking/*`, **`GET /api/booking/calendar`** ICS abonements + **`GET /api/booking/calendar-link`** (auth), e-pasti `booking_owner` / `booking_guest`, DB `page_booking_reservations` + `025` length CHECK); DnD; sidemodāļi bez blur; draft priekšskats.
+- Bloki: `BlocksEditor` + `block-faces` / `lib/blocks.ts` — tipi: saite, teksts, **video**, attēls, Spotify, **maps** (`/api/maps/embed`, `lib/google-maps-embed.ts`), resumē, **Instagram** (tikai ieraksta iegulums, `instagram.com/p/…/embed`), **X** (tikai ieraksta iegulums, `x-embed.tsx` + `platform.x.com/widgets.js`), citāts, **skills**, **services** un **products** (nosaukums, neobligāts apraksts, cena + `currency` no `PRICE_CURRENCIES`, `formatItemPrice`; produktam attēls; DnD), **gallery** (`grid` / `masonry` / `carousel`, attēlu DnD; carousel `autoplay` + `intervalSeconds` ar rAF progresu, pauze virs bildes; masonry sadalīts pa kolonnām; klikšķis atver pietuvinājumu), **countdown** (hidrācija: cipari ar `suppressHydrationWarning`, animācija CSS `.countdown-digit-roller`), **poll** (`/api/poll/*`, `page_poll_votes`), FAQ, **booking** (`page-booking-ui`, lazy chunk; kalendārs, Turnstile kad ieslēgts, `GET/POST /api/booking/*`, **`GET /api/booking/calendar`** ICS abonements + **`GET /api/booking/calendar-link`** (auth), e-pasti `booking_owner` / `booking_guest`, DB `page_booking_reservations` + `025` length CHECK); DnD; sidemodāļi bez blur; draft priekšskats.
+- Bloka fons var būt `transparent`: `ColorPicker` `allowTransparent` un `surfacePaint` (`app/lib/color/surface.ts`) saitei, countdown, poll, skills, services, products, FAQ un booking pogai. Teksts tad ir lapas krāsa.
 - **Booking ICS abonements:** nosaukums feedā = lapas `display_name` / `content.displayName` (fallback handle) — `NAME`, `X-WR-CALNAME`, `X-APPLE-CALENDAR-NAME` ICS failā.
 
 ### Booking kalendārs — ICS feed (Vercel)
@@ -116,7 +117,7 @@ node scripts/calendar-feed-smoke.mjs "https://presh.me/api/booking/calendar?hand
 
 Pārbaudi arī **Deployment Protection** — production bez Vercel login visiem. Pēc labojuma: no jauna pievienot Apple/Google abonementu.
 
-- Pamatos (toggle): **Contact** (`page-contact-ui`), **Share** (`page-share-ui`); ar moduļa atbalstu **Analytics** (`module_umami`, `studio-analytics-editor`, `PageUmamiTracker`); **Abonements** (`module_paid`, Stripe checkout / change-plan, `studio-plan-picker-drawer`).
+- Pamatos (toggle): **Contact** (`page-contact-ui`), **Share** (`page-share-ui`); ar moduļa atbalstu **Analytics** (`module_umami`, `studio-analytics-editor`, `PageUmamiTracker`); **Abonements** (`module_paid`, Stripe checkout / change-plan, `studio-plan-picker-drawer`). Agrīnais piedāvājums ir viens admin kartē zem plānu tabulas; ieslēgts tas rāda zvaigznīti un piezīmi maksas plānos un checkout liek `trial_end`.
 - Izskats → Teksts: vārds, tagline, bio tipogrāfija; **Bloku stils** drill-down pievienotajiem blokiem (`BlockStyleFields`).
 - Attēlu lauki: `ImageDropField` / `ImageField`.
 

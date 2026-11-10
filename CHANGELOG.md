@@ -4,6 +4,49 @@
 
 - (none)
 
+## v0.2.11
+
+**Sociālie, dizaina kopija un nepabeigta lapa**
+
+- Sociālā tīkla labošana atveras kreisajā panelī; ikonu izmērs, noapaļojums un atstarpe ir arī Sociālo sadaļā
+- Pro konts ar vairākām lapām var nokopēt citas lapas dizainu no publiskās lapas vai vedņa
+- Nepabeigta lapa studijā rāda paziņojumu, un lapu izvēlnē tai ir sarkanīgs fons
+
+## v0.2.10
+
+**Instagram, X un admin todo**
+
+- Instagram bloks rāda vienu ierakstu no ielīmētas saites
+- X bloks rāda vienu ierakstu no saites vai ieguluma koda
+- Galerijas karuselis apstājas, kamēr pele ir virs bildes, un turpina no tās pašas vietas
+- Admin todo labošanā redzams viss teksts
+
+## v0.2.9
+
+**Galerija, sociālās pogas un agrīnais piedāvājums**
+
+- Galerija: karuselis maina slaidu ar progresu, masonry kārtots pa kolonnām, klikšķis pietuvina attēlu
+- Sociālās pogas: īstās zīmolu ikonas, jauna rinda, kopīgs izmērs, noapaļojums un atstarpe
+- Abonementiem viens ieslēdzams piedāvājums: pirmie X lietotāji saņem Y mēnešus, maksas cenā zvaigznīte un piezīme
+
+## v0.2.8
+
+**Pakalpojumi, produkti un caurspīdīgs fons**
+
+- Jauni bloki: Pakalpojumi un Produkti (nosaukums, neobligāts apraksts, cena, vilkšana; produktam arī attēls)
+- Cenai var pievienot populāru valūtu (€, $, £ un citas)
+- Bloku fonam var izvēlēties caurspīdīgu (saite, taimeris, aptauja, prasmes, pakalpojumi, produkti, FAQ, rezervācija)
+- Atpakaļskaitīšana vairs neizraisa hidrācijas brīdinājumu, kad sekunde paspēj mainīties
+
+## v0.2.7
+
+**Studijas kolonnas un auth lapu kolāža**
+
+- Studija virs 1280 px atkal ir trīs kolonnas (Pamati, priekšskats, Izskats); režģis ir `.studio-columns`
+- Login, reģistrācija un paroles atjaunošana rāda nejaušas publicētās lapas, ne demo
+- Šī kolāža uz šaura ekrāna (zem 1024 px) ir paslēpta
+- CI auth pārbaude atpazīst publiskos poll un Maps maršrutus
+
 ## v0.2.6
 
 **Studio bloki, aptauja un priekšskatījuma UX**

@@ -1,6 +1,7 @@
 import type { SocialPlatform } from "@/app/lib/types";
 
 export function safeHref(raw: string, platform: SocialPlatform | "link" = "link") {
+  if (platform === "break") return null;
   const value = raw.trim();
   if (!value) return null;
 

@@ -134,6 +134,7 @@ export function BookingBlockFields({
             <ColorPicker
               label={t("onboarding.color", "Krāsa")}
               value={block.buttonColor ?? "#111111"}
+              allowTransparent
               onChange={(buttonColor) => onChange({ ...block, buttonColor })}
             />
           </div>

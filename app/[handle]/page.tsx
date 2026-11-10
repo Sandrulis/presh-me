@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { PublicPageI18nShell } from "@/app/components/public-page-i18n-shell";
+import { CopyPageDesignButton } from "@/app/components/copy-page-design-button";
 import { PageView } from "@/app/components/page-view";
 import { PageUmamiTracker } from "@/app/components/page-umami-tracker";
 import { MissingHandle } from "@/app/components/page-states";
@@ -92,7 +93,13 @@ export default async function HandlePage({ params }: HandlePageProps) {
   const example = getExample(handle);
   if (example) {
     const { t } = await getServerTranslations();
-    return <PageView page={localizeDemoPage(example, t)} mode="live" />;
+    const demo = localizeDemoPage(example, t);
+    return (
+      <>
+        <PageView page={demo} mode="live" />
+        <CopyPageDesignButton page={demo} />
+      </>
+    );
   }
 
   const page = await loadPageByHandle(handle);
@@ -119,6 +126,7 @@ export default async function HandlePage({ params }: HandlePageProps) {
       {pageUmami ? <PageUmamiTracker {...pageUmami} /> : null}
       <PublicPageI18nShell page={page}>
         <PageView page={page} mode="live" />
+        <CopyPageDesignButton page={page} />
       </PublicPageI18nShell>
     </>
   );

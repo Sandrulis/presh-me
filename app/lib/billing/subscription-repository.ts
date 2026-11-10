@@ -13,6 +13,7 @@ import {
   type PlanTier,
 } from "@/app/lib/billing/plan-change";
 import { parseBillingInterval, type BillingInterval } from "@/app/lib/billing/billing-interval";
+import { openEarlyOffer, trialEndUnixAfterMonths } from "@/app/lib/billing/early-offer";
 import { loadSubscriptionTrialPeriodDaysAdmin } from "@/app/lib/billing/trial-period";
 import {
   notifySubscriptionPlanDowngradedEmail,
@@ -151,14 +152,19 @@ export async function listPublicBillingPlans(languageCode: string) {
     .order("sort_order", { ascending: true })
     .order("plan_key", { ascending: true });
   if (error) throw error;
-  const { data: i18nRows } = await admin.from("subscription_plan_i18n").select("plan_id, language_code, name");
+  const [i18nRes, early] = await Promise.all([
+    admin.from("subscription_plan_i18n").select("plan_id, language_code, name"),
+    loadGlobalEarlyOffer(),
+  ]);
   const namesByPlan = new Map<string, Record<string, string>>();
-  for (const row of i18nRows ?? []) {
+  for (const row of i18nRes.data ?? []) {
     const planId = row.plan_id as string;
-    const bucket = namesByPlan.get(planId) ?? {};
-    bucket[row.language_code as string] = row.name as string;
-    namesByPlan.set(planId, bucket);
+    const names = namesByPlan.get(planId) ?? {};
+    names[row.language_code as string] = row.name as string;
+    namesByPlan.set(planId, names);
   }
+  const note =
+    early.notes[languageCode]?.trim() || early.notes.en?.trim() || early.notes.lv?.trim() || "";
   return (plans ?? []).map((row) => {
     const plan = row as unknown as PlanRow;
     const names = namesByPlan.get(plan.id) ?? {};
@@ -167,14 +173,66 @@ export async function listPublicBillingPlans(languageCode: string) {
       names.en?.trim() ||
       names.lv?.trim() ||
       plan.plan_key;
+    const priceAmount = parseAmount(plan.price_amount);
+    const priceAmountAnnual = parseAmount(plan.price_amount_annual);
     return {
       planKey: plan.plan_key,
-      priceAmount: parseAmount(plan.price_amount),
-      priceAmountAnnual: parseAmount(plan.price_amount_annual),
+      priceAmount,
+      priceAmountAnnual,
       sortOrder: (row as { sort_order?: number }).sort_order ?? 0,
       name,
+      earlyOffer:
+        priceAmount > 0 || priceAmountAnnual > 0
+          ? openEarlyOffer({
+              enabled: early.enabled,
+              users: early.users,
+              months: early.months,
+              claimed: early.claimed,
+              extendable: early.extendable,
+              note,
+            })
+          : null,
     };
   });
+}
+
+export async function loadGlobalEarlyOffer() {
+  const empty = {
+    enabled: false,
+    users: 0,
+    months: 0,
+    claimed: 0,
+    extendable: false,
+    notes: {} as Record<string, string>,
+  };
+  if (!isSupabaseAdminConfigured()) return empty;
+  try {
+    const admin = createAdminClient();
+    const [offerRes, claimsRes, notesRes] = await Promise.all([
+      admin
+        .from("subscription_early_offer")
+        .select("is_enabled, user_limit, free_months, extendable")
+        .eq("id", 1)
+        .maybeSingle(),
+      admin.from("subscription_early_claims").select("user_id", { count: "exact", head: true }),
+      admin.from("subscription_early_offer_i18n").select("language_code, note"),
+    ]);
+    if (offerRes.error) return empty;
+    const notes: Record<string, string> = {};
+    for (const row of notesRes.data ?? []) {
+      notes[row.language_code as string] = (row.note as string) ?? "";
+    }
+    return {
+      enabled: offerRes.data?.is_enabled === true,
+      users: parseAmount(offerRes.data?.user_limit ?? 0),
+      months: parseAmount(offerRes.data?.free_months ?? 0),
+      claimed: claimsRes.count ?? 0,
+      extendable: offerRes.data?.extendable === true,
+      notes,
+    };
+  } catch {
+    return empty;
+  }
 }
 
 /** Active plan display names and included modules (no Stripe gate — studio badges, marketing). */
@@ -359,6 +417,44 @@ export async function findUserIdByStripeCustomer(customerId: string) {
   return (data?.user_id as string) ?? "";
 }
 
+async function claimGlobalEarlyMonths(userId: string): Promise<number> {
+  const admin = createAdminClient();
+  const { data, error } = await admin.rpc("claim_early_offer", { p_user_id: userId });
+  if (error) return 0;
+  const months = typeof data === "number" ? data : Number(data);
+  return Number.isFinite(months) ? Math.max(0, Math.floor(months)) : 0;
+}
+
+async function attachEarlyClaimSession(userId: string, sessionId: string) {
+  const admin = createAdminClient();
+  await admin
+    .from("subscription_early_claims")
+    .update({ stripe_session_id: sessionId })
+    .eq("user_id", userId)
+    .eq("status", "reserved");
+}
+
+export async function keepPlanEarlyClaim(_planKey: string, userId: string) {
+  if (!userId) return;
+  const admin = createAdminClient();
+  await admin
+    .from("subscription_early_claims")
+    .update({ status: "kept" })
+    .eq("user_id", userId)
+    .eq("status", "reserved");
+}
+
+export async function releasePlanEarlyClaim(_planKey: string, userId: string, sessionId: string) {
+  if (!userId || !sessionId) return;
+  const admin = createAdminClient();
+  await admin
+    .from("subscription_early_claims")
+    .delete()
+    .eq("user_id", userId)
+    .eq("status", "reserved")
+    .eq("stripe_session_id", sessionId);
+}
+
 async function checkoutSubscriptionTrialDays(userId: string): Promise<number | undefined> {
   const existing = await loadUserSubscriptionRow(userId);
   if (existing?.stripe_subscription_id?.trim()) {
@@ -435,8 +531,21 @@ export async function createCheckoutSession(input: {
 
   const planName = (await loadPlanName(plan.id, input.languageCode)) ?? plan.plan_key;
   const site = getPublicSiteUrl();
+  const earlyMonths = await claimGlobalEarlyMonths(input.userId);
+  const nowUnix = Math.floor(Date.now() / 1000);
   const trialDays = await checkoutSubscriptionTrialDays(input.userId);
-  const session = await stripe.checkout.sessions.create({
+  const earlyTrialEnd = earlyMonths > 0 ? trialEndUnixAfterMonths(earlyMonths) : 0;
+  const dayTrialEnd = trialDays ? nowUnix + trialDays * 86400 : 0;
+  const trialEnd = Math.max(earlyTrialEnd, dayTrialEnd);
+  const subscriptionTrial =
+    earlyMonths > 0 && trialEnd >= nowUnix + 48 * 3600
+      ? { trial_end: trialEnd }
+      : trialDays
+        ? { trial_period_days: trialDays }
+        : {};
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
     client_reference_id: input.userId,
@@ -460,7 +569,7 @@ export async function createCheckoutSession(input: {
         planKey: plan.plan_key,
         billingInterval: interval,
       },
-      ...(trialDays ? { trial_period_days: trialDays } : {}),
+      ...subscriptionTrial,
     },
     metadata: {
       userId: input.userId,
@@ -470,7 +579,22 @@ export async function createCheckoutSession(input: {
     success_url: `${site}/studio?billing=success`,
     cancel_url: `${site}/studio?billing=cancel`,
   });
+  } catch (error) {
+    if (earlyMonths > 0) {
+      const admin = createAdminClient();
+      await admin
+        .from("subscription_early_claims")
+        .delete()
+        .eq("user_id", input.userId)
+        .eq("status", "reserved")
+        .eq("stripe_session_id", "");
+    }
+    throw error;
+  }
   if (!session.url) throw new Error("checkout_url_missing");
+  if (earlyMonths > 0 && session.id) {
+    await attachEarlyClaimSession(input.userId, session.id);
+  }
   return session.url;
 }
 

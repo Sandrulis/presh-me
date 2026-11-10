@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "@/app/components/translations-provider";
+import { isTransparentColor } from "@/app/lib/color/surface";
 import { pickColorFromScreen, samplePixelFromImageElement, supportsEyeDropper } from "@/app/lib/color/sample-image-pixel";
 
 type Hsv = { h: number; s: number; v: number };
@@ -86,14 +87,18 @@ export function ColorPicker({
   value,
   onChange,
   sampleImageUrl,
+  allowTransparent = false,
 }: {
   label: string;
   value: string;
   onChange: (hex: string) => void;
   /** When set, user can click the preview to sample a pixel (e.g. page background image). */
   sampleImageUrl?: string | null;
+  /** Bloka fonam: var izvēlēties arī caurspīdīgu. */
+  allowTransparent?: boolean;
 }) {
   const { t } = useTranslations();
+  const transparent = allowTransparent && isTransparentColor(value);
   const safe = /^#[0-9a-fA-F]{6}$/.test(value) ? value.toLowerCase() : "#111111";
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -106,7 +111,10 @@ export function ColorPicker({
   const eyedropperAvailable = supportsEyeDropper();
   const sampleUrl = sampleImageUrl?.trim() || "";
   const panelHeight =
-    PANEL_BASE_H + (eyedropperAvailable ? PANEL_EYEDROPPER_H : 0) + (sampleUrl ? PANEL_SAMPLE_H : 0);
+    PANEL_BASE_H +
+    (allowTransparent ? 52 : 0) +
+    (eyedropperAvailable ? PANEL_EYEDROPPER_H : 0) +
+    (sampleUrl ? PANEL_SAMPLE_H : 0);
   const parsed = hexToHsv(safe);
   const emitted = hsvToHex(model.h, model.s, model.v).toLowerCase();
   const active: Hsv = emitted === safe ? model : { h: parsed.s < 0.02 ? model.h : parsed.h, s: parsed.s, v: parsed.v };
@@ -181,6 +189,23 @@ export function ColorPicker({
             className="fixed z-[80] rounded-2xl border border-[#d3e4da] bg-white p-3 shadow-[0_16px_40px_rgba(20,48,40,0.14)]"
             style={{ left: box.left, top: box.top, width: PANEL_W }}
           >
+            {allowTransparent ? (
+              <button
+                type="button"
+                className={`mb-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl border text-sm font-medium ${
+                  transparent
+                    ? "border-[#1a6b4a] bg-[#f3faf6] text-[#143028]"
+                    : "border-[#c5d9cd] bg-[#f7faf8] text-[#143028]"
+                }`}
+                onClick={() => {
+                  setHexDraft(null);
+                  onChange("transparent");
+                }}
+              >
+                <span className="color-checker size-5 rounded-md ring-1 ring-black/10" />
+                {t("studio.color_picker.transparent", "Caurspīdīgs")}
+              </button>
+            ) : null}
             <div
               className="relative h-[132px] cursor-crosshair touch-none overflow-hidden rounded-xl ring-1 ring-black/10"
               style={{
@@ -220,10 +245,13 @@ export function ColorPicker({
               />
             </div>
             <label className="mt-3 flex h-11 items-center gap-2 rounded-xl border border-[#c5d9cd] bg-white px-3 focus-within:border-[#1a6b4a] focus-within:ring-4 focus-within:ring-[#1a6b4a]/15">
-              <span className="size-5 shrink-0 rounded-md ring-1 ring-black/10" style={{ background: safe }} />
+              <span
+                className={`size-5 shrink-0 rounded-md ring-1 ring-black/10 ${transparent ? "color-checker" : ""}`}
+                style={transparent ? undefined : { background: safe }}
+              />
               <span className="text-sm text-[#5f756a]">#</span>
               <input
-                value={(hexDraft ?? safe.replace("#", "")).toUpperCase()}
+                value={transparent ? (hexDraft ?? "") : (hexDraft ?? safe.replace("#", "")).toUpperCase()}
                 spellCheck={false}
                 maxLength={6}
                 aria-label={label}
@@ -286,8 +314,8 @@ export function ColorPicker({
           setModel(hexToHsv(safe));
           setOpen((current) => !current);
         }}
-        className={`size-9 shrink-0 rounded-xl ring-1 ring-[#c5d9cd] ${open ? "ring-2 ring-[#1a6b4a]" : ""}`}
-        style={{ background: safe }}
+        className={`size-9 shrink-0 rounded-xl ring-1 ring-[#c5d9cd] ${transparent ? "color-checker" : ""} ${open ? "ring-2 ring-[#1a6b4a]" : ""}`}
+        style={transparent ? undefined : { background: safe }}
       />
       {panel}
     </div>

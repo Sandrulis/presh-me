@@ -16,6 +16,14 @@ import { ImageDropField, useImageFileDrop } from "@/app/components/image-drop-fi
 import { useTranslations } from "@/app/components/translations-provider";
 import { imageFrame, pageImageFrame, panLimits, placedImageStyle } from "@/app/lib/image-frame";
 import { LINK_UNAVAILABLE, linkFieldError, normalizeHandle } from "@/app/lib/handles";
+import { useFrontendModuleAccess } from "@/app/lib/modules/use-frontend-module-access";
+import {
+  applyCopiedDesign,
+  handleFromDesignInput,
+  readCopiedDesign,
+  saveCopiedDesign,
+  type CopiedPageDesign,
+} from "@/app/lib/page-design";
 import { instagramName, publicHttpUrl, type SourcePreview } from "@/app/lib/source-preview";
 import {
   claimInstagramAvatar,
@@ -28,7 +36,7 @@ import {
   savePage,
   subscribeStore,
 } from "@/app/lib/store";
-import { normalizeOnboardingStep } from "@/app/lib/onboarding/destination";
+import { normalizeOnboardingStep, pageDesignInProgress } from "@/app/lib/onboarding/destination";
 import { getTheme, themes } from "@/app/lib/themes";
 import type { FontId, Onboarding, Portfolio, SectionId, StepId, StepMark } from "@/app/lib/types";
 
@@ -104,6 +112,8 @@ export function OnboardingApp() {
   const [linkDraft, setLinkDraft] = useState("");
 
   const [creatingPage, setCreatingPage] = useState(false);
+  const unfinishedChecked = useRef(false);
+  const { access: multisitesAccess } = useFrontendModuleAccess("module_multisites");
 
   useEffect(() => {
     if (ready && !sessionId) router.replace("/login");
@@ -130,6 +140,15 @@ export function OnboardingApp() {
   useEffect(() => {
     if (stored?.onboarding?.finished) router.replace("/studio");
   }, [stored, router]);
+
+  useEffect(() => {
+    if (unfinishedChecked.current) return;
+    const onboarding = stored?.onboarding;
+    if (!onboarding) return;
+    unfinishedChecked.current = true;
+    if (!pageDesignInProgress(onboarding)) return;
+    notify(t("onboarding.unfinished", "Tu esi sācis veidot lapu, bet vēl neesi to pabeidzis."), "info");
+  }, [stored, notify, t]);
 
   if (stored?.onboarding?.finished) {
     return <LoadingScreen label="common.loading" backdrop="app" />;
@@ -219,6 +238,40 @@ export function OnboardingApp() {
           instagram: name,
           sourceNote: note,
           sections: images.length > 0 ? ["instagram", "links"] : page.onboarding.sections,
+        },
+      });
+      setPending(false);
+      return;
+    }
+    if (source === "page") {
+      const typed = handleFromDesignInput(page.onboarding.copiedHandle ?? "");
+      let design = readCopiedDesign();
+      if (typed && design?.handle !== typed) {
+        const response = await fetch(`/api/page-design?handle=${encodeURIComponent(typed)}`, {
+          credentials: "same-origin",
+        });
+        const body = (await response.json().catch(() => null)) as { ok?: boolean; design?: CopiedPageDesign } | null;
+        if (!response.ok || !body?.ok || !body.design) {
+          notify(t("onboarding.from_page.missing", "Atver citu lapu un nospied kopēt, vai ievadi linku."), "error");
+          setPending(false);
+          return;
+        }
+        design = body.design;
+        saveCopiedDesign(design);
+      }
+      if (!design) {
+        notify(t("onboarding.from_page.missing", "Atver citu lapu un nospied kopēt, vai ievadi linku."), "error");
+        setPending(false);
+        return;
+      }
+      const applied = applyCopiedDesign(page, design);
+      go(2, "start", "done", {
+        ...applied,
+        onboarding: {
+          ...page.onboarding,
+          source: "page",
+          copiedHandle: design.handle,
+          sourceNote: t("onboarding.source.note_page", "Dizains no {handle}.", { handle: design.handle }),
         },
       });
       setPending(false);
@@ -360,6 +413,7 @@ export function OnboardingApp() {
               <StepStart
                 onboarding={onboarding}
                 pending={pending}
+                canCopy={multisitesAccess.canUse}
                 onChange={(patch) => setDraft({ ...draft, onboarding: { ...onboarding, ...patch } })}
                 onContinue={() => void continueStart()}
                 onSkip={skip}
@@ -422,17 +476,20 @@ export function OnboardingApp() {
 function StepStart({
   onboarding,
   pending,
+  canCopy,
   onChange,
   onContinue,
   onSkip,
 }: {
   onboarding: Onboarding;
   pending: boolean;
+  canCopy: boolean;
   onChange: (patch: Partial<Onboarding>) => void;
   onContinue: () => void;
   onSkip: () => void;
 }) {
   const { t } = useTranslations();
+  const stored = readCopiedDesign();
   return (
     <>
       <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-[-0.04em]">
@@ -482,6 +539,37 @@ function StepStart({
             {t("onboarding.from_scratch.hint", "Tukša lapa. Visu saliksi pats.")}
           </span>
         </button>
+        {canCopy ? (
+          <div className="choice" data-selected={onboarding.source === "page"}>
+            <button
+              type="button"
+              className="block w-full text-left"
+              aria-pressed={onboarding.source === "page"}
+              onClick={() => onChange({ source: "page", copiedHandle: onboarding.copiedHandle || stored?.handle || "" })}
+            >
+              <span className="block font-semibold">{t("onboarding.from_page", "No cita lietotāja")}</span>
+              <span className="mt-1 block text-sm text-[var(--muted)]">
+                {t("onboarding.from_page.hint", "Dizains no citas lapas. Bildes un tekstu saliksi pats.")}
+              </span>
+            </button>
+            {onboarding.source === "page" ? (
+              <>
+                {stored ? (
+                  <p className="mt-3 text-sm text-[var(--muted)]">
+                    {t("onboarding.from_page.ready", "Nokopēts no {handle}", { handle: stored.handle })}
+                  </p>
+                ) : null}
+                <input
+                  className="auth-field mt-3"
+                  value={onboarding.copiedHandle ?? ""}
+                  placeholder={t("onboarding.from_page.handle_ph", "presh.me/vards")}
+                  aria-label={t("onboarding.from_page", "No cita lietotāja")}
+                  onChange={(event) => onChange({ copiedHandle: event.target.value })}
+                />
+              </>
+            ) : null}
+          </div>
+        ) : null}
       </div>
       <button type="button" className="btn-auth mt-6" disabled={pending} onClick={onContinue}>
         {pending ? t("onboarding.start.looking", "Skatos...") : t("common.continue", "Turpināt")}
@@ -699,14 +787,32 @@ function StepProfile({
     icons: {
       title: t("onboarding.socials.title", "Sociālās ikonas"),
       body: (
-        <RangeField
-          label={t("onboarding.icon_size", "Ikonu izmērs")}
-          min={24}
-          max={72}
-          value={draft.socialIconSize ?? 40}
-          suffix=" px"
-          onChange={(socialIconSize) => onChange({ socialIconSize })}
-        />
+        <>
+          <RangeField
+            label={t("onboarding.icon_size", "Ikonu izmērs")}
+            min={24}
+            max={72}
+            value={draft.socialIconSize ?? 40}
+            suffix=" px"
+            onChange={(socialIconSize) => onChange({ socialIconSize })}
+          />
+          <RangeField
+            label={t("onboarding.avatar_radius", "Noapaļojums")}
+            min={0}
+            max={50}
+            value={draft.socialIconRadius ?? 50}
+            suffix=" %"
+            onChange={(socialIconRadius) => onChange({ socialIconRadius })}
+          />
+          <RangeField
+            label={t("onboarding.icon_padding", "Ikonas atstarpe")}
+            min={0}
+            max={16}
+            value={draft.socialIconPadding ?? 9}
+            suffix=" px"
+            onChange={(socialIconPadding) => onChange({ socialIconPadding })}
+          />
+        </>
       ),
     },
   };
@@ -809,11 +915,14 @@ function StepProfile({
       />
       <OptionRow
         title={t("onboarding.socials.title", "Sociālās ikonas")}
-        hint={t("onboarding.socials.hint", "Ikonu izmērs lapā.")}
+        hint={t("onboarding.socials.hint", "Izmērs, noapaļojums un atstarpe.")}
         open={panel === "icons" && panelVisible}
         onOpen={() => showPanel("icons")}
         preview={
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-[var(--line)] text-xs text-[var(--muted)]">
+          <span
+            className="grid h-12 w-12 shrink-0 place-items-center border border-[var(--line)] text-xs text-[var(--muted)]"
+            style={{ borderRadius: `${draft.socialIconRadius ?? 50}%` }}
+          >
             {draft.socialIconSize ?? 40}
           </span>
         }

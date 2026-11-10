@@ -2,6 +2,8 @@ import Stripe from "stripe";
 import {
   extendSubscriptionWithTrialBonus,
   findUserIdByStripeCustomer,
+  keepPlanEarlyClaim,
+  releasePlanEarlyClaim,
   syncSubscriptionById,
 } from "@/app/lib/billing/subscription-repository";
 import { parseBillingInterval } from "@/app/lib/billing/billing-interval";
@@ -66,8 +68,18 @@ export async function POST(request: Request) {
               ? await findUserIdByStripeCustomer(session.customer)
               : "");
           if (resolvedUserId && planKey) {
+            await keepPlanEarlyClaim(planKey, resolvedUserId);
             notifySubscriptionPurchasedEmail(resolvedUserId, planKey, billingInterval);
           }
+        }
+        break;
+      }
+      case "checkout.session.expired": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const userId = session.metadata?.userId || session.client_reference_id || "";
+        const planKey = session.metadata?.planKey?.trim().toLowerCase() ?? "";
+        if (userId && planKey && session.id) {
+          await releasePlanEarlyClaim(planKey, userId, session.id);
         }
         break;
       }

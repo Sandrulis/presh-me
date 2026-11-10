@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { ToggleSwitch } from "@/app/components/admin-ui";
 import { BlockStyleFields, RangeRow } from "@/app/components/block-style-fields";
 import { DropLine } from "@/app/components/drop-line";
 import { FieldFrame } from "@/app/components/field-frame";
@@ -18,12 +19,17 @@ import {
   emptyFaqItem,
   emptyPollOption,
   emptyResumeItem,
+  emptyGalleryItem,
+  emptyProductItem,
+  galleryIntervalSeconds,
+  emptyServiceItem,
   emptySkillItem,
+  formatItemPrice,
+  PRICE_CURRENCIES,
   clampSkillRating,
   googleMapsEmbedUrl,
   isGoogleMapsShortLink,
   mapsBlockUrlAccepted,
-  instagramMediaUrlsFromText,
   readImageFile,
   videoEmbedUrl,
 } from "@/app/lib/blocks";
@@ -34,6 +40,7 @@ import type {
   FaqBlock,
   FaqBlockItem,
   InstagramBlock,
+  XBlock,
   LinkBlock,
   MapsBlock,
   PollBlock,
@@ -44,6 +51,13 @@ import type {
   ResumeBlock,
   ResumeItem,
   CountdownBlock,
+  GalleryBlock,
+  GalleryItem,
+  GalleryLayout,
+  ProductItem,
+  ProductsBlock,
+  ServiceItem,
+  ServicesBlock,
   SkillItem,
   SkillsBlock,
 } from "@/app/lib/types";
@@ -517,6 +531,8 @@ function BlockFields({
       );
     case "instagram":
       return <InstagramFields block={block} onChange={onChange} />;
+    case "x":
+      return <XFields block={block} onChange={onChange} />;
     case "quote":
       return (
         <>
@@ -595,6 +611,110 @@ function BlockFields({
             <BlockStyleFields block={block} onChange={onChange} />
           </div>
           <SkillsItemsEditor block={block} onChange={onChange} />
+        </>
+      );
+    case "services":
+      return (
+        <>
+          <FieldFrame label={t("common.heading", "Virsraksts")}>
+            <input
+              className="auth-field"
+              autoFocus
+              placeholder={optionalPh}
+              value={block.heading ?? ""}
+              maxLength={80}
+              onChange={(e) => onChange({ ...block, heading: e.target.value })}
+            />
+          </FieldFrame>
+          <div className="mb-4 mt-4">
+            <BlockStyleFields block={block} onChange={onChange} />
+          </div>
+          <ServicesItemsEditor block={block} onChange={onChange} />
+        </>
+      );
+    case "products":
+      return (
+        <>
+          <FieldFrame label={t("common.heading", "Virsraksts")}>
+            <input
+              className="auth-field"
+              autoFocus
+              placeholder={optionalPh}
+              value={block.heading ?? ""}
+              maxLength={80}
+              onChange={(e) => onChange({ ...block, heading: e.target.value })}
+            />
+          </FieldFrame>
+          <div className="mb-4 mt-4">
+            <BlockStyleFields block={block} onChange={onChange} />
+          </div>
+          <ProductsItemsEditor block={block} onChange={onChange} />
+        </>
+      );
+    case "gallery":
+      return (
+        <>
+          <FieldFrame label={t("common.heading", "Virsraksts")}>
+            <input
+              className="auth-field"
+              autoFocus
+              placeholder={optionalPh}
+              value={block.heading ?? ""}
+              maxLength={80}
+              onChange={(e) => onChange({ ...block, heading: e.target.value })}
+            />
+          </FieldFrame>
+          <div className="mb-4 mt-4">
+            <p className="mb-2 text-sm font-medium">{t("studio.blocks.gallery.layout", "Veids")}</p>
+            <GalleryLayoutSwitch
+              value={block.layout}
+              onChange={(layout) => onChange({ ...block, layout })}
+            />
+          </div>
+          {block.layout === "carousel" ? (
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{t("studio.blocks.gallery.autoplay", "Mainīt automātiski")}</p>
+                {block.autoplay ? (
+                  <label className="mt-2 flex items-center gap-2 text-sm text-[var(--muted)]">
+                    <span>{t("studio.blocks.gallery.interval", "Ik pēc sekundēm")}</span>
+                    <span className="w-20 shrink-0">
+                    <input
+                      type="number"
+                      min={2}
+                      max={30}
+                      inputMode="numeric"
+                      aria-label={t("studio.blocks.gallery.interval", "Ik pēc sekundēm")}
+                      className="auth-field px-2 text-center"
+                      value={galleryIntervalSeconds(block.intervalSeconds)}
+                      onChange={(event) =>
+                        onChange({
+                          ...block,
+                          intervalSeconds: galleryIntervalSeconds(Number(event.target.value)),
+                        })
+                      }
+                      />
+                    </span>
+                  </label>
+                ) : null}
+              </div>
+              <ToggleSwitch
+                checked={Boolean(block.autoplay)}
+                label={t("studio.blocks.gallery.autoplay", "Mainīt automātiski")}
+                onChange={(autoplay) =>
+                  onChange({
+                    ...block,
+                    autoplay,
+                    intervalSeconds: galleryIntervalSeconds(block.intervalSeconds),
+                  })
+                }
+              />
+            </div>
+          ) : null}
+          <div className="mb-4">
+            <BlockStyleFields block={block} onChange={onChange} />
+          </div>
+          <GalleryItemsEditor block={block} onChange={onChange} />
         </>
       );
     case "faq":
@@ -784,132 +904,41 @@ function InstagramFields({
   onChange: (next: InstagramBlock) => void;
 }) {
   const { t } = useTranslations();
-  const [linksText, setLinksText] = useState("");
-  const [status, setStatus] = useState<string | null>(null);
-  const count = Math.min(12, Math.max(1, block.count || 6));
+  return (
+    <FieldFrame label={t("studio.blocks.instagram.post_url", "Ieraksta saite")}>
+      <input
+        className="auth-field"
+        autoFocus
+        placeholder={t("studio.blocks.instagram.post_url_ph", "https://www.instagram.com/p/…")}
+        value={block.postUrl ?? ""}
+        onChange={(e) => onChange({ ...block, mode: "post", postUrl: e.target.value })}
+      />
+    </FieldFrame>
+  );
+}
 
-  function applyPostLinks() {
-    const fromLinks = instagramMediaUrlsFromText(linksText, count);
-    if (fromLinks.length === 0) {
-      setStatus(t("studio.blocks.instagram.paste_error", "Ielīmē Instagram ierakstu saites (instagram.com/p/… vai /reel/…)."));
-      return;
-    }
-    const merged: string[] = [];
-    const seen = new Set<string>();
-    for (const src of [...fromLinks, ...block.images]) {
-      const key = src.match(/\/p\/([A-Za-z0-9_-]+)/)?.[1] ?? src;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      merged.push(src);
-      if (merged.length >= count) break;
-    }
-    onChange({ ...block, images: merged });
-    setLinksText("");
-    setStatus(t("studio.blocks.instagram.added_status", "Pievienotas {count} bildes (rāda līdz {max}).", { count: fromLinks.length, max: count }));
-  }
-
+function XFields({
+  block,
+  onChange,
+}: {
+  block: XBlock;
+  onChange: (next: XBlock) => void;
+}) {
+  const { t } = useTranslations();
   return (
     <>
-      <FieldFrame label={t("onboarding.instagram_username", "Instagram lietotājvārds")}>
-        <input
-          className="auth-field"
-          placeholder={t("studio.blocks.instagram.username_ph", "@lietotajs (nav obligāts)")}
-          value={block.username}
-          maxLength={60}
-          onChange={(e) => onChange({ ...block, username: e.target.value })}
+      <FieldFrame label={t("studio.blocks.x.embed", "Ieraksta saite vai iegulums")}>
+        <textarea
+          className="auth-area min-h-[8rem]"
+          autoFocus
+          placeholder={t("studio.blocks.x.embed_ph", "https://x.com/vards/status/…")}
+          value={block.source}
+          onChange={(e) => onChange({ ...block, mode: "post", source: e.target.value })}
         />
       </FieldFrame>
-
-      <div className="mt-4">
-        <p className="mb-2 text-sm font-medium">{t("common.columns", "Kolonnas")}</p>
-        <div className="inline-flex rounded-2xl bg-[#e8eef5] p-1">
-          {([2, 3, 4] as const).map((cols) => (
-            <button
-              key={cols}
-              type="button"
-              className={`h-9 min-w-10 rounded-xl px-3 text-sm font-medium ${block.columns === cols ? "bg-white shadow-[0_1px_2px_rgba(16,24,40,0.12)]" : "text-[#8b95a3]"}`}
-              onClick={() => onChange({ ...block, columns: cols })}
-            >
-              {cols}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <FieldFrame label={t("studio.blocks.instagram.image_count", "Bildžu skaits")}>
-        <input
-          className="auth-field"
-          type="number"
-          min={1}
-          max={12}
-          value={count}
-          onChange={(e) => {
-            const next = Math.min(12, Math.max(1, Number(e.target.value) || 1));
-            onChange({ ...block, count: next, images: block.images.slice(0, next) });
-          }}
-        />
-      </FieldFrame>
-
-      <p className="mt-3 text-xs text-[var(--muted)]">
-        {t("studio.blocks.instagram.api_note", "Instagram neatļauj automātiski ņemt „pēdējās N” no profila bez oficiālā API. Ielīmē konkrētu ierakstu saites — rādīsies tikai bildes (bez galvenes), skaitā un kolonnās kā iestatīts.")}
+      <p className="mt-2 text-xs text-[var(--muted)]">
+        {t("studio.blocks.x.embed_hint", "Vari ielīmēt ieraksta saiti vai X ieguluma kodu. Rādās pats ieraksts.")}
       </p>
-
-      <div className="mt-3">
-        <FieldFrame label={t("studio.blocks.instagram.post_links", "Ierakstu saites")}>
-          <textarea
-            className="auth-area min-h-[7rem]"
-            autoFocus
-            placeholder={t("studio.blocks.instagram.post_links_ph", "https://www.instagram.com/p/…\nhttps://www.instagram.com/reel/…")}
-            value={linksText}
-            onChange={(e) => {
-              setStatus(null);
-              setLinksText(e.target.value);
-            }}
-          />
-        </FieldFrame>
-        <button type="button" className="btn-line mt-2 w-full" onClick={applyPostLinks}>
-          {t("studio.blocks.instagram.add_from_links", "Pievienot bildes no saitēm")}
-        </button>
-        {status ? <p className="mt-2 text-xs text-[var(--muted)]">{status}</p> : null}
-      </div>
-
-      {block.images.length > 0 ? (
-        <div className="mt-3 flex flex-col gap-2">
-          {block.images.slice(0, count).map((src, index) => (
-            <div key={`${src.slice(0, 40)}-${index}`} className="flex items-center gap-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt="" className="size-12 rounded-lg object-cover" referrerPolicy="no-referrer" />
-              <button
-                type="button"
-                className="text-xs text-[var(--stamp)]"
-                onClick={() => onChange({ ...block, images: block.images.filter((_, i) => i !== index) })}
-              >
-                {t("common.remove", "Noņemt")}
-              </button>
-            </div>
-          ))}
-          <button type="button" className="btn-line w-full" onClick={() => onChange({ ...block, images: [] })}>
-            {t("studio.blocks.instagram.clear_images", "Notīrīt bildes")}
-          </button>
-        </div>
-      ) : null}
-
-      {block.images.length < count ? (
-        <div className="mt-3">
-          <ImageDropField
-            title={t("studio.blocks.instagram.add_own", "Vai pievienot savu bildi")}
-            hint={t("studio.blocks.instagram.remaining", "Vēl {count} līdz limitam.", { count: count - block.images.length })}
-            preview={<span className="text-sm text-[var(--muted)]">{t("actions.add", "Pievienot")}</span>}
-            onFile={(file) =>
-              void readImageFile(
-                file,
-                (src) => onChange({ ...block, images: [...block.images, src].slice(0, count) }),
-                () => {},
-              )
-            }
-          />
-        </div>
-      ) : null}
     </>
   );
 }
@@ -1444,6 +1473,822 @@ function SkillStarIcon({ filled }: { filled: boolean }) {
     <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8">
       <path d="M12 3.2l2.4 5.6 6.1.6-4.6 4 1.4 6-5.3-3.2L6.7 19.4l1.4-6-4.6-4 6.1-.6L12 3.2z" />
     </svg>
+  );
+}
+
+function GalleryLayoutSwitch({
+  value,
+  onChange,
+}: {
+  value: GalleryLayout;
+  onChange: (layout: GalleryLayout) => void;
+}) {
+  const { t } = useTranslations();
+  const options: { id: GalleryLayout; label: string }[] = [
+    { id: "grid", label: t("studio.blocks.gallery.layout.grid", "Režģis") },
+    { id: "masonry", label: t("studio.blocks.gallery.layout.masonry", "Masonry") },
+    { id: "carousel", label: t("studio.blocks.gallery.layout.carousel", "Karuselis") },
+  ];
+  return (
+    <div className="grid grid-cols-3 rounded-2xl bg-[#e8eef5] p-1" role="radiogroup" aria-label={t("studio.blocks.gallery.layout", "Veids")}>
+      {options.map((option) => {
+        const selected = value === option.id;
+        return (
+          <button
+            key={option.id}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(option.id)}
+            className={`h-10 rounded-xl px-2 text-sm font-medium ${
+              selected ? "bg-white text-[#111] shadow-[0_1px_2px_rgba(16,24,40,0.12)]" : "text-[#8b95a3]"
+            }`}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function GalleryItemsEditor({
+  block,
+  onChange,
+}: {
+  block: GalleryBlock;
+  onChange: (next: GalleryBlock) => void;
+}) {
+  const { t } = useTranslations();
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [drop, setDrop] = useState<DropTarget | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [uploadPercent, setUploadPercent] = useState<Record<string, number>>({});
+  const dragIdRef = useRef<string | null>(null);
+  const dropRef = useRef<DropTarget | null>(null);
+  const blockRef = useRef(block);
+  const previewsRef = useRef<Record<string, string>>({});
+  const seenBlockRef = useRef(block);
+  dragIdRef.current = dragId;
+  dropRef.current = drop;
+  if (block !== seenBlockRef.current) {
+    seenBlockRef.current = block;
+    blockRef.current = block;
+  }
+
+  useEffect(() => {
+    const urls = previewsRef.current;
+    return () => {
+      for (const url of Object.values(urls)) URL.revokeObjectURL(url);
+    };
+  }, []);
+
+  const itemIds = block.items.map((item) => item.id);
+  const editing = block.items.find((item) => item.id === editId) ?? null;
+
+  function clearDrag() {
+    setDragId(null);
+    setDrop(null);
+  }
+
+  function patchItem(id: string, patch: Partial<GalleryItem>) {
+    const current = blockRef.current;
+    const next = {
+      ...current,
+      items: current.items.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    };
+    blockRef.current = next;
+    onChange(next);
+  }
+
+  function clearPreview(id: string) {
+    const url = previewsRef.current[id];
+    if (!url) return;
+    URL.revokeObjectURL(url);
+    delete previewsRef.current[id];
+  }
+
+  function finishUpload(id: string) {
+    clearPreview(id);
+    setUploadPercent((current) => {
+      if (!(id in current)) return current;
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+  }
+
+  function trackUpload(id: string, file: File, onFail: (message: string) => void) {
+    clearPreview(id);
+    previewsRef.current[id] = URL.createObjectURL(file);
+    setUploadPercent((current) => ({ ...current, [id]: 0 }));
+    void readImageFile(
+      file,
+      (imageUrl) => {
+        patchItem(id, { imageUrl });
+        finishUpload(id);
+      },
+      (message) => {
+        finishUpload(id);
+        onFail(message);
+      },
+      (percent) => setUploadPercent((current) => ({ ...current, [id]: percent })),
+    );
+  }
+
+  function addFromFiles(files: File[]) {
+    const room = 30 - blockRef.current.items.length;
+    const accepted = files.slice(0, room);
+    if (accepted.length === 0) return;
+    const created = accepted.map(() => emptyGalleryItem());
+    const next = { ...blockRef.current, items: [...blockRef.current.items, ...created] };
+    blockRef.current = next;
+    onChange(next);
+    setImageError(null);
+    accepted.forEach((file, index) => {
+      const id = created[index].id;
+      trackUpload(id, file, (message) => {
+        setImageError(message);
+        const current = blockRef.current;
+        const without = { ...current, items: current.items.filter((item) => item.id !== id) };
+        blockRef.current = without;
+        onChange(without);
+      });
+    });
+  }
+
+  return (
+    <>
+      <div className="mt-2">
+        <p className="mb-2 text-sm font-medium">{t("studio.blocks.gallery.list", "Attēli")}</p>
+        <ImageDropField
+          multiple
+          title={t("studio.blocks.gallery.list", "Attēli")}
+          hint={t("studio.blocks.gallery.drop_hint", "Ievelc attēlus vai izvēlies vairākus failus.")}
+          preview={<span className="text-sm text-[var(--muted)]">+</span>}
+          onFiles={addFromFiles}
+        />
+        {imageError ? <p className="mt-2 text-sm text-[var(--stamp)]">{imageError}</p> : null}
+      </div>
+
+      {block.items.length === 0 ? (
+        <p className="mt-3 text-sm text-[var(--muted)]">
+          {t("studio.blocks.gallery.empty", "Pievieno attēlus. Secību maini ar vilkšanu.")}
+        </p>
+      ) : (
+        <ul className="mt-3 flex flex-col gap-2">
+          {block.items.map((item) => {
+            const dragging = dragId === item.id;
+            const percent = uploadPercent[item.id];
+            const uploading = percent !== undefined;
+            const incomplete = !item.imageUrl?.trim() && !uploading;
+            const showLine = Boolean(dragId && drop && drop.id === item.id && dropWouldMove(itemIds, dragId, drop));
+            const title = uploading
+              ? t("studio.blocks.gallery.uploading", "Augšupielāde {percent}%", { percent: String(percent) })
+              : item.alt?.trim() || t("studio.blocks.gallery.new_image", "Jauns attēls");
+            const image = item.imageUrl?.trim() || previewsRef.current[item.id] || "";
+            return (
+              <li
+                key={item.id}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  if (!dragId || dragId === item.id) {
+                    if (drop) setDrop(null);
+                    return;
+                  }
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  const next: DropTarget = {
+                    id: item.id,
+                    edge: edgeFromPointer(event.clientY, rect.top, rect.height),
+                  };
+                  if (!drop || drop.id !== next.id || drop.edge !== next.edge) setDrop(next);
+                }}
+                onDragLeave={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node) && drop?.id === item.id) {
+                    setDrop(null);
+                  }
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const fromId = dragIdRef.current ?? event.dataTransfer.getData("text/plain");
+                  const target = dropRef.current;
+                  if (fromId) {
+                    const next = commitDropReorder(block.items, fromId, target);
+                    if (next) onChange({ ...block, items: next });
+                  }
+                  clearDrag();
+                }}
+                className={`relative rounded-xl bg-white px-1.5 py-1.5 transition-[opacity,border-color,box-shadow,border-width] duration-150 ${
+                  dragging
+                    ? "border-2 border-dashed border-[var(--accent)] opacity-[0.35] shadow-none"
+                    : incomplete
+                      ? "border-2 border-solid border-[var(--stamp)] opacity-100"
+                      : "border border-solid border-[var(--line)] opacity-100"
+                }`}
+              >
+                {showLine && drop ? <DropLine edge={drop.edge} /> : null}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    draggable
+                    aria-label={t("studio.dnd.change_priority", "Mainīt prioritāti")}
+                    title={t("studio.dnd.drag_order", "Velc, lai mainītu secību")}
+                    className="grid size-8 shrink-0 cursor-grab place-items-center rounded-lg text-[var(--muted)] hover:bg-[var(--paper)] active:cursor-grabbing"
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", item.id);
+                      setDragId(item.id);
+                      setDrop(null);
+                    }}
+                    onDragEnd={clearDrag}
+                  >
+                    <DragHandle />
+                  </button>
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-1 py-1 text-left hover:bg-[var(--paper)]"
+                    onClick={() => {
+                      setImageError(null);
+                      setEditId(item.id);
+                    }}
+                  >
+                    {image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={image} alt="" className="size-8 shrink-0 rounded-md object-cover" />
+                    ) : null}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold tabular-nums">{title}</span>
+                      {uploading ? (
+                        <span className="mt-1 block h-1 overflow-hidden rounded-full bg-[#e8eef5]">
+                          <span className="block h-full bg-[var(--accent)]" style={{ width: `${percent}%` }} />
+                        </span>
+                      ) : null}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("actions.delete", "Dzēst")}
+                    title={t("actions.delete", "Dzēst")}
+                    className="grid size-8 shrink-0 place-items-center rounded-lg text-[var(--muted)] hover:bg-red-50 hover:text-[var(--stamp)]"
+                    onClick={() => {
+                      finishUpload(item.id);
+                      const current = blockRef.current;
+                      const next = { ...current, items: current.items.filter((entry) => entry.id !== item.id) };
+                      blockRef.current = next;
+                      onChange(next);
+                    }}
+                  >
+                    <IconTrash />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {editing ? (
+        <SideDrawer
+          title={t("studio.blocks.gallery.edit_title", "Attēls")}
+          hint={t("studio.blocks.gallery.edit_hint", "Attēls un alternatīvais teksts")}
+          ariaLabel={t("studio.blocks.gallery.edit_aria", "Labot attēlu")}
+          nested
+          onClose={() => setEditId(null)}
+          footer={(close) => (
+            <button type="button" className="btn-ink w-full" onClick={close}>
+              {t("common.done", "Gatavs")}
+            </button>
+          )}
+        >
+          <FieldFrame label={t("studio.blocks.gallery.alt", "Alternatīvais teksts")}>
+            <input
+              className="auth-field"
+              autoFocus
+              placeholder={t("common.optional", "Nav obligāts")}
+              value={editing.alt ?? ""}
+              maxLength={120}
+              onChange={(event) => patchItem(editing.id, { alt: event.target.value })}
+            />
+          </FieldFrame>
+          <div className="mt-4">
+            <ImageDropField
+              title={t("onboarding.image.title", "Attēls")}
+              hint={t("studio.blocks.field.image_drop_hint", "Ievelc vai izvēlies failu.")}
+              preview={
+                editing.imageUrl || previewsRef.current[editing.id] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={editing.imageUrl || previewsRef.current[editing.id]} alt="" className="size-16 rounded-lg object-cover" />
+                ) : (
+                  <span className="text-sm text-[var(--muted)]">{t("studio.blocks.field.no_image", "Nav attēla")}</span>
+                )
+              }
+              onFile={(file) => {
+                if (!file) return;
+                setImageError(null);
+                trackUpload(editing.id, file, setImageError);
+              }}
+            />
+            {uploadPercent[editing.id] !== undefined ? (
+              <p className="mt-2 text-sm tabular-nums text-[var(--muted)]">
+                {t("studio.blocks.gallery.uploading", "Augšupielāde {percent}%", {
+                  percent: String(uploadPercent[editing.id]),
+                })}
+              </p>
+            ) : null}
+            {imageError ? <p className="mt-2 text-sm text-[var(--stamp)]">{imageError}</p> : null}
+          </div>
+        </SideDrawer>
+      ) : null}
+    </>
+  );
+}
+
+function PriceFields({
+  price,
+  currency,
+  onPrice,
+  onCurrency,
+}: {
+  price: string;
+  currency: string;
+  onPrice: (price: string) => void;
+  onCurrency: (currency: string) => void;
+}) {
+  const { t } = useTranslations();
+  return (
+    <FieldFrame label={t("studio.blocks.services.price", "Cena")}>
+      <div className="flex gap-2">
+        <input
+          className="auth-field min-w-0 flex-1"
+          inputMode="decimal"
+          placeholder={t("studio.blocks.services.price_ph", "Piem. 25")}
+          value={price}
+          maxLength={40}
+          onChange={(event) => onPrice(event.target.value)}
+        />
+        <div className="w-[8.75rem] shrink-0">
+          <select
+            className="auth-field"
+            aria-label={t("studio.blocks.services.currency", "Valūta")}
+            value={currency}
+            onChange={(event) => onCurrency(event.target.value)}
+          >
+            <option value="">{t("studio.blocks.services.currency_none", "Bez valūtas")}</option>
+            {PRICE_CURRENCIES.map((item) => (
+              <option key={item.code} value={item.code}>
+                {item.symbol} {item.code}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </FieldFrame>
+  );
+}
+
+function ServicesItemsEditor({
+  block,
+  onChange,
+}: {
+  block: ServicesBlock;
+  onChange: (next: ServicesBlock) => void;
+}) {
+  const { t } = useTranslations();
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [drop, setDrop] = useState<DropTarget | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const dragIdRef = useRef<string | null>(null);
+  const dropRef = useRef<DropTarget | null>(null);
+  dragIdRef.current = dragId;
+  dropRef.current = drop;
+
+  const itemIds = block.items.map((item) => item.id);
+  const editing = block.items.find((item) => item.id === editId) ?? null;
+
+  function clearDrag() {
+    setDragId(null);
+    setDrop(null);
+  }
+
+  function patchItem(id: string, patch: Partial<ServiceItem>) {
+    onChange({
+      ...block,
+      items: block.items.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    });
+  }
+
+  function addItem() {
+    const next = emptyServiceItem();
+    onChange({ ...block, items: [...block.items, next] });
+    setEditId(next.id);
+  }
+
+  return (
+    <>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <p className="text-sm font-medium">{t("studio.blocks.services.list", "Pakalpojumi")}</p>
+        <button type="button" className="btn-line gap-1 px-2.5 py-1.5 text-[0.64rem] leading-none" onClick={addItem}>
+          <span aria-hidden="true">+</span>
+          {t("actions.add", "Pievienot")}
+        </button>
+      </div>
+
+      {block.items.length === 0 ? (
+        <p className="mt-3 text-sm text-[var(--muted)]">
+          {t("studio.blocks.services.empty", "Pievieno pakalpojumus. Secību maini ar vilkšanu.")}
+        </p>
+      ) : (
+        <ul className="mt-3 flex flex-col gap-2">
+          {block.items.map((item) => {
+            const dragging = dragId === item.id;
+            const incomplete = !item.name.trim();
+            const showLine = Boolean(dragId && drop && drop.id === item.id && dropWouldMove(itemIds, dragId, drop));
+            const title = item.name.trim() || t("studio.blocks.services.new_service", "Jauns pakalpojums");
+            const price = formatItemPrice(item.price, item.currency);
+            const description = item.description?.trim() ?? "";
+            const hint = [description, price].filter(Boolean).join(" · ");
+            return (
+              <li
+                key={item.id}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  if (!dragId || dragId === item.id) {
+                    if (drop) setDrop(null);
+                    return;
+                  }
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  const next: DropTarget = {
+                    id: item.id,
+                    edge: edgeFromPointer(event.clientY, rect.top, rect.height),
+                  };
+                  if (!drop || drop.id !== next.id || drop.edge !== next.edge) setDrop(next);
+                }}
+                onDragLeave={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node) && drop?.id === item.id) {
+                    setDrop(null);
+                  }
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const fromId = dragIdRef.current ?? event.dataTransfer.getData("text/plain");
+                  const target = dropRef.current;
+                  if (fromId) {
+                    const next = commitDropReorder(block.items, fromId, target);
+                    if (next) onChange({ ...block, items: next });
+                  }
+                  clearDrag();
+                }}
+                className={`relative rounded-xl bg-white px-1.5 py-1.5 transition-[opacity,border-color,box-shadow,border-width] duration-150 ${
+                  dragging
+                    ? "border-2 border-dashed border-[var(--accent)] opacity-[0.35] shadow-none"
+                    : incomplete
+                      ? "border-2 border-solid border-[var(--stamp)] opacity-100"
+                      : "border border-solid border-[var(--line)] opacity-100"
+                }`}
+              >
+                {showLine && drop ? <DropLine edge={drop.edge} /> : null}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    draggable
+                    aria-label={t("studio.dnd.change_priority", "Mainīt prioritāti")}
+                    title={t("studio.dnd.drag_order", "Velc, lai mainītu secību")}
+                    className="grid size-8 shrink-0 cursor-grab place-items-center rounded-lg text-[var(--muted)] hover:bg-[var(--paper)] active:cursor-grabbing"
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", item.id);
+                      setDragId(item.id);
+                      setDrop(null);
+                    }}
+                    onDragEnd={clearDrag}
+                  >
+                    <DragHandle />
+                  </button>
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-1 py-1 text-left hover:bg-[var(--paper)]"
+                    onClick={() => setEditId(item.id)}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold">{title}</span>
+                      {hint ? <span className="mt-0.5 block truncate text-xs text-[var(--muted)]">{hint}</span> : null}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("actions.edit", "Labot")}
+                    title={t("actions.edit", "Labot")}
+                    className="grid size-8 shrink-0 place-items-center rounded-lg text-[var(--muted)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"
+                    onClick={() => setEditId(item.id)}
+                  >
+                    <IconEdit />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("actions.delete", "Dzēst")}
+                    title={t("actions.delete", "Dzēst")}
+                    className="grid size-8 shrink-0 place-items-center rounded-lg text-[var(--muted)] hover:bg-red-50 hover:text-[var(--stamp)]"
+                    onClick={() => onChange({ ...block, items: block.items.filter((entry) => entry.id !== item.id) })}
+                  >
+                    <IconTrash />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {editing ? (
+        <SideDrawer
+          title={t("studio.blocks.services.edit_title", "Pakalpojums")}
+          hint={t("studio.blocks.services.edit_hint", "Nosaukums, apraksts un cena")}
+          ariaLabel={t("studio.blocks.services.edit_aria", "Labot pakalpojumu")}
+          nested
+          onClose={() => setEditId(null)}
+          footer={(close) => (
+            <button type="button" className="btn-ink w-full" onClick={close}>
+              {t("common.done", "Gatavs")}
+            </button>
+          )}
+        >
+          <FieldFrame label={t("common.title", "Nosaukums")}>
+            <input
+              className="auth-field"
+              autoFocus
+              placeholder={t("studio.blocks.services.name_ph", "Piem. Konsultācija, Griezums")}
+              value={editing.name}
+              maxLength={80}
+              onChange={(e) => patchItem(editing.id, { name: e.target.value })}
+            />
+          </FieldFrame>
+          <FieldFrame label={t("common.description", "Apraksts")}>
+            <textarea
+              className="auth-area min-h-[4.5rem]"
+              placeholder={t("common.optional", "Nav obligāts")}
+              value={editing.description ?? ""}
+              maxLength={240}
+              onChange={(e) => patchItem(editing.id, { description: e.target.value })}
+            />
+          </FieldFrame>
+          <PriceFields
+            price={editing.price ?? ""}
+            currency={editing.currency ?? ""}
+            onPrice={(price) => patchItem(editing.id, { price })}
+            onCurrency={(currency) => patchItem(editing.id, { currency })}
+          />
+        </SideDrawer>
+      ) : null}
+    </>
+  );
+}
+
+function ProductsItemsEditor({
+  block,
+  onChange,
+}: {
+  block: ProductsBlock;
+  onChange: (next: ProductsBlock) => void;
+}) {
+  const { t } = useTranslations();
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [drop, setDrop] = useState<DropTarget | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const dragIdRef = useRef<string | null>(null);
+  const dropRef = useRef<DropTarget | null>(null);
+  const blockRef = useRef(block);
+  dragIdRef.current = dragId;
+  dropRef.current = drop;
+  blockRef.current = block;
+
+  const itemIds = block.items.map((item) => item.id);
+  const editing = block.items.find((item) => item.id === editId) ?? null;
+
+  function clearDrag() {
+    setDragId(null);
+    setDrop(null);
+  }
+
+  function patchItem(id: string, patch: Partial<ProductItem>) {
+    const current = blockRef.current;
+    onChange({
+      ...current,
+      items: current.items.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    });
+  }
+
+  function addItem() {
+    const next = emptyProductItem();
+    onChange({ ...block, items: [...block.items, next] });
+    setImageError(null);
+    setEditId(next.id);
+  }
+
+  return (
+    <>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <p className="text-sm font-medium">{t("studio.blocks.products.list", "Produkti")}</p>
+        <button type="button" className="btn-line gap-1 px-2.5 py-1.5 text-[0.64rem] leading-none" onClick={addItem}>
+          <span aria-hidden="true">+</span>
+          {t("actions.add", "Pievienot")}
+        </button>
+      </div>
+
+      {block.items.length === 0 ? (
+        <p className="mt-3 text-sm text-[var(--muted)]">
+          {t("studio.blocks.products.empty", "Pievieno produktus. Secību maini ar vilkšanu.")}
+        </p>
+      ) : (
+        <ul className="mt-3 flex flex-col gap-2">
+          {block.items.map((item) => {
+            const dragging = dragId === item.id;
+            const incomplete = !item.name.trim();
+            const showLine = Boolean(dragId && drop && drop.id === item.id && dropWouldMove(itemIds, dragId, drop));
+            const title = item.name.trim() || t("studio.blocks.products.new_product", "Jauns produkts");
+            const price = formatItemPrice(item.price, item.currency);
+            const description = item.description?.trim() ?? "";
+            const hint = [description, price].filter(Boolean).join(" · ");
+            const image = item.imageUrl?.trim() ?? "";
+            return (
+              <li
+                key={item.id}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  if (!dragId || dragId === item.id) {
+                    if (drop) setDrop(null);
+                    return;
+                  }
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  const next: DropTarget = {
+                    id: item.id,
+                    edge: edgeFromPointer(event.clientY, rect.top, rect.height),
+                  };
+                  if (!drop || drop.id !== next.id || drop.edge !== next.edge) setDrop(next);
+                }}
+                onDragLeave={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node) && drop?.id === item.id) {
+                    setDrop(null);
+                  }
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const fromId = dragIdRef.current ?? event.dataTransfer.getData("text/plain");
+                  const target = dropRef.current;
+                  if (fromId) {
+                    const next = commitDropReorder(block.items, fromId, target);
+                    if (next) onChange({ ...block, items: next });
+                  }
+                  clearDrag();
+                }}
+                className={`relative rounded-xl bg-white px-1.5 py-1.5 transition-[opacity,border-color,box-shadow,border-width] duration-150 ${
+                  dragging
+                    ? "border-2 border-dashed border-[var(--accent)] opacity-[0.35] shadow-none"
+                    : incomplete
+                      ? "border-2 border-solid border-[var(--stamp)] opacity-100"
+                      : "border border-solid border-[var(--line)] opacity-100"
+                }`}
+              >
+                {showLine && drop ? <DropLine edge={drop.edge} /> : null}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    draggable
+                    aria-label={t("studio.dnd.change_priority", "Mainīt prioritāti")}
+                    title={t("studio.dnd.drag_order", "Velc, lai mainītu secību")}
+                    className="grid size-8 shrink-0 cursor-grab place-items-center rounded-lg text-[var(--muted)] hover:bg-[var(--paper)] active:cursor-grabbing"
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", item.id);
+                      setDragId(item.id);
+                      setDrop(null);
+                    }}
+                    onDragEnd={clearDrag}
+                  >
+                    <DragHandle />
+                  </button>
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-1 py-1 text-left hover:bg-[var(--paper)]"
+                    onClick={() => {
+                      setImageError(null);
+                      setEditId(item.id);
+                    }}
+                  >
+                    {image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={image} alt="" className="size-8 shrink-0 rounded-md object-cover" />
+                    ) : null}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold">{title}</span>
+                      {hint ? <span className="mt-0.5 block truncate text-xs text-[var(--muted)]">{hint}</span> : null}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("actions.edit", "Labot")}
+                    title={t("actions.edit", "Labot")}
+                    className="grid size-8 shrink-0 place-items-center rounded-lg text-[var(--muted)] hover:bg-[var(--paper)] hover:text-[var(--ink)]"
+                    onClick={() => {
+                      setImageError(null);
+                      setEditId(item.id);
+                    }}
+                  >
+                    <IconEdit />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("actions.delete", "Dzēst")}
+                    title={t("actions.delete", "Dzēst")}
+                    className="grid size-8 shrink-0 place-items-center rounded-lg text-[var(--muted)] hover:bg-red-50 hover:text-[var(--stamp)]"
+                    onClick={() => onChange({ ...block, items: block.items.filter((entry) => entry.id !== item.id) })}
+                  >
+                    <IconTrash />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {editing ? (
+        <SideDrawer
+          title={t("studio.blocks.products.edit_title", "Produkts")}
+          hint={t("studio.blocks.products.edit_hint", "Nosaukums, apraksts, attēls un cena")}
+          ariaLabel={t("studio.blocks.products.edit_aria", "Labot produktu")}
+          nested
+          onClose={() => setEditId(null)}
+          footer={(close) => (
+            <button type="button" className="btn-ink w-full" onClick={close}>
+              {t("common.done", "Gatavs")}
+            </button>
+          )}
+        >
+          <FieldFrame label={t("common.title", "Nosaukums")}>
+            <input
+              className="auth-field"
+              autoFocus
+              placeholder={t("studio.blocks.products.name_ph", "Piem. T-krekls, Kafija")}
+              value={editing.name}
+              maxLength={80}
+              onChange={(e) => patchItem(editing.id, { name: e.target.value })}
+            />
+          </FieldFrame>
+          <FieldFrame label={t("common.description", "Apraksts")}>
+            <textarea
+              className="auth-area min-h-[4.5rem]"
+              placeholder={t("common.optional", "Nav obligāts")}
+              value={editing.description ?? ""}
+              maxLength={240}
+              onChange={(e) => patchItem(editing.id, { description: e.target.value })}
+            />
+          </FieldFrame>
+          <div className="mt-3">
+            <ImageDropField
+              title={t("onboarding.image.title", "Attēls")}
+              hint={t("studio.blocks.field.image_drop_hint", "Ievelc vai izvēlies failu.")}
+              preview={
+                editing.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={editing.imageUrl} alt="" className="size-16 rounded-lg object-cover" />
+                ) : (
+                  <span className="text-sm text-[var(--muted)]">{t("studio.blocks.field.no_image", "Nav attēla")}</span>
+                )
+              }
+              onFile={(file) => {
+                setImageError(null);
+                void readImageFile(
+                  file,
+                  (imageUrl) => patchItem(editing.id, { imageUrl }),
+                  (message) => setImageError(message),
+                );
+              }}
+            />
+            {editing.imageUrl ? (
+              <button
+                type="button"
+                className="btn-line mt-2 w-full"
+                onClick={() => patchItem(editing.id, { imageUrl: null })}
+              >
+                {t("studio.blocks.remove_image", "Noņemt attēlu")}
+              </button>
+            ) : null}
+            {imageError ? <p className="mt-2 text-sm text-[var(--stamp)]">{imageError}</p> : null}
+          </div>
+          <PriceFields
+            price={editing.price ?? ""}
+            currency={editing.currency ?? ""}
+            onPrice={(price) => patchItem(editing.id, { price })}
+            onCurrency={(currency) => patchItem(editing.id, { currency })}
+          />
+        </SideDrawer>
+      ) : null}
+    </>
   );
 }
 

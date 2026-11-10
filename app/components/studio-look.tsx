@@ -66,7 +66,7 @@ export function LookColumn({
           {
             id: "icons",
             title: t("onboarding.socials.title", "Sociālās ikonas"),
-            hint: t("onboarding.socials.hint", "Ikonu izmērs lapā."),
+            hint: t("onboarding.socials.hint", "Izmērs, noapaļojums un atstarpe."),
             icon: <ShareIcon />,
           },
           ...(styleableBlocks.length > 0
@@ -377,6 +377,8 @@ export function LookColumn({
       {view === "icons" ? (
         <StudioGroup title={t("onboarding.socials.title", "Sociālās ikonas")}>
           <RangeField label={t("onboarding.icon_size", "Ikonu izmērs")} min={24} max={72} value={page.socialIconSize ?? 40} suffix=" px" onChange={(socialIconSize) => update({ socialIconSize })} />
+          <RangeField label={t("onboarding.avatar_radius", "Noapaļojums")} min={0} max={50} value={page.socialIconRadius ?? 50} suffix=" %" onChange={(socialIconRadius) => update({ socialIconRadius })} />
+          <RangeField label={t("onboarding.icon_padding", "Ikonas atstarpe")} min={0} max={16} value={page.socialIconPadding ?? 9} suffix=" px" onChange={(socialIconPadding) => update({ socialIconPadding })} />
         </StudioGroup>
       ) : null}
     </StudioScreen>

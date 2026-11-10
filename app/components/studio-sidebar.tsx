@@ -14,6 +14,7 @@ import { useTranslations } from "@/app/components/translations-provider";
 import type { FeedbackKind } from "@/app/lib/feedback/types";
 import { useSubscriptionPlanLabels } from "@/app/lib/billing/use-subscription-plan-labels";
 import { isModuleProLocked } from "@/app/lib/modules/is-module-pro-locked";
+import { pageDesignInProgress } from "@/app/lib/onboarding/destination";
 import { useFrontendModuleAccess } from "@/app/lib/modules/use-frontend-module-access";
 import { isFrontendModuleEnabled } from "@/app/lib/site-admin/modules";
 import {
@@ -60,6 +61,7 @@ export function StudioSidebar({ open, mobile = false, onOpenChange }: StudioSide
   const [feedbackKind, setFeedbackKind] = useState<FeedbackKind | null>(null);
   const [contactOpen, setContactOpen] = useState(false);
   const { notices, notify, dismissNotice } = useNotices();
+  const unfinishedNoted = useRef("");
   const linksRef = useRef<HTMLDivElement>(null);
   const leaveTimer = useRef<number | null>(null);
 
@@ -93,6 +95,21 @@ export function StudioSidebar({ open, mobile = false, onOpenChange }: StudioSide
   }
 
   useEffect(() => () => clearLeaveTimer(), []);
+
+  useEffect(() => {
+    if (pathname !== "/studio") return;
+    const active = activeId ?? pages[0]?.id ?? null;
+    const pending = pages.filter((page) => page.id !== active && pageDesignInProgress(page.onboarding));
+    if (pending.length === 0) return;
+    const key = pending
+      .map((page) => page.id)
+      .sort()
+      .join(",");
+    if (unfinishedNoted.current === key) return;
+    unfinishedNoted.current = key;
+    const handles = pending.map((page) => `/${page.handle}`).join(", ");
+    notify(t("studio.page.unfinished", "Iesākta un vēl nepabeigta: {handles}.", { handles }), "info");
+  }, [pathname, pages, activeId, notify, t]);
 
   useEffect(() => {
     if (!linksOpen) return;
@@ -193,16 +210,27 @@ export function StudioSidebar({ open, mobile = false, onOpenChange }: StudioSide
               <div className="absolute z-50 mt-1 left-0 right-0 min-w-[12rem] overflow-visible rounded-xl border border-[var(--line)] bg-white py-1 shadow-lg">
                 {pages.map((page) => {
                   const selected = (activeId ?? current?.id) === page.id;
+                  const inProgress = pageDesignInProgress(page.onboarding);
                   return (
                     <button
                       key={page.id}
                       type="button"
                       onClick={() => selectPage(page.id)}
-                      className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-[var(--paper)] ${
-                        selected ? "bg-[var(--paper)] font-medium" : ""
+                      className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${
+                        inProgress
+                          ? selected
+                            ? "bg-red-100 font-medium hover:bg-red-100"
+                            : "bg-red-50 hover:bg-red-100"
+                          : selected
+                            ? "bg-[var(--paper)] font-medium hover:bg-[var(--paper)]"
+                            : "hover:bg-[var(--paper)]"
                       }`}
                     >
-                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[var(--paper)] text-[var(--muted)]">
+                      <span
+                        className={`grid h-7 w-7 shrink-0 place-items-center rounded-md text-[var(--muted)] ${
+                          inProgress ? "bg-white" : "bg-[var(--paper)]"
+                        }`}
+                      >
                         <IconLink />
                       </span>
                       <span className="min-w-0 truncate">/{page.handle}</span>

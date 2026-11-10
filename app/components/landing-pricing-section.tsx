@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BillingIntervalToggle } from "@/app/components/billing-interval-toggle";
+import { EarlyOfferNote, EarlyOfferStar } from "@/app/components/early-offer-note";
 import { useTranslations } from "@/app/components/translations-provider";
 import type { BillingInterval } from "@/app/lib/billing/billing-interval";
 import { formatPlanPrice } from "@/app/lib/billing/format-plan-price";
@@ -147,6 +148,7 @@ export function LandingPricingSection({ pricing }: { pricing: LandingPricingData
                 <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
                   <span className="font-display text-4xl font-bold tracking-[-0.03em]">
                     {display.priceLabel}
+                    <EarlyOfferStar show={Boolean(plan.earlyOffer)} />
                   </span>
                   {period ? (
                     <span className="text-base font-sans font-normal text-[var(--muted)]">/ {period}</span>
@@ -159,6 +161,7 @@ export function LandingPricingSection({ pricing }: { pricing: LandingPricingData
                     </span>
                   ) : null}
                 </div>
+                <EarlyOfferNote offer={plan.earlyOffer} />
                 <p className="mt-2 flex-1 text-sm leading-relaxed text-[var(--muted)]">
                   {pricingText(plan.bodyKey, plan.name)}
                 </p>
